@@ -1,0 +1,86 @@
+/* Modern Color Palette */
+.root {
+    -color-primary: #2563eb;
+    -color-primary-dark: #1e40af;
+    -color-bg: #f8fafc;
+    -color-surface: #ffffff;
+    -color-text: #1e293b;
+    -color-text-muted: #64748b;
+    
+    -fx-font-family: 'Segoe UI', sans-serif;
+    -fx-font-size: 14px;
+}
+
+/* Background gradient for the left panel */
+.branding-panel {
+    -fx-background-color: linear-gradient(to bottom right, #2563eb, #4f46e5);
+    -fx-alignment: center;
+}
+
+.branding-text {
+    -fx-text-fill: white;
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 2);
+}
+
+.branding-subtext {
+    -fx-text-fill: rgba(255,255,255,0.8);
+    -fx-font-size: 16px;
+}
+
+/* Login Form Area */
+.login-panel {
+    -fx-background-color: -color-surface;
+    -fx-spacing: 20;
+    -fx-padding: 60;
+    -fx-alignment: center-left;
+}
+
+.h1 {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text;
+}
+
+.text-field, .password-field {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: transparent;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 12;
+    -fx-font-size: 14px;
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-background-color: white;
+    -fx-border-color: -color-primary;
+    -fx-border-width: 2px;
+}
+
+.button-primary {
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 12 24;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(37, 99, 235, 0.3), 10, 0, 0, 5);
+}
+
+.button-primary:hover {
+    -fx-background-color: -color-primary-dark;
+}
+
+.button-icon {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-text-muted;
+    -fx-cursor: hand;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 5;
+}
+
+.button-icon:hover {
+    -fx-background-color: #f1f5f9;
+    -fx-text-fill: -color-primary;
+}
