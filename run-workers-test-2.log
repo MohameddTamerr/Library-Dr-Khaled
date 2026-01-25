@@ -1,0 +1,308 @@
+﻿.\mvnw.cmd : WARNING: A restricted method in 
+java.lang.System has been called
+At line:1 char:185
++ ... ontinue }; Start-Sleep -Seconds 2; 
+.\mvnw.cmd javafx:run 2>&1 | Out-F ...
++                                        
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARN 
+   ING: A rest...has been called:String) [], Rem  
+  oteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: java.lang.System::load has been called 
+by org.fusesource.jansi.internal.JansiLoader in 
+an unnamed module (file:/C:/Users/user/.m2/wrapper
+/dists/apache-maven-3.9.6-bin/439sdfsg2nbdob9ciift
+5h5nse/apache-maven-3.9.6/lib/jansi-2.4.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED 
+to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a 
+future release unless native access is enabled
+
+WARNING: A terminally deprecated method in 
+sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has 
+been called by com.google.common.util.concurrent.A
+bstractFuture$UnsafeAtomicHelper (file:/C:/Users/u
+ser/.m2/wrapper/dists/apache-maven-3.9.6-bin/439sd
+fsg2nbdob9ciift5h5nse/apache-maven-3.9.6/lib/guava
+-32.0.1-jre.jar)
+WARNING: Please consider reporting this to the 
+maintainers of class com.google.common.util.concur
+rent.AbstractFuture$UnsafeAtomicHelper
+WARNING: sun.misc.Unsafe::objectFieldOffset will 
+be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.library:pos-system >-----------------------
+[INFO] Building Library POS System 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> javafx:0.0.8:run (default-cli) > process-classes @ pos-system >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ pos-system ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 8 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ pos-system ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] <<< javafx:0.0.8:run (default-cli) < process-classes @ pos-system <<<
+[INFO] 
+[INFO] 
+[INFO] --- javafx:0.0.8:run (default-cli) @ pos-system ---
+WARNING: A restricted method in java.lang.System 
+has been called
+WARNING: java.lang.System::load has been called 
+by com.sun.glass.utils.NativeLibLoader in module 
+javafx.graphics (file:/C:/Users/user/.m2/repositor
+y/org/openjfx/javafx-graphics/21/javafx-graphics-2
+1-win.jar)
+WARNING: Use 
+--enable-native-access=javafx.graphics to avoid a 
+warning for callers in this module
+WARNING: Restricted methods will be blocked in a 
+future release unless native access is enabled
+
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.2)
+
+2026-01-25T23:20:04.411+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.s.boot.SpringApplication               : Starting application using Java 24.0.1 with PID 37136 (started by user in C:\Users\user\Library-Dr-Khaled)
+2026-01-25T23:20:04.416+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.s.boot.SpringApplication               : No active profile set, falling back to 1 default profile: "default"
+2026-01-25T23:20:05.315+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-25T23:20:05.416+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 92 ms. Found 3 JPA repository interfaces.
+WARNING: A restricted method in java.lang.System 
+has been called
+WARNING: java.lang.System::load has been called 
+by org.apache.tomcat.jni.Library in an unnamed 
+module (file:/C:/Users/user/.m2/repository/org/apa
+che/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-
+embed-core-10.1.18.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED 
+to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a 
+future release unless native access is enabled
+
+2026-01-25T23:20:06.157+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-01-25T23:20:06.176+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-25T23:20:06.176+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.18]
+2026-01-25T23:20:06.242+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-01-25T23:20:06.243+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1758 ms
+2026-01-25T23:20:06.279+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-25T23:20:06.498+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2026-01-25T23:20:06.500+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-25T23:20:06.511+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:testdb'
+2026-01-25T23:20:06.795+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-25T23:20:06.911+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
+2026-01-25T23:20:06.971+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-25T23:20:07.213+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-25T23:20:07.258+02:00  WARN 37136 --- [Library POS System] [JavaFX-Launcher] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-25T23:20:08.210+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-25T23:20:08.269+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+Creating default Owner account...
+2026-01-25T23:20:09.285+02:00  WARN 37136 --- [Library POS System] [JavaFX-Launcher] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-01-25T23:20:09.907+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-01-25T23:20:09.924+02:00  INFO 37136 --- [Library POS System] [JavaFX-Launcher] o.s.boot.SpringApplication               : Started application in 5.947 seconds (process running for 6.759)
+Checking database schema...
+Exception in Application start method
+2026-01-25T23:20:10.171+02:00  INFO 37136 --- [Library POS System] [lication Thread] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-25T23:20:10.185+02:00  INFO 37136 --- [Library POS System] [lication Thread] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-25T23:20:10.188+02:00  INFO 37136 --- [Library POS System] [lication Thread] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+Exception in thread "main" 
+java.lang.RuntimeException: Exception in 
+Application start method
+	at javafx.graphics@21/com.sun.javafx.application.
+LauncherImpl.launchApplication1(LauncherImpl.java:
+893)
+	at javafx.graphics@21/com.sun.javafx.application.
+LauncherImpl.lambda$launchApplication$2(LauncherIm
+pl.java:196)
+	at 
+java.base/java.lang.Thread.run(Thread.java:1447)
+Caused by: javafx.fxml.LoadException: Resource 
+"workers.username.prompt" not found.
+/C:/Users/user/Library-Dr-Khaled/target/classes/fx
+ml/workers.fxml:45
+
+	at javafx.fxml@21/javafx.fxml.FXMLLoader.construc
+tLoadException(FXMLLoader.java:2718)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader$Element.
+resolvePrefixedValue(FXMLLoader.java:437)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader$Element.
+processValue(FXMLLoader.java:375)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader$Element.
+processPropertyAttribute(FXMLLoader.java:337)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader$Element.
+processInstancePropertyAttributes(FXMLLoader.java:
+248)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader$ValueEle
+ment.processEndElement(FXMLLoader.java:780)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader.processE
+ndElement(FXMLLoader.java:2969)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader.loadImpl
+(FXMLLoader.java:2654)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader.loadImpl
+(FXMLLoader.java:2563)
+	at javafx.fxml@21/javafx.fxml.FXMLLoader.load(FXM
+LLoader.java:2531)
+	at com.library.pos.LibraryPosApplication.start(Li
+braryPosApplication.java:35)
+	at javafx.graphics@21/com.sun.javafx.application.
+LauncherImpl.lambda$launchApplication1$9(LauncherI
+mpl.java:839)
+	at javafx.graphics@21/com.sun.javafx.application.
+PlatformImpl.lambda$runAndWait$12(PlatformImpl.jav
+a:483)
+	at javafx.graphics@21/com.sun.javafx.application.
+PlatformImpl.lambda$runLater$10(PlatformImpl.java:
+456)
+	at java.base/java.security.AccessController.doPri
+vileged(AccessController.java:138)
+	at javafx.graphics@21/com.sun.javafx.application.
+PlatformImpl.lambda$runLater$11(PlatformImpl.java:
+455)
+	at javafx.graphics@21/com.sun.glass.ui.InvokeLate
+rDispatcher$Future.run(InvokeLaterDispatcher.java:
+95)
+	at javafx.graphics@21/com.sun.glass.ui.win.WinApp
+lication._runLoop(Native Method)
+	at javafx.graphics@21/com.sun.glass.ui.win.WinApp
+lication.lambda$runLoop$3(WinApplication.java:185)
+	... 1 more
+[ERROR] Command execution failed.
+org.apache.commons.exec.ExecuteException: Process exited with an error: 1 (Exit value: 1)
+    at org.apache.commons.exec.DefaultExecutor.executeInternal (DefaultExecutor.java:404)
+    at org.apache.commons.exec.DefaultExecutor.execute (DefaultExecutor.java:166)
+    at org.openjfx.JavaFXBaseMojo.executeCommandLine (JavaFXBaseMojo.java:567)
+    at org.openjfx.JavaFXBaseMojo.executeCommandLine (JavaFXBaseMojo.java:434)
+    at org.openjfx.JavaFXRunMojo.execute (JavaFXRunMojo.java:105)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:126)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:328)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:906)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:283)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:206)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:104)
+    at java.lang.reflect.Method.invoke (Method.java:565)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:283)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:226)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:407)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:348)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:104)
+    at java.lang.reflect.Method.invoke (Method.java:565)
+    at org.apache.maven.wrapper.BootstrapMainStarter.start (BootstrapMainStarter.java:39)
+    at org.apache.maven.wrapper.WrapperExecutor.execute (WrapperExecutor.java:122)
+    at org.apache.maven.wrapper.MavenWrapperMain.main (MavenWrapperMain.java:60)
+org.apache.commons.exec.ExecuteException: Process 
+exited with an error: 1 (Exit value: 1)
+	at org.apache.commons.exec.DefaultExecutor.execut
+eInternal(DefaultExecutor.java:404)
+	at org.apache.commons.exec.DefaultExecutor.execut
+e(DefaultExecutor.java:166)
+	at org.openjfx.JavaFXBaseMojo.executeCommandLine(
+JavaFXBaseMojo.java:567)
+	at org.openjfx.JavaFXBaseMojo.executeCommandLine(
+JavaFXBaseMojo.java:434)
+	at org.openjfx.JavaFXRunMojo.execute(JavaFXRunMoj
+o.java:105)
+	at org.apache.maven.plugin.DefaultBuildPluginMana
+ger.executeMojo(DefaultBuildPluginManager.java:126
+)
+	at org.apache.maven.lifecycle.internal.MojoExecut
+or.doExecute2(MojoExecutor.java:328)
+	at org.apache.maven.lifecycle.internal.MojoExecut
+or.doExecute(MojoExecutor.java:316)
+	at org.apache.maven.lifecycle.internal.MojoExecut
+or.execute(MojoExecutor.java:212)
+	at org.apache.maven.lifecycle.internal.MojoExecut
+or.execute(MojoExecutor.java:174)
+	at org.apache.maven.lifecycle.internal.MojoExecut
+or.access$000(MojoExecutor.java:75)
+	at org.apache.maven.lifecycle.internal.MojoExecut
+or$1.run(MojoExecutor.java:162)
+	at org.apache.maven.plugin.DefaultMojosExecutionS
+trategy.execute(DefaultMojosExecutionStrategy.java
+:39)
+	at org.apache.maven.lifecycle.internal.MojoExecut
+or.execute(MojoExecutor.java:159)
+	at org.apache.maven.lifecycle.internal.LifecycleM
+oduleBuilder.buildProject(LifecycleModuleBuilder.j
+ava:105)
+	at org.apache.maven.lifecycle.internal.LifecycleM
+oduleBuilder.buildProject(LifecycleModuleBuilder.j
+ava:73)
+	at org.apache.maven.lifecycle.internal.builder.si
+nglethreaded.SingleThreadedBuilder.build(SingleThr
+eadedBuilder.java:53)
+	at org.apache.maven.lifecycle.internal.LifecycleS
+tarter.execute(LifecycleStarter.java:118)
+	at org.apache.maven.DefaultMaven.doExecute(Defaul
+tMaven.java:261)
+	at org.apache.maven.DefaultMaven.doExecute(Defaul
+tMaven.java:173)
+	at org.apache.maven.DefaultMaven.execute(DefaultM
+aven.java:101)
+	at org.apache.maven.cli.MavenCli.execute(MavenCli
+.java:906)
+	at org.apache.maven.cli.MavenCli.doMain(MavenCli.
+java:283)
+	at org.apache.maven.cli.MavenCli.main(MavenCli.ja
+va:206)
+	at java.base/jdk.internal.reflect.DirectMethodHan
+dleAccessor.invoke(DirectMethodHandleAccessor.java
+:104)
+	at java.base/java.lang.reflect.Method.invoke(Meth
+od.java:565)
+	at org.codehaus.plexus.classworlds.launcher.Launc
+her.launchEnhanced(Launcher.java:283)
+	at org.codehaus.plexus.classworlds.launcher.Launc
+her.launch(Launcher.java:226)
+	at org.codehaus.plexus.classworlds.launcher.Launc
+her.mainWithExitCode(Launcher.java:407)
+	at org.codehaus.plexus.classworlds.launcher.Launc
+her.main(Launcher.java:348)
+	at java.base/jdk.internal.reflect.DirectMethodHan
+dleAccessor.invoke(DirectMethodHandleAccessor.java
+:104)
+	at java.base/java.lang.reflect.Method.invoke(Meth
+od.java:565)
+	at org.apache.maven.wrapper.BootstrapMainStarter.
+start(BootstrapMainStarter.java:39)
+	at org.apache.maven.wrapper.WrapperExecutor.execu
+te(WrapperExecutor.java:122)
+	at org.apache.maven.wrapper.MavenWrapperMain.main
+(MavenWrapperMain.java:60)
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  9.505 s
+[INFO] Finished at: 2026-01-25T23:20:10+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.openjfx:javafx-maven-plugin:0.0.8:run (default-cli) on project pos-system: Error: Command execution failed. Process exited with an error: 1 (Exit value: 1) -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

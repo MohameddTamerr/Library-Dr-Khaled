@@ -1,16 +1,11 @@
 package com.library.pos.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "worker_shifts")
-@Data
-@NoArgsConstructor
 public class WorkerShift {
 
     @Id
@@ -33,4 +28,57 @@ public class WorkerShift {
 
     @Column
     private String notes;
+
+    public WorkerShift() {
+    }
+
+    // Getters
+    public Long getId() {
+        return id;
+    }
+
+    public User getWorker() {
+        return worker;
+    }
+
+    public LocalDate getShiftDate() {
+        return shiftDate;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    // Setters
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setWorker(User worker) {
+        this.worker = worker;
+    }
+
+    public void setShiftDate(LocalDate shiftDate) {
+        this.shiftDate = shiftDate;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
 }

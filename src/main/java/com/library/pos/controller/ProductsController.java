@@ -53,8 +53,24 @@ public class ProductsController {
         sellPriceCol.setCellValueFactory(new PropertyValueFactory<>("sellPrice"));
         qtyCol.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         minStockCol.setCellValueFactory(new PropertyValueFactory<>("minStock"));
+        supplierCol.setCellValueFactory(new PropertyValueFactory<>("supplier"));
 
         setupActionColumn();
+
+        productsTable.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(Product item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item == null || empty) {
+                    setStyle("");
+                } else if (item.getQuantity() <= item.getMinStock()) {
+                    // Light Red for Low Stock
+                    setStyle("-fx-background-color: #fee2e2;");
+                } else {
+                    setStyle("");
+                }
+            }
+        });
 
         refreshTable();
     }
@@ -150,6 +166,13 @@ public class ProductsController {
         actionCol.setCellFactory(cellFactory);
     }
 
+    @FXML
+    private TableColumn<Product, String> supplierCol;
+
+    // ...
+
+    // ...
+
     private Optional<Product> showProductDialog(Product existing) {
         Dialog<Product> dialog = new Dialog<>();
         dialog.setTitle(existing == null ? "Add Product" : "Edit Product");
@@ -163,7 +186,12 @@ public class ProductsController {
 
         TextField name = new TextField();
         TextField barcode = new TextField();
-        TextField category = new TextField();
+
+        ComboBox<String> category = new ComboBox<>();
+        category.setEditable(true);
+        category.setItems(FXCollections.observableArrayList(productService.getAllCategories()));
+
+        TextField supplier = new TextField();
         TextField cost = new TextField();
         TextField sellPrice = new TextField();
         TextField qty = new TextField();
@@ -172,7 +200,8 @@ public class ProductsController {
         if (existing != null) {
             name.setText(existing.getName());
             barcode.setText(existing.getBarcode());
-            category.setText(existing.getCategory());
+            category.setValue(existing.getCategory());
+            supplier.setText(existing.getSupplier());
             cost.setText(String.valueOf(existing.getCost()));
             sellPrice.setText(String.valueOf(existing.getSellPrice()));
             qty.setText(String.valueOf(existing.getQuantity()));
@@ -182,25 +211,32 @@ public class ProductsController {
         grid.addRow(0, new Label("Name"), name);
         grid.addRow(1, new Label("Barcode"), barcode);
         grid.addRow(2, new Label("Category"), category);
-        grid.addRow(3, new Label("Cost"), cost);
-        grid.addRow(4, new Label("Sell Price"), sellPrice);
-        grid.addRow(5, new Label("Quantity"), qty);
-        grid.addRow(6, new Label("Min Stock"), minStock);
+        grid.addRow(3, new Label("Supplier"), supplier);
+        grid.addRow(4, new Label("Cost"), cost);
+        grid.addRow(5, new Label("Sell Price"), sellPrice);
+        grid.addRow(6, new Label("Quantity"), qty);
+        grid.addRow(7, new Label("Min Stock"), minStock);
 
         dialog.getDialogPane().setContent(grid);
+
+        // Validation needed to prevent nulls
 
         dialog.setResultConverter(button -> {
             if (button == saveButton) {
                 try {
+                    String catVal = category.getValue();
+                    if (catVal == null)
+                        catVal = category.getEditor().getText();
+
                     return new Product(
                             name.getText().trim(),
                             barcode.getText().trim(),
-                            category.getText().trim(),
+                            catVal != null ? catVal : "",
                             Double.parseDouble(cost.getText().trim()),
                             Double.parseDouble(sellPrice.getText().trim()),
                             Integer.parseInt(qty.getText().trim()),
-                            Integer.parseInt(minStock.getText().trim())
-                    );
+                            Integer.parseInt(minStock.getText().trim()),
+                            supplier.getText().trim());
                 } catch (Exception e) {
                     showAlert("Please enter valid values in all fields.");
                     return null;

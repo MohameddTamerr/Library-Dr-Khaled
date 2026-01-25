@@ -13,21 +13,58 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final com.library.pos.repository.SalaryAdvanceRepository advanceRepository;
+    private final com.library.pos.repository.WorkSessionRepository sessionRepository;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+            com.library.pos.repository.SalaryAdvanceRepository advanceRepository,
+            com.library.pos.repository.WorkSessionRepository sessionRepository) {
         this.userRepository = userRepository;
+        this.advanceRepository = advanceRepository;
+        this.sessionRepository = sessionRepository;
     }
 
     public List<User> getAllWorkers() {
-        return userRepository.findAll().stream()
+        List<User> workers = userRepository.findAll().stream()
                 .filter(user -> user.getRole() == Role.WORKER)
                 .collect(Collectors.toList());
+
+        // Populate current withdrawals
+        java.time.LocalDate now = java.time.LocalDate.now();
+        java.time.LocalDate start = now.withDayOfMonth(1);
+        java.time.LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
+
+        workers.forEach(w -> {
+            Double drawn = advanceRepository.findByWorkerAndAdvanceDateBetween(w, start, end).stream()
+                    .mapToDouble(com.library.pos.model.SalaryAdvance::getAmount)
+                    .sum();
+            w.setCurrentWithdrawal(drawn);
+        });
+
+        return workers;
+    }
+
+    public long getWorkMinutes(User worker, java.time.LocalDate start, java.time.LocalDate end) {
+        return sessionRepository
+                .findByWorkerAndStartTimeBetween(worker, start.atStartOfDay(), end.atTime(java.time.LocalTime.MAX))
+                .stream()
+                .mapToLong(s -> s.getDurationMinutes() != null ? s.getDurationMinutes() : 0)
+                .sum();
+    }
+
+    public void addAdvance(User worker, Double amount, String note) {
+        com.library.pos.model.SalaryAdvance adv = new com.library.pos.model.SalaryAdvance();
+        adv.setWorker(worker);
+        adv.setAmount(amount);
+        adv.setAdvanceDate(java.time.LocalDate.now());
+        adv.setReason(note);
+        adv.setIsDeducted(false);
+        advanceRepository.save(adv);
     }
 
     public User saveWorker(User user) {
         user.setRole(Role.WORKER);
-        // In a real app, hash the password here
         return userRepository.save(user);
     }
 

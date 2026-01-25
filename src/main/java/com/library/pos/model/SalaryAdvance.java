@@ -1,15 +1,10 @@
 package com.library.pos.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "salary_advances")
-@Data
-@NoArgsConstructor
 public class SalaryAdvance {
 
     @Id
@@ -32,4 +27,57 @@ public class SalaryAdvance {
 
     @Column(name = "is_deducted")
     private Boolean isDeducted;
+
+    public SalaryAdvance() {
+    }
+
+    // Getters
+    public Long getId() {
+        return id;
+    }
+
+    public User getWorker() {
+        return worker;
+    }
+
+    public Double getAmount() {
+        return amount;
+    }
+
+    public LocalDate getAdvanceDate() {
+        return advanceDate;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public Boolean getIsDeducted() {
+        return isDeducted;
+    }
+
+    // Setters
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setWorker(User worker) {
+        this.worker = worker;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
+
+    public void setAdvanceDate(LocalDate advanceDate) {
+        this.advanceDate = advanceDate;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public void setIsDeducted(Boolean isDeducted) {
+        this.isDeducted = isDeducted;
+    }
 }

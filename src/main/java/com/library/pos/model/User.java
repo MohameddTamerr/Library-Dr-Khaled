@@ -1,15 +1,10 @@
 package com.library.pos.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data
-@NoArgsConstructor
 public class User {
 
     @Id
@@ -21,7 +16,7 @@ public class User {
     private String username;
 
     @Column(nullable = false)
-    private String password; // In real app, this should be hashed
+    private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -31,7 +26,7 @@ public class User {
     private String fullName;
 
     @Column(name = "salary")
-    private Double hourlyRate; // Mapped to salary column
+    private Double hourlyRate;
 
     @Column(name = "phone")
     private String phoneNumber;
@@ -39,25 +34,106 @@ public class User {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Not in the SQL schema. Keep transient so JPA doesn't expect columns.
-    @Transient
-    private String address;
-    @Transient
-    private Double salaryLimit; // Max amount they can withdraw
-    @Transient
-    private Double currentWithdrawal; // Amount currently withdrawn this month
+    @Column(name = "withdrawal_limit")
+    private Double salaryLimit;
 
-    // Full constructor
-    public User(String username, String password, Role role, String fullName, Double hourlyRate, String address,
+    @Transient
+    private Double currentWithdrawal;
+
+    public User() {
+    }
+
+    public User(String username, String password, Role role, String fullName, Double hourlyRate,
             String phoneNumber, Double salaryLimit) {
         this.username = username;
         this.password = password;
         this.role = role;
         this.fullName = fullName;
         this.hourlyRate = hourlyRate;
-        this.address = address;
         this.phoneNumber = phoneNumber;
         this.salaryLimit = salaryLimit;
         this.currentWithdrawal = 0.0;
+    }
+
+    // Getters
+    public Long getId() {
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public Double getHourlyRate() {
+        return hourlyRate;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public Double getSalaryLimit() {
+        return salaryLimit;
+    }
+
+    public Double getCurrentWithdrawal() {
+        return currentWithdrawal;
+    }
+
+    // Setters
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public void setHourlyRate(Double hourlyRate) {
+        this.hourlyRate = hourlyRate;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setSalaryLimit(Double salaryLimit) {
+        this.salaryLimit = salaryLimit;
+    }
+
+    public void setCurrentWithdrawal(Double currentWithdrawal) {
+        this.currentWithdrawal = currentWithdrawal;
     }
 }

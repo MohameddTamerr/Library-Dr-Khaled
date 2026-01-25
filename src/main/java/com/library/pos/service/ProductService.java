@@ -20,6 +20,10 @@ public class ProductService {
         return productRepository.findAll();
     }
 
+    public List<String> getAllCategories() {
+        return productRepository.findDistinctCategories();
+    }
+
     public Optional<Product> findByBarcode(String barcode) {
         return productRepository.findByBarcode(barcode);
     }

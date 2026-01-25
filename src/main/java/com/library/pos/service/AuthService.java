@@ -26,7 +26,7 @@ public class AuthService {
     public void init() {
         if (!userRepository.existsByRole(Role.OWNER)) {
             System.out.println("Creating default Owner account...");
-            User owner = new User("admin", "admin", Role.OWNER, "System Owner", 0.0, "Library Address", "0000000000",
+            User owner = new User("admin", "admin", Role.OWNER, "System Owner", 0.0, "0000000000",
                     0.0);
             userRepository.save(owner);
         }

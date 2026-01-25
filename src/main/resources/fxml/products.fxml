@@ -28,6 +28,7 @@
             <TableColumn fx:id="nameCol" text="Name" prefWidth="160"/>
             <TableColumn fx:id="barcodeCol" text="Barcode" prefWidth="120"/>
             <TableColumn fx:id="categoryCol" text="Category" prefWidth="120"/>
+            <TableColumn fx:id="supplierCol" text="Supplier" prefWidth="120"/>
             <TableColumn fx:id="costCol" text="Cost" prefWidth="80"/>
             <TableColumn fx:id="sellPriceCol" text="Sell Price" prefWidth="90"/>
             <TableColumn fx:id="qtyCol" text="Qty" prefWidth="60"/>

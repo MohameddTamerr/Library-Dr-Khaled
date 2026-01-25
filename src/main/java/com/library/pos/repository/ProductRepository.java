@@ -8,5 +8,9 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByBarcode(String barcode);
+
     List<Product> findByBarcodeContainingIgnoreCaseOrNameContainingIgnoreCase(String barcode, String name);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT p.category FROM Product p WHERE p.category IS NOT NULL")
+    List<String> findDistinctCategories();
 }

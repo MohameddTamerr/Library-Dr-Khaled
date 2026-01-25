@@ -62,19 +62,37 @@ public class LoginController {
     private void navigateToDashboard(User user) {
         try {
             Stage stage = (Stage) loginButton.getScene().getWindow();
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
-            loader.setControllerFactory(applicationContext::getBean);
-            loader.setResources(ResourceBundle.getBundle("messages"));
 
-            Scene scene = new Scene(loader.load(), 1200, 800);
-            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+            if (user.getRole() == com.library.pos.model.Role.WORKER) {
+                // Navigate to Cashier System
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/cashier.fxml"));
+                loader.setControllerFactory(applicationContext::getBean);
+                loader.setResources(ResourceBundle.getBundle("messages"));
+                Scene scene = new Scene(loader.load(), 1200, 800);
+                scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
 
-            // Pass user info to dashboard
-            DashboardController dashboardController = loader.getController();
-            dashboardController.setUsername(user.getFullName());
+                CashierController cashierController = loader.getController();
+                cashierController.setUser(user);
 
-            stage.setTitle(ResourceBundle.getBundle("messages").getString("app.title") + " - Dashboard");
-            stage.setScene(scene);
+                stage.setTitle(ResourceBundle.getBundle("messages").getString("cashier.title"));
+                stage.setScene(scene);
+            } else {
+                // Navigate to Owner Dashboard
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+                loader.setControllerFactory(applicationContext::getBean);
+                loader.setResources(ResourceBundle.getBundle("messages")); // Using same messages bundle
+
+                Scene scene = new Scene(loader.load(), 1200, 800);
+                scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+
+                // Pass user info to dashboard
+                DashboardController dashboardController = loader.getController();
+                dashboardController.setUsername(user.getFullName());
+
+                stage.setTitle(ResourceBundle.getBundle("messages").getString("app.title") + " - Dashboard");
+                stage.setScene(scene);
+            }
+
             stage.setResizable(true);
             stage.centerOnScreen();
         } catch (Exception e) {

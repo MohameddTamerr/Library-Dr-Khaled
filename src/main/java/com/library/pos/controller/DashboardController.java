@@ -1,34 +1,33 @@
 package com.library.pos.controller;
 
+import com.library.pos.model.Product;
 import com.library.pos.model.Sale;
-import com.library.pos.model.SaleStatus;
+import com.library.pos.model.User;
+import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.ComboBox;
+import javafx.scene.Scene;
+import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.PieChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ResourceBundle;
-import java.util.Locale;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.WeekFields;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class DashboardController {
@@ -37,73 +36,267 @@ public class DashboardController {
     private Label welcomeLabel;
     @FXML
     private StackPane contentArea;
-    @FXML
-    private Button workersButton;
 
-    private final ConfigurableApplicationContext applicationContext;
-    private final SaleService saleService;
-
+    // KPI Cards
     @FXML
-    private TabPane rangeTabs;
+    private Label totalSalesLabel;
+    @FXML
+    private Label netProfitLabel;
+    @FXML
+    private Label invoiceCountLabel;
+    @FXML
+    private Label lowStockLabel;
+
+    // Filters
     @FXML
     private DatePicker fromDatePicker;
     @FXML
     private DatePicker toDatePicker;
     @FXML
-    private ComboBox<String> fromTimeField;
-    @FXML
-    private ComboBox<String> toTimeField;
-    @FXML
-    private TableView<Sale> salesTable;
-    @FXML
-    private TableColumn<Sale, String> dateCol;
-    @FXML
-    private TableColumn<Sale, String> timeCol;
-    @FXML
-    private TableColumn<Sale, String> itemCol;
-    @FXML
-    private TableColumn<Sale, String> qtyCol;
-    @FXML
-    private TableColumn<Sale, String> totalCol;
-    @FXML
-    private TableColumn<Sale, String> statusCol;
-    @FXML
-    private TableColumn<Sale, String> workerCol;
-    @FXML
-    private TableColumn<Sale, String> notesCol;
+    private ComboBox<String> categoryFilter;
 
+    // Charts
+    @FXML
+    private AreaChart<String, Number> salesChart;
+    @FXML
+    private PieChart topProductsChart;
+
+    // Stock Table
+    @FXML
+    private TableView<Product> stockTable;
+    @FXML
+    private TableColumn<Product, String> stockProductCol;
+    @FXML
+    private TableColumn<Product, String> stockBarcodeCol;
+    @FXML
+    private TableColumn<Product, Integer> stockQtyCol;
+    @FXML
+    private TableColumn<Product, Double> stockPriceCol;
+    @FXML
+    private TableColumn<Product, String> stockStatusCol;
+    @FXML
+    private TextField searchField;
+
+    private final ConfigurableApplicationContext applicationContext;
+    private final SaleService saleService;
+    private final ProductService productService;
+
+    private User currentUser;
     private Parent defaultDashboardView;
+    private ResourceBundle bundle;
 
-    public DashboardController(ConfigurableApplicationContext applicationContext, SaleService saleService) {
+    public DashboardController(ConfigurableApplicationContext applicationContext,
+            SaleService saleService,
+            ProductService productService) {
         this.applicationContext = applicationContext;
         this.saleService = saleService;
+        this.productService = productService;
     }
 
     @FXML
     public void initialize() {
+        bundle = ResourceBundle.getBundle("messages");
+
+        // Save default view for home navigation
         if (contentArea != null && !contentArea.getChildren().isEmpty()) {
             defaultDashboardView = (Parent) contentArea.getChildren().get(0);
         }
 
-        if (salesTable != null) {
-            configureSalesTable();
-            setupTimeDropdowns();
-            setupDefaultRange();
-            hookTabChanges();
-            loadSalesFromInputs();
+        if (stockTable != null) {
+            configureStockTable();
+            setupFilters();
+            // Initial Load: Last 30 Days
+            fromDatePicker.setValue(LocalDate.now().minusDays(30));
+            toDatePicker.setValue(LocalDate.now());
+            refreshAnalytics();
         }
     }
 
-    public void setUsername(String username) {
-        welcomeLabel.setText(ResourceBundle.getBundle("messages").getString("dash.welcome").replace("{0}", username));
+    private void setupFilters() {
+        // Populate Categories (Mock data for now, or distinct from DB)
+        List<String> categories = new ArrayList<>();
+        categories.add("الكل");
+        categories.add("كتب");
+        categories.add("أدوات مكتبية");
+        categories.add("ألعاب");
+        categoryFilter.setItems(FXCollections.observableArrayList(categories));
+        categoryFilter.getSelectionModel().selectFirst();
     }
 
+    @FXML
+    public void refreshAnalytics() {
+        LocalDate from = fromDatePicker.getValue();
+        LocalDate to = toDatePicker.getValue();
+        if (from == null)
+            from = LocalDate.now().minusDays(30);
+        if (to == null)
+            to = LocalDate.now();
+
+        LocalDateTime start = LocalDateTime.of(from, LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.of(to, LocalTime.MAX);
+
+        // Fetch Data
+        List<Sale> sales = saleService.findByRange(start, end);
+        List<Product> products = productService.getAll();
+
+        updateKPICards(sales, products);
+        updateCharts(sales);
+        updateStockTable(products);
+    }
+
+    @FXML
+    private Label salesTrendLabel;
+    @FXML
+    private Label productsBadge;
+
+    private void updateKPICards(List<Sale> sales, List<Product> products) {
+        // Total Sales (Filtered Range)
+        double totalRevenue = sales.stream()
+                .mapToDouble(s -> s.getTotalAmount() != null ? s.getTotalAmount() : 0)
+                .sum();
+        totalSalesLabel.setText(String.format("%.2f ج.م", totalRevenue));
+
+        // Net Profit (Estimated 25%)
+        double estimatedProfit = totalRevenue * 0.25;
+        netProfitLabel.setText(String.format("%.2f ج.م", estimatedProfit));
+
+        // Invoice Count
+        invoiceCountLabel.setText(String.valueOf(sales.size()));
+
+        // Low Stock
+        long lowStockCount = products.stream()
+                .filter(p -> p.getQuantity() <= p.getMinStock())
+                .count();
+        lowStockLabel.setText(String.valueOf(lowStockCount));
+
+        if (productsBadge != null) {
+            productsBadge.setVisible(lowStockCount > 0);
+        }
+
+        // Sales Trend (Current Month vs Last Month)
+        // Sales Trend (Current Month vs Last Month)
+        calculateSalesTrend();
+    }
+
+    private void calculateSalesTrend() {
+        if (salesTrendLabel == null)
+            return;
+
+        try {
+            LocalDate now = LocalDate.now();
+            LocalDateTime startCurrent = now.withDayOfMonth(1).atStartOfDay();
+            LocalDateTime endCurrent = now.atTime(LocalTime.MAX);
+
+            LocalDateTime startLast = now.minusMonths(1).withDayOfMonth(1).atStartOfDay();
+            LocalDateTime endLast = now.minusMonths(1).withDayOfMonth(now.minusMonths(1).lengthOfMonth())
+                    .atTime(LocalTime.MAX);
+
+            double currentMonthSales = saleService.findByRange(startCurrent, endCurrent).stream()
+                    .mapToDouble(s -> s.getTotalAmount() != null ? s.getTotalAmount() : 0).sum();
+
+            double lastMonthSales = saleService.findByRange(startLast, endLast).stream()
+                    .mapToDouble(s -> s.getTotalAmount() != null ? s.getTotalAmount() : 0).sum();
+
+            if (lastMonthSales == 0) {
+                salesTrendLabel.setText("N/A عن الشهر الماضي");
+                salesTrendLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 12px;");
+            } else {
+                double growth = ((currentMonthSales - lastMonthSales) / lastMonthSales) * 100;
+                String sign = growth >= 0 ? "+" : "";
+                String color = growth >= 0 ? "-color-success" : "-color-danger";
+
+                salesTrendLabel.setText(String.format("%s %.1f%% عن الشهر الماضي", sign, growth));
+                salesTrendLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 12px;");
+            }
+        } catch (Exception e) {
+            System.err.println("Error calculating sales trend: " + e.getMessage());
+            e.printStackTrace();
+            salesTrendLabel.setText("خطأ");
+        }
+    }
+
+    private void updateCharts(List<Sale> sales) {
+        // --- 1. Area Chart: Sales Over Time ---
+        salesChart.getData().clear();
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("المبيعات");
+
+        // Group by Date
+        Map<LocalDate, Double> salesByDate = sales.stream()
+                .collect(Collectors.groupingBy(
+                        s -> s.getTimestamp().toLocalDate(),
+                        Collectors.summingDouble(Sale::getTotalAmount)));
+
+        // Sort by Date
+        salesByDate.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    series.getData().add(new XYChart.Data<>(entry.getKey().toString(), entry.getValue()));
+                });
+
+        salesChart.getData().add(series);
+
+        // --- 2. Pie Chart: Top Products (based on Frequency in Sales) ---
+        // Since Sale doesn't expose OrderItems directly in basic fetch (lazy load),
+        // we might mock this or need a dedicated service method.
+        // For simplicity, we'll visualize "Sales by Status" or assume we can access
+        // Items.
+        // Let's visualize Sales Count by Payment Method (if available) or Status.
+        topProductsChart.getData().clear();
+
+        // Let's use SaleStatus grouping
+        Map<String, Long> statusCounts = sales.stream()
+                .collect(Collectors.groupingBy(s -> s.getStatus().name(), Collectors.counting()));
+
+        statusCounts.forEach((status, count) -> {
+            topProductsChart.getData().add(new PieChart.Data(status, count));
+        });
+    }
+
+    private void updateStockTable(List<Product> products) {
+        stockTable.setItems(FXCollections.observableArrayList(products));
+    }
+
+    // --- Stock Table Config ---
+    private void configureStockTable() {
+        stockProductCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
+        stockBarcodeCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getBarcode()));
+        stockQtyCol.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getQuantity()).asObject());
+        stockPriceCol.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getSellPrice()).asObject());
+
+        stockPriceCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : String.format("%.2f", item));
+            }
+        });
+
+        stockStatusCol.setCellValueFactory(data -> {
+            int qty = data.getValue().getQuantity();
+            int min = data.getValue().getMinStock();
+            return new SimpleStringProperty(qty <= 0 ? "نفذ" : (qty <= min ? "منخفض" : "متوفر"));
+        });
+    }
+
+    // --- Search ---
+    @FXML
+    private void handleSearch() {
+        String term = searchField.getText();
+        if (term == null || term.isBlank()) {
+            refreshAnalytics(); // Reset
+            return;
+        }
+        List<Product> results = productService.searchByBarcodeOrName(term.trim());
+        stockTable.setItems(FXCollections.observableArrayList(results));
+    }
+
+    // --- Navigation ---
     @FXML
     public void showDashboard() {
         if (defaultDashboardView != null) {
             contentArea.getChildren().setAll(defaultDashboardView);
-            setupDefaultRange();
-            loadSalesFromInputs();
+            refreshAnalytics();
         }
     }
 
@@ -117,148 +310,76 @@ public class DashboardController {
         loadView("/fxml/products.fxml");
     }
 
-    private void loadView(String fxmlPath) {
+    @FXML
+    public void showCustomers() {
+        loadView("/fxml/customers.fxml");
+    }
+
+    @FXML
+    public void showOrders() {
+        loadView("/fxml/orders.fxml");
+    }
+
+    @FXML
+    public void openCashier() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Stage stage = (Stage) contentArea.getScene().getWindow();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/cashier.fxml"));
             loader.setControllerFactory(applicationContext::getBean);
-            loader.setResources(ResourceBundle.getBundle("messages"));
-            Parent view = loader.load();
-            contentArea.getChildren().setAll(view);
+            loader.setResources(bundle);
+            Parent root = loader.load();
+            CashierController controller = loader.getController();
+            if (currentUser != null)
+                controller.setUser(currentUser);
+            Scene scene = new Scene(root, 1200, 800);
+            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle(bundle.getString("cashier.title"));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     @FXML
-    public void applyFilters() {
-        loadSalesFromInputs();
-    }
-
-    private void configureSalesTable() {
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
-        dateCol.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().getTimestamp().toLocalDate().toString()));
-        timeCol.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().getTimestamp().toLocalTime().format(timeFormatter)));
-        itemCol.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getItemName()));
-        qtyCol.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getQuantity())));
-        totalCol.setCellValueFactory(cell -> {
-            double total = cell.getValue().getTotalAmount();
-            if (cell.getValue().getStatus() == SaleStatus.RETURNED) {
-                total = -Math.abs(total);
-            }
-            return new SimpleStringProperty(String.format(Locale.US, "%.2f", total));
-        });
-        statusCol.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStatus().name()));
-        statusCol.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item);
-                    if (item.equalsIgnoreCase(SaleStatus.RETURNED.name())) {
-                        setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold;");
-                    } else {
-                        setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;");
-                    }
-                }
-            }
-        });
-        workerCol.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().getWorker() != null ? cell.getValue().getWorker().getFullName() : ""));
-        notesCol.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().getNotes() != null ? cell.getValue().getNotes() : ""));
-    }
-
-    private void hookTabChanges() {
-        rangeTabs.getSelectionModel().selectedIndexProperty().addListener((obs, oldVal, newVal) -> {
-            switch (newVal.intValue()) {
-                case 0 -> setDayRange(LocalDate.now());
-                case 1 -> setWeekRange(LocalDate.now());
-                case 2 -> setMonthRange(LocalDate.now());
-                default -> setDayRange(LocalDate.now());
-            }
-            loadSalesFromInputs();
-        });
-    }
-
-    private void setupDefaultRange() {
-        if (rangeTabs != null) {
-            rangeTabs.getSelectionModel().select(0);
-        }
-        setDayRange(LocalDate.now());
-    }
-
-    private void setDayRange(LocalDate date) {
-        fromDatePicker.setValue(date);
-        toDatePicker.setValue(date);
-        fromTimeField.setValue("12:00 AM");
-        toTimeField.setValue("11:59 PM");
-    }
-
-    private void setWeekRange(LocalDate date) {
-        DayOfWeek firstDay = WeekFields.of(Locale.getDefault()).getFirstDayOfWeek();
-        LocalDate start = date.with(TemporalAdjusters.previousOrSame(firstDay));
-        LocalDate end = start.plusDays(6);
-        fromDatePicker.setValue(start);
-        toDatePicker.setValue(end);
-        fromTimeField.setValue("12:00 AM");
-        toTimeField.setValue("11:59 PM");
-    }
-
-    private void setMonthRange(LocalDate date) {
-        LocalDate start = date.withDayOfMonth(1);
-        LocalDate end = date.with(TemporalAdjusters.lastDayOfMonth());
-        fromDatePicker.setValue(start);
-        toDatePicker.setValue(end);
-        fromTimeField.setValue("12:00 AM");
-        toTimeField.setValue("11:59 PM");
-    }
-
-    private void loadSalesFromInputs() {
-        LocalDate fromDate = fromDatePicker.getValue() != null ? fromDatePicker.getValue() : LocalDate.now();
-        LocalDate toDate = toDatePicker.getValue() != null ? toDatePicker.getValue() : fromDate;
-
-        LocalTime fromTime = parseTimeOrDefault(fromTimeField.getValue(), LocalTime.MIN);
-        LocalTime toTime = parseTimeOrDefault(toTimeField.getValue(), LocalTime.of(23, 59));
-
-        LocalDateTime start = LocalDateTime.of(fromDate, fromTime);
-        LocalDateTime end = LocalDateTime.of(toDate, toTime);
-
-        if (end.isBefore(start)) {
-            LocalDateTime temp = start;
-            start = end;
-            end = temp;
-        }
-
-        salesTable.setItems(FXCollections.observableArrayList(saleService.findByRange(start, end)));
-    }
-
-    private LocalTime parseTimeOrDefault(String raw, LocalTime fallback) {
-        if (raw == null || raw.isBlank()) {
-            return fallback;
-        }
+    public void handleLogout() {
         try {
-            DateTimeFormatter parser = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
-            return LocalTime.parse(raw, parser);
-        } catch (Exception e) {
-            return fallback;
+            Stage stage = (Stage) contentArea.getScene().getWindow();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+            loader.setResources(bundle);
+            Scene scene = new Scene(loader.load(), 1000, 700);
+            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+            stage.setTitle(bundle.getString("app.title"));
+            stage.setScene(scene);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private void setupTimeDropdowns() {
-        if (fromTimeField == null || toTimeField == null) {
-            return;
+    private void loadView(String fxmlPath) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            loader.setControllerFactory(applicationContext::getBean);
+            loader.setResources(bundle);
+            contentArea.getChildren().setAll((Parent) loader.load());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("خطأ");
+            alert.setHeaderText("فشل تحميل الصفحة");
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
-        var items = FXCollections.<String>observableArrayList();
-        for (int hour = 0; hour < 24; hour++) {
-            items.add(LocalTime.of(hour, 0).format(formatter));
-        }
-        toTimeField.setItems(items);
-        fromTimeField.setItems(items);
+    }
+
+    public void setUser(User user) {
+        this.currentUser = user;
+        if (welcomeLabel != null && user != null)
+            welcomeLabel.setText("👤 " + user.getFullName());
+    }
+
+    public void setUsername(String username) {
+        if (welcomeLabel != null)
+            welcomeLabel.setText("👤 " + username);
     }
 }

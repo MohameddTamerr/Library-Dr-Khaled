@@ -1,13 +1,9 @@
 package com.library.pos.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "order_items")
-@Data
-@NoArgsConstructor
 public class OrderItem {
 
     @Id
@@ -28,4 +24,49 @@ public class OrderItem {
 
     @Column(nullable = false)
     private Double price;
+
+    public OrderItem() {
+    }
+
+    // Getters
+    public Long getId() {
+        return id;
+    }
+
+    public Sale getOrder() {
+        return order;
+    }
+
+    public Product getProduct() {
+        return product;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public Double getPrice() {
+        return price;
+    }
+
+    // Setters
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setOrder(Sale order) {
+        this.order = order;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public void setPrice(Double price) {
+        this.price = price;
+    }
 }

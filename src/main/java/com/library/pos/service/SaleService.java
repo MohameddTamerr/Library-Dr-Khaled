@@ -25,6 +25,10 @@ public class SaleService {
         return saleRepository.findByTimestampBetween(start, end);
     }
 
+    public List<Sale> getAll() {
+        return saleRepository.findAll();
+    }
+
     public Sale save(Sale sale) {
         Sale saved = saleRepository.save(sale);
         Product product = saved.getProduct();

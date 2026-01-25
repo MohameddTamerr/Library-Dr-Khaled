@@ -1,86 +1,588 @@
-/* Modern Color Palette */
+/* ============================================
+   Library POS - Modern Light Theme
+   ============================================ */
+
+/* Root Variables */
 .root {
-    -color-primary: #2563eb;
-    -color-primary-dark: #1e40af;
-    -color-bg: #f8fafc;
-    -color-surface: #ffffff;
-    -color-text: #1e293b;
-    -color-text-muted: #64748b;
-    
-    -fx-font-family: 'Segoe UI', sans-serif;
+    /* Brand Colors (Vibrant yet Professional) */
+    -color-primary: #3b82f6;
+    /* Bright Blue */
+    -color-primary-dark: #2563eb;
+    /* Deep Blue */
+    -color-secondary: #64748b;
+    /* Slate Gray */
+
+    -color-success: #10b981;
+    /* Emerald */
+    -color-success-dark: #059669;
+    -color-warning: #f59e0b;
+    /* Amber */
+    -color-warning-dark: #d97706;
+    -color-danger: #ef4444;
+    /* Red */
+    -color-danger-dark: #dc2626;
+
+    /* Backgrounds (Clean Light Mode) */
+    -bg-main: #f1f5f9;
+    /* Light Gray Background */
+    -bg-panel: #ffffff;
+    /* Pure White Cards */
+    -bg-sidebar: #1e293b;
+    /* Dark Slate Sidebar for Contrast */
+    -bg-input: #f8fafc;
+    /* Very Light Input Bg */
+
+    /* Text Colors */
+    -text-primary: #1e293b;
+    /* Dark Slate Text */
+    -text-secondary: #64748b;
+    /* Muted Slate Text */
+    -text-muted: #94a3b8;
+    /* Light Gray Text */
+    -text-on-dark: #f8fafc;
+    /* White Text for Sidebar */
+
+    -border-color: #e2e8f0;
+    /* Light Border */
+
+    -fx-font-family: 'Segoe UI', 'Arial', sans-serif;
     -fx-font-size: 14px;
 }
 
-/* Background gradient for the left panel */
-.branding-panel {
-    -fx-background-color: linear-gradient(to bottom right, #2563eb, #4f46e5);
-    -fx-alignment: center;
+/* ============================================
+   Sidebar Styling
+   ============================================ */
+.sidebar-box {
+    -fx-background-color: -bg-sidebar;
+    -fx-padding: 20;
+    -fx-pref-width: 240;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0, 2, 0);
 }
 
-.branding-text {
-    -fx-text-fill: white;
-    -fx-font-size: 32px;
+.sidebar-title {
+    -fx-text-fill: -text-on-dark;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 2);
 }
 
-.branding-subtext {
-    -fx-text-fill: rgba(255,255,255,0.8);
-    -fx-font-size: 16px;
+.sidebar-user {
+    -fx-text-fill: rgba(255, 255, 255, 0.7);
+    -fx-font-size: 13px;
 }
 
-/* Login Form Area */
-.login-panel {
-    -fx-background-color: -color-surface;
-    -fx-spacing: 20;
-    -fx-padding: 60;
-    -fx-alignment: center-left;
-}
-
-.h1 {
-    -fx-font-size: 28px;
+/* Sidebar Buttons */
+.button-sidebar {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    /* Transparent on dark */
+    -fx-text-fill: -text-on-dark;
     -fx-font-weight: bold;
-    -fx-text-fill: -color-text;
-}
-
-.text-field, .password-field {
-    -fx-background-color: #f1f5f9;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 16;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
     -fx-border-color: transparent;
-    -fx-border-radius: 5;
-    -fx-background-radius: 5;
-    -fx-padding: 12;
-    -fx-font-size: 14px;
+    -fx-border-width: 0 0 0 3;
+    /* Left border indicator */
 }
 
-.text-field:focused, .password-field:focused {
-    -fx-background-color: white;
+.button-sidebar:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
     -fx-border-color: -color-primary;
-    -fx-border-width: 2px;
 }
 
+/* Primary Action Button (Solid Blue) */
 .button-primary {
     -fx-background-color: -color-primary;
     -fx-text-fill: white;
     -fx-font-weight: bold;
-    -fx-padding: 12 24;
-    -fx-background-radius: 5;
+    -fx-padding: 10 16;
+    -fx-background-radius: 8;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(three-pass-box, rgba(37, 99, 235, 0.3), 10, 0, 0, 5);
 }
 
 .button-primary:hover {
     -fx-background-color: -color-primary-dark;
 }
 
-.button-icon {
-    -fx-background-color: transparent;
-    -fx-text-fill: -color-text-muted;
+.button-danger {
+    -fx-background-color: rgba(239, 68, 68, 0.15);
+    -fx-text-fill: #fca5a5;
+    -fx-font-weight: bold;
+    -fx-padding: 10 16;
+    -fx-background-radius: 8;
     -fx-cursor: hand;
-    -fx-border-color: #e2e8f0;
-    -fx-border-radius: 5;
 }
 
-.button-icon:hover {
-    -fx-background-color: #f1f5f9;
+.button-danger:hover {
+    -fx-background-color: -color-danger;
+    -fx-text-fill: white;
+}
+
+/* ============================================
+   Main Content Area
+   ============================================ */
+.content-area {
+    -fx-background-color: -bg-main;
+    -fx-padding: 30;
+}
+
+.h1 {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+/* ============================================
+   Card Styling (White with Soft Shadow)
+   ============================================ */
+.card,
+.summary-card,
+.panel-card {
+    -fx-background-color: -bg-panel;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, 4);
+    -fx-padding: 20;
+    -fx-spacing: 10;
+}
+
+/* Card Typography */
+.card-title,
+.panel-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-secondary;
+    -fx-text-transform: uppercase;
+}
+
+.card-value {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.card-value-green {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-success;
+}
+
+.card-value-warning {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-warning;
+}
+
+/* ============================================
+   Table Styling (Clean & Modern)
+   ============================================ */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -bg-panel;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -text-secondary;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: -text-primary;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 10;
+}
+
+.table-row-cell {
+    -fx-background-color: -bg-panel;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f8fafc;
+    /* Alternating row color */
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #e0f2fe;
+    /* Light Blue Selection */
+    -fx-table-cell-border-color: transparent;
+}
+
+/* ============================================
+   Inputs & Controls
+   ============================================ */
+.text-field,
+.combo-box,
+.date-picker {
+    -fx-background-color: -bg-panel;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+    -fx-text-fill: -text-primary;
+}
+
+.text-field:focused,
+.combo-box:focused,
+.date-picker:focused {
+    -fx-border-color: -color-primary;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 4, 0, 0, 0);
+}
+
+.button-action {
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-padding: 8 16;
+}
+
+.button-action:hover {
+    -fx-background-color: -color-primary-dark;
+}
+
+/* Chart Styles */
+.chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+.chart-vertical-grid-lines,
+.chart-horizontal-grid-lines {
+    -fx-stroke: -border-color;
+    -fx-stroke-dash-array: 4 4;
+}
+
+.axis-label {
+    -fx-text-fill: -text-secondary;
+}
+
+/* Cashier Specific Overrides */
+.cashier-root {
+    -fx-background-color: -bg-main;
+}
+
+.product-card {
+    -fx-background-color: -bg-panel;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, 4);
+    -fx-padding: 20;
+}
+
+.product-name {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.product-price {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
     -fx-text-fill: -color-primary;
+}
+
+/* ============================================
+   Restored Cashier Styles (Light Theme Adapted)
+   ============================================ */
+
+/* Header */
+.header-bar {
+    -fx-background-color: -color-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 2);
+}
+
+.header-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.worker-label {
+    -fx-text-fill: rgba(255, 255, 255, 0.9);
+    -fx-font-size: 14px;
+}
+
+.datetime-label {
+    -fx-text-fill: rgba(255, 255, 255, 0.8);
+    -fx-font-size: 13px;
+}
+
+/* Scanner & Barcode */
+.scanner-panel {
+    -fx-background-color: -bg-main;
+}
+
+.barcode-section {
+    -fx-background-color: -bg-panel;
+    -fx-background-radius: 10;
+    -fx-padding: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 5, 0, 0, 2);
+}
+
+.section-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.barcode-input {
+    -fx-background-color: -bg-input;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 14;
+    -fx-font-size: 16px;
+    -fx-text-fill: -text-primary;
+}
+
+.barcode-input:focused {
+    -fx-border-color: -color-primary;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 5, 0, 0, 0);
+}
+
+/* Product Card Details */
+.product-stock {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-secondary;
+}
+
+.barcode-display {
+    -fx-font-size: 14px;
+    -fx-text-fill: -text-muted;
+    -fx-font-family: 'Consolas', monospace;
+}
+
+.label-muted {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+}
+
+/* Quantity Section */
+.qty-section {
+    -fx-background-color: -bg-main;
+    -fx-background-radius: 8;
+    -fx-padding: 10;
+}
+
+.qty-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.qty-btn {
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.qty-btn:hover {
+    -fx-background-color: -color-primary-dark;
+}
+
+.qty-input {
+    -fx-min-width: 60;
+    -fx-max-width: 80;
+    -fx-min-height: 40;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-color: -bg-panel;
+    -fx-text-fill: -text-primary;
+    -fx-alignment: center;
+    -fx-background-radius: 6;
+    -fx-border-color: -border-color;
+}
+
+/* Buttons */
+.btn-add {
+    -fx-background-color: -color-success;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 12 24;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.btn-add:hover {
+    -fx-background-color: -color-success-dark;
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.3), 8, 0, 0, 2);
+}
+
+.btn-add:disabled {
+    -fx-background-color: -border-color;
+    -fx-text-fill: -text-muted;
+    -fx-opacity: 0.7;
+}
+
+.btn-danger-sm {
+    -fx-background-color: -color-danger;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 6 12;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.btn-danger-sm:hover {
+    -fx-background-color: -color-danger-dark;
+}
+
+/* Quick Buttons */
+.quick-section {
+    -fx-background-color: -bg-panel;
+    -fx-background-radius: 10;
+    -fx-padding: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 5, 0, 0, 2);
+}
+
+.section-label-small {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+    -fx-font-weight: bold;
+}
+
+.quick-btn {
+    -fx-min-width: 50;
+    -fx-min-height: 35;
+    -fx-background-color: -bg-main;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: -text-primary;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.quick-btn:hover {
+    -fx-background-color: -color-primary;
+    -fx-border-color: -color-primary;
+    -fx-text-fill: white;
+}
+
+/* Cart Panel */
+.cart-panel {
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 0 0 1;
+}
+
+.cart-header {
+    -fx-background-color: -bg-main;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 0 1 0;
+}
+
+.cart-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+/* Cart Table */
+.cart-table {
+    -fx-background-color: white;
+}
+
+.cart-table .column-header-background {
+    -fx-background-color: -bg-main;
+}
+
+.cart-table .table-row-cell:odd {
+    -fx-background-color: -bg-input;
+}
+
+/* Cart Summary */
+.cart-summary {
+    -fx-background-color: -bg-main;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+.summary-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -text-secondary;
+}
+
+.summary-value {
+    -fx-font-size: 14px;
+    -fx-text-fill: -text-primary;
+    -fx-font-weight: bold;
+}
+
+.total-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.total-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-success;
+}
+
+.currency-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -text-muted;
+}
+
+/* Payment Buttons */
+.payment-buttons {
+    -fx-background-color: white;
+    -fx-padding: 15;
+}
+
+.btn-success-large {
+    -fx-background-color: -color-success;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 14 20;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.btn-success-large:hover {
+    -fx-background-color: -color-success-dark;
+}
+
+.btn-warning-large {
+    -fx-background-color: -color-warning;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 14 20;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.btn-warning-large:hover {
+    -fx-background-color: -color-warning-dark;
+}
+
+/* Badge Style */
+.badge-red {
+    -fx-background-color: -color-danger;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 4, 0, 0, 1);
 }
