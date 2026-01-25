@@ -24,6 +24,10 @@ public class ProductService {
         return productRepository.findByBarcode(barcode);
     }
 
+    public List<Product> searchByBarcodeOrName(String term) {
+        return productRepository.findByBarcodeContainingIgnoreCaseOrNameContainingIgnoreCase(term, term);
+    }
+
     public Product save(Product product) {
         return productRepository.save(product);
     }

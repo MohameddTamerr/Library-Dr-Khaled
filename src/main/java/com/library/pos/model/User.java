@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -12,6 +14,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
     @Column(unique = true, nullable = false)
@@ -24,13 +27,24 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "full_name", nullable = false)
     private String fullName;
-    private Double hourlyRate; // For workers
 
-    // New fields for Worker Management
-    private String address;
+    @Column(name = "salary")
+    private Double hourlyRate; // Mapped to salary column
+
+    @Column(name = "phone")
     private String phoneNumber;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    // Not in the SQL schema. Keep transient so JPA doesn't expect columns.
+    @Transient
+    private String address;
+    @Transient
     private Double salaryLimit; // Max amount they can withdraw
+    @Transient
     private Double currentWithdrawal; // Amount currently withdrawn this month
 
     // Full constructor

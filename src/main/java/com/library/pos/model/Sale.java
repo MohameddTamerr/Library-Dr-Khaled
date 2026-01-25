@@ -7,29 +7,29 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "sales")
+@Table(name = "orders")
 @Data
 @NoArgsConstructor
 public class Sale {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "order_id")
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "order_date", nullable = false)
     private LocalDateTime timestamp;
 
-    @Column(nullable = false)
+    @Transient
     private String itemName;
 
-    @Column(nullable = false)
+    @Transient
     private Integer quantity;
 
-    @Column(nullable = false)
+    @Column(name = "total_amount", nullable = false)
     private Double totalAmount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Transient
     private SaleStatus status;
 
     @ManyToOne
@@ -37,10 +37,13 @@ public class Sale {
     private User worker;
 
     @ManyToOne
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
+    @Transient
     private Product product;
 
-    @Column(length = 500)
+    @Transient
     private String notes;
 
     public Sale(LocalDateTime timestamp, String itemName, Integer quantity, Double totalAmount, SaleStatus status,

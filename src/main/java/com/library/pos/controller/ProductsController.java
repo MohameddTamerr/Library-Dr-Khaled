@@ -61,16 +61,18 @@ public class ProductsController {
 
     @FXML
     private void handleSearch() {
-        String barcode = barcodeSearchField.getText();
-        if (barcode == null || barcode.isBlank()) {
-            showAlert("Enter a barcode to search.");
+        String term = barcodeSearchField.getText();
+        if (term == null || term.isBlank()) {
+            showAlert("Enter a name or barcode to search.");
             return;
         }
-        productService.findByBarcode(barcode.trim())
-                .ifPresentOrElse(
-                        product -> productsTable.setItems(FXCollections.observableArrayList(product)),
-                        () -> showAlert("No product found for this barcode.")
-                );
+        var results = productService.searchByBarcodeOrName(term.trim());
+        if (results.isEmpty()) {
+            showAlert("No products found for this search.");
+            return;
+        }
+        productsTable.setItems(FXCollections.observableArrayList(results));
+        productsTable.refresh();
     }
 
     @FXML
@@ -88,7 +90,9 @@ public class ProductsController {
 
     @FXML
     private void handleShowAll() {
+        barcodeSearchField.clear();
         refreshTable();
+        productsTable.refresh();
     }
 
     private void refreshTable() {
@@ -103,7 +107,7 @@ public class ProductsController {
 
             {
                 editBtn.getStyleClass().add("button-primary");
-                delBtn.getStyleClass().add("button-icon");
+                delBtn.getStyleClass().add("button-primary");
 
                 editBtn.setOnAction(e -> {
                     Product product = getTableView().getItems().get(getIndex());
@@ -218,7 +222,8 @@ public class ProductsController {
 
     private static class HBoxWrapper extends javafx.scene.layout.HBox {
         HBoxWrapper(Button edit, Button delete) {
-            super(6, edit, delete);
+            super(8, edit, delete);
+            setStyle("-fx-padding: 2 6 2 6;");
         }
     }
 }

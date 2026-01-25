@@ -14,11 +14,11 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+CREATE DATABASE IF NOT EXISTS library_pos;
+USE library_pos;
 
 --
 -- Table structure for table `customers`
---
-
 DROP TABLE IF EXISTS `customers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -163,7 +163,7 @@ CREATE TABLE `salary_advances` (
   `advance_id` int(11) NOT NULL AUTO_INCREMENT,
   `worker_id` int(11) NOT NULL,
   `amount` decimal(10,2) NOT NULL,
-  `advance_date` date DEFAULT curdate(),
+  `advance_date` date DEFAULT NULL,
   `reason` varchar(255) DEFAULT NULL,
   `is_deducted` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`advance_id`),
@@ -283,4 +283,6 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-25 15:08:10
+-- Dump completed on 2026-01-25 15:08:1
+SELECT * FROM USERS;
+
