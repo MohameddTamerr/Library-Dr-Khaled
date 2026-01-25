@@ -24,6 +24,22 @@ OR
 mvn spring-boot:run
 ```
 
+## Option 3: Run with Docker MySQL (Shareable Setup)
+This uses a local MySQL container so you can share the same setup with a friend.
+
+1. Start MySQL:
+```powershell
+docker compose up -d
+```
+
+2. Run the app with the MySQL profile:
+```powershell
+$env:SPRING_PROFILES_ACTIVE="mysql"
+mvn spring-boot:run
+```
+
+If you run from the IDE, set the environment variable `SPRING_PROFILES_ACTIVE=mysql` in the Run Configuration.
+
 ## Troubleshooting
 - **"Symbol not found" errors**: Make sure your IDE has finished indexing and downloading Maven dependencies.
 - **Port 8080 already in use**: Open `src/main/resources/application.properties` and change `server.port` to something else (e.g., 8081).
