@@ -33,7 +33,11 @@
             
             <Region HBox.hgrow="ALWAYS"/>
             
+            <Button fx:id="backButton" text="🔙 لوحة التحكم" onAction="#handleBackToDashboard" styleClass="btn-secondary" visible="false"/>
+            <Region prefWidth="20"/>
+
             <Label fx:id="workerNameLabel" styleClass="worker-label"/>
+            <Label fx:id="dailyCashLabel" text="💰 0.00" style="-fx-text-fill: -color-success; -fx-font-weight: bold; -fx-font-size: 16px;"/>
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
             <Button text="%cashier.logout" onAction="#handleLogout" styleClass="btn-danger"/>
@@ -50,7 +54,7 @@
                 
                 <!-- Barcode Scanner Input -->
                 <VBox styleClass="barcode-section" spacing="10">
-                    <Label text="📷 %cashier.scan" styleClass="section-label"/>
+                    <Label text="%cashier.scan" styleClass="section-label"/>
                     <HBox spacing="10">
                         <TextField fx:id="barcodeField" 
                                    promptText="%cashier.scan.placeholder" 
@@ -114,7 +118,7 @@
                 <!-- Cart Header -->
                 <HBox styleClass="cart-header" alignment="CENTER_LEFT" spacing="12">
                     <padding><Insets top="12" right="16" bottom="12" left="16"/></padding>
-                    <Label text="🛒 %cashier.cart" styleClass="cart-title"/>
+                    <Label text="%cashier.cart" styleClass="cart-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="%cashier.clear" onAction="#handleClearCart" styleClass="btn-danger-sm"/>
                 </HBox>

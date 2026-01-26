@@ -236,21 +236,23 @@ public class DashboardController {
 
         salesChart.getData().add(series);
 
-        // --- 2. Pie Chart: Top Products (based on Frequency in Sales) ---
-        // Since Sale doesn't expose OrderItems directly in basic fetch (lazy load),
-        // we might mock this or need a dedicated service method.
-        // For simplicity, we'll visualize "Sales by Status" or assume we can access
-        // Items.
-        // Let's visualize Sales Count by Payment Method (if available) or Status.
+        // --- 2. Pie Chart: Top Products by Sales Quantity ---
         topProductsChart.getData().clear();
 
-        // Let's use SaleStatus grouping
-        Map<String, Long> statusCounts = sales.stream()
-                .collect(Collectors.groupingBy(s -> s.getStatus().name(), Collectors.counting()));
+        // Group by product name and sum quantities
+        Map<String, Integer> productSales = sales.stream()
+                .filter(s -> s.getItemName() != null && !s.getItemName().isEmpty())
+                .collect(Collectors.groupingBy(
+                        Sale::getItemName,
+                        Collectors.summingInt(s -> s.getQuantity() != null ? s.getQuantity() : 0)));
 
-        statusCounts.forEach((status, count) -> {
-            topProductsChart.getData().add(new PieChart.Data(status, count));
-        });
+        // Sort by quantity and take top 5
+        productSales.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(5)
+                .forEach(entry -> {
+                    topProductsChart.getData().add(new PieChart.Data(entry.getKey(), entry.getValue()));
+                });
     }
 
     private void updateStockTable(List<Product> products) {

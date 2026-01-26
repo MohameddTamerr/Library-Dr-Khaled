@@ -25,6 +25,15 @@ public class OrdersController {
     @FXML
     private TableColumn<Sale, Long> idCol;
     @FXML
+    private TableColumn<Sale, String> timeCol;
+    @FXML
+    private TableColumn<Sale, String> itemCol;
+    @FXML
+    private TableColumn<Sale, Integer> quantityCol;
+    @FXML
+    private TableColumn<Sale, String> notesCol;
+
+    @FXML
     private TableColumn<Sale, String> dateCol;
     @FXML
     private TableColumn<Sale, String> customerCol;
@@ -39,24 +48,64 @@ public class OrdersController {
     private DatePicker fromDatePicker;
     @FXML
     private DatePicker toDatePicker;
+    @FXML
+    private javafx.scene.control.TextField filterProductField;
+    @FXML
+    private javafx.scene.control.ComboBox<com.library.pos.model.User> filterWorkerCombo;
 
     private final SaleService saleService;
-    private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private final com.library.pos.service.UserService userService;
+    private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("hh:mm a");
 
-    public OrdersController(SaleService saleService) {
+    public OrdersController(SaleService saleService, com.library.pos.service.UserService userService) {
         this.saleService = saleService;
+        this.userService = userService;
     }
 
     @FXML
     public void initialize() {
-        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        // ID Column
+        if (idCol != null) {
+            idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        }
 
+        // Setup filter combo
+        filterWorkerCombo.setConverter(new javafx.util.StringConverter<com.library.pos.model.User>() {
+            @Override
+            public String toString(com.library.pos.model.User user) {
+                return user == null ? "الكل" : user.getFullName();
+            }
+
+            @Override
+            public com.library.pos.model.User fromString(String string) {
+                return null; // Not needed
+            }
+        });
+        filterWorkerCombo.setItems(FXCollections.observableArrayList());
+        filterWorkerCombo.getItems().add(null); // Option for "All"
+        filterWorkerCombo.getItems().addAll(userService.getAllWorkers());
+        filterWorkerCombo.getSelectionModel().selectFirst();
+
+        // Date & Time
         dateCol.setCellValueFactory(cell -> {
             if (cell.getValue().getTimestamp() != null) {
-                return new SimpleStringProperty(cell.getValue().getTimestamp().format(dtf));
+                return new SimpleStringProperty(cell.getValue().getTimestamp().format(dateFormat));
             }
             return new SimpleStringProperty("");
         });
+
+        timeCol.setCellValueFactory(cell -> {
+            if (cell.getValue().getTimestamp() != null) {
+                return new SimpleStringProperty(cell.getValue().getTimestamp().format(timeFormat));
+            }
+            return new SimpleStringProperty("");
+        });
+
+        // Item & Qty
+        itemCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
+        quantityCol.setCellValueFactory(new PropertyValueFactory<>("quantity"));
+        notesCol.setCellValueFactory(new PropertyValueFactory<>("notes"));
 
         customerCol.setCellValueFactory(cell -> {
             if (cell.getValue().getCustomer() != null) {
@@ -73,7 +122,20 @@ public class OrdersController {
         });
 
         amountCol.setCellValueFactory(new PropertyValueFactory<>("totalAmount"));
-        statusCol.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStatus().name()));
+        statusCol.setCellValueFactory(cell -> {
+            if (cell.getValue().getStatus() != null) {
+                // Translate status if needed
+                String s = cell.getValue().getStatus().name();
+                if ("SOLD".equals(s))
+                    return new SimpleStringProperty("مباع");
+                if ("RETURNED".equals(s))
+                    return new SimpleStringProperty("مرتجع");
+                if ("DEFERRED".equals(s))
+                    return new SimpleStringProperty("آجل");
+                return new SimpleStringProperty(s);
+            }
+            return new SimpleStringProperty("-");
+        });
 
         // Default: This month
         fromDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
@@ -87,10 +149,19 @@ public class OrdersController {
         LocalDate from = fromDatePicker.getValue();
         LocalDate to = toDatePicker.getValue();
 
+        // Get filters
+        String productName = filterProductField != null ? filterProductField.getText() : null;
+        if (productName != null && productName.trim().isEmpty())
+            productName = null;
+
+        com.library.pos.model.User worker = filterWorkerCombo.getValue();
+        Long workerId = worker != null ? worker.getId() : null;
+
         if (from != null && to != null) {
             LocalDateTime start = from.atStartOfDay();
             LocalDateTime end = to.atTime(LocalTime.MAX);
-            ordersTable.setItems(FXCollections.observableArrayList(saleService.findByRange(start, end)));
+            ordersTable.setItems(FXCollections.observableArrayList(
+                    saleService.search(start, end, workerId, productName)));
         }
     }
 

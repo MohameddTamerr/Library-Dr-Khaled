@@ -87,7 +87,7 @@ public class LoginController {
 
                 // Pass user info to dashboard
                 DashboardController dashboardController = loader.getController();
-                dashboardController.setUsername(user.getFullName());
+                dashboardController.setUser(user);
 
                 stage.setTitle(ResourceBundle.getBundle("messages").getString("app.title") + " - Dashboard");
                 stage.setScene(scene);

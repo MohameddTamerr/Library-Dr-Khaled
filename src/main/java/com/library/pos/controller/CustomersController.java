@@ -2,7 +2,6 @@ package com.library.pos.controller;
 
 import com.library.pos.model.Customer;
 import com.library.pos.service.CustomerService;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;

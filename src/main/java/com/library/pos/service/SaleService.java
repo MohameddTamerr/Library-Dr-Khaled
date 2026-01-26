@@ -7,7 +7,9 @@ import com.library.pos.repository.ProductRepository;
 import com.library.pos.repository.SaleRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -27,6 +29,17 @@ public class SaleService {
 
     public List<Sale> getAll() {
         return saleRepository.findAll();
+    }
+
+    public List<Sale> search(LocalDateTime start, LocalDateTime end, Long workerId, String productName) {
+        return saleRepository.findByCriteria(start, end, workerId, productName);
+    }
+
+    public Double getDailyCash(Long workerId) {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = LocalDate.now().atTime(LocalTime.MAX);
+        Double total = saleRepository.calculateDailyCash(workerId, start, end);
+        return total != null ? total : 0.0;
     }
 
     public Sale save(Sale sale) {

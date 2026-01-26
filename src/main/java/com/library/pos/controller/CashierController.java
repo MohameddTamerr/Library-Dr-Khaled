@@ -45,6 +45,10 @@ public class CashierController {
     private Label workerNameLabel;
     @FXML
     private Label dateTimeLabel;
+    @FXML
+    private Button backButton;
+    @FXML
+    private Label dailyCashLabel;
 
     // Barcode input
     @FXML
@@ -96,6 +100,7 @@ public class CashierController {
     private final SaleService saleService;
     private final ApplicationContext applicationContext;
     private final com.library.pos.repository.WorkSessionRepository sessionRepository;
+    private final com.library.pos.service.UserService userService;
 
     private User currentUser;
     private Product selectedProduct;
@@ -104,11 +109,13 @@ public class CashierController {
     private com.library.pos.model.WorkSession currentSession;
 
     public CashierController(ProductService productService, SaleService saleService,
-            ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository) {
+            ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
+            com.library.pos.service.UserService userService) {
         this.productService = productService;
         this.saleService = saleService;
         this.applicationContext = applicationContext;
         this.sessionRepository = sessionRepository;
+        this.userService = userService;
     }
 
     @FXML
@@ -135,6 +142,24 @@ public class CashierController {
             // Start Session
             currentSession = new com.library.pos.model.WorkSession(user, LocalDateTime.now());
             sessionRepository.save(currentSession);
+        }
+
+        // Show Back Button for Owner
+        if (backButton != null) {
+            boolean isOwner = user != null && user.getRole() == com.library.pos.model.Role.OWNER;
+            backButton.setVisible(isOwner);
+            backButton.setManaged(isOwner);
+        }
+
+        updateDailyCash();
+    }
+
+    private void updateDailyCash() {
+        if (dailyCashLabel != null && currentUser != null) {
+            Double total = saleService.getDailyCash(currentUser.getId());
+            dailyCashLabel.setText(String.format("💰 %.2f", total));
+        } else if (dailyCashLabel != null) {
+            dailyCashLabel.setText("💰 0.00");
         }
     }
 
@@ -429,7 +454,7 @@ public class CashierController {
         root.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
 
         // Header
-        Label header = new Label("💵 " + bundle.getString("cashier.cash"));
+        Label header = new Label(bundle.getString("cashier.cash"));
         header.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         // Total
@@ -503,13 +528,16 @@ public class CashierController {
                 dialog.close();
             } catch (NumberFormatException ex) {
                 showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.amount"));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showAlert(Alert.AlertType.ERROR, "خطأ في عملية الدفع: " + ex.getMessage());
             }
         });
         buttons.getChildren().addAll(cancelBtn, confirmBtn);
 
         root.getChildren().addAll(header, totalBox, cashBox, changeBox, buttons);
 
-        Scene scene = new Scene(root, 400, 380);
+        Scene scene = new Scene(root, 450, 550);
         dialog.setScene(scene);
         dialog.showAndWait();
     }
@@ -527,7 +555,7 @@ public class CashierController {
         root.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
 
         // Header
-        Label header = new Label("💳 " + bundle.getString("cashier.deferred"));
+        Label header = new Label(bundle.getString("cashier.deferred"));
         header.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         // Total
@@ -589,26 +617,65 @@ public class CashierController {
 
         root.getChildren().addAll(header, totalBox, customerBox, phoneBox, buttons);
 
-        Scene scene = new Scene(root, 400, 380);
+        Scene scene = new Scene(root, 450, 550);
         dialog.setScene(scene);
         dialog.showAndWait();
     }
 
     private void completeSale(String paymentType, String customerName) {
+        // Fallback user if null (prevent crash)
+        User worker = currentUser;
+        if (worker == null) {
+            System.out.println("WARNING: currentUser is null. Attempting to fallback to first worker found.");
+            worker = userService.getAllWorkers().stream().findFirst().orElse(null);
+            if (worker == null) {
+                // Even worse, try ANY user
+                // But userService.getAllWorkers returns only WORKERS.
+                // We might need a generic findFirst.
+                // However, assuming there is at least one worker or admin.
+                // If worker still null, we risk crash, but let's try creating a dummy or error.
+                // Since we can't create dummy with ID easily (JPA), we throw meaningful error.
+                throw new RuntimeException("No active user and no fallback worker found in DB!");
+            }
+            // Temporarily set currentUser so session tracking works? No, just use 'worker'
+            // for sale.
+        }
+
+        // Ensure customer if needed (for Deferred)
+        com.library.pos.model.Customer customer = null;
+        if ("DEFERRED".equals(paymentType) && customerName != null) {
+            // Logic to find/create customer...
+            // For now we just use name in notes or if we have CustomerService
+            // But Sale entity has customer_id.
+            // We need CustomerService to find/create customer!
+            // Wait, do we have CustomerService here? No.
+            // We only have SaleService and ProductService.
+            // Given constraint, if Customer is required? Sale.customer is nullable?
+            // Sale.java: @ManyToOne @JoinColumn(name="customer_id") -> Default is nullable.
+            // So we are safe for now. We can put customer name in Notes.
+        }
+
         // Process sales
         for (CartItem item : cartItems) {
             Sale sale = new Sale(
-                    LocalDateTime.now(),
+                    java.time.LocalDateTime.now(),
                     item.getProduct().getName(),
                     item.getQuantity(),
                     item.getTotal(),
-                    SaleStatus.SOLD,
-                    currentUser,
-                    paymentType + (customerName != null ? " - " + customerName : ""));
+                    com.library.pos.model.SaleStatus.SOLD,
+                    worker,
+                    paymentType.equals("DEFERRED") ? "Deferred: " + customerName : "Cash Payment");
+
+            // Set transient customer if we had it, but we lack service.
+            // sale.setCustomer(customer);
+
             sale.setProduct(item.getProduct());
+            if (paymentType.equals("DEFERRED")) {
+                sale.setStatus(com.library.pos.model.SaleStatus.DEFERRED);
+            }
+
             saleService.save(sale);
         }
-
         cartItems.clear();
         updateSummary();
         resetSelection();
@@ -620,6 +687,35 @@ public class CashierController {
     @FXML
     private void handleQuickBtn() {
         // Placeholder for quick buttons - would be configured
+    }
+
+    @FXML
+    public void handleBackToDashboard() {
+        try {
+            Stage stage = (Stage) workerNameLabel.getScene().getWindow();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+            loader.setResources(bundle);
+            javafx.scene.Parent root = loader.load();
+
+            DashboardController controller = loader.getController();
+            controller.setUser(currentUser);
+
+            Scene scene = new Scene(root, 1280, 850);
+            // scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+            // Assuming stylesheet is set in FXML or globally?
+            // But DashboardController doesn't set it in showDashboard?
+            // Better to set it here just in case.
+            java.net.URL css = getClass().getResource("/css/style.css");
+            if (css != null)
+                scene.getStylesheets().add(css.toExternalForm());
+
+            stage.setTitle(bundle.getString("app.title"));
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML

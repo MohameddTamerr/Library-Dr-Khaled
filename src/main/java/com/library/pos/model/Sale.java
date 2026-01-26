@@ -15,16 +15,17 @@ public class Sale {
     @Column(name = "order_date", nullable = false)
     private LocalDateTime timestamp;
 
-    @Transient
+    @Column(name = "item_name")
     private String itemName;
 
-    @Transient
+    @Column(name = "quantity")
     private Integer quantity;
 
     @Column(name = "total_amount", nullable = false)
     private Double totalAmount;
 
-    @Transient
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
     private SaleStatus status;
 
     @ManyToOne
@@ -35,10 +36,11 @@ public class Sale {
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    @Transient
+    @ManyToOne
+    @JoinColumn(name = "product_id")
     private Product product;
 
-    @Transient
+    @Column(name = "notes")
     private String notes;
 
     public Sale() {
