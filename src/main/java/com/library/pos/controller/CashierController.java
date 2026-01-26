@@ -36,6 +36,9 @@ import java.util.ResourceBundle;
 import javafx.animation.Timeline;
 import javafx.animation.KeyFrame;
 import javafx.util.Duration;
+import java.util.Properties;
+import java.io.InputStream;
+import javafx.event.ActionEvent;
 
 @Component
 public class CashierController {
@@ -96,6 +99,10 @@ public class CashierController {
     @FXML
     private Label grandTotalLabel;
 
+    // Payment Method
+    @FXML
+    private ComboBox<String> paymentMethodCombo;
+
     private final ProductService productService;
     private final SaleService saleService;
     private final ApplicationContext applicationContext;
@@ -107,6 +114,7 @@ public class CashierController {
     private final ObservableList<CartItem> cartItems = FXCollections.observableArrayList();
     private ResourceBundle bundle;
     private com.library.pos.model.WorkSession currentSession;
+    private final Properties quickKeys = new Properties();
 
     public CashierController(ProductService productService, SaleService saleService,
             ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
@@ -132,6 +140,34 @@ public class CashierController {
 
         // Setup keyboard shortcuts
         setupKeyboardShortcuts();
+
+        // Setup cart table row click for quick quantity edit
+        setupCartTableClickHandler();
+
+        // Initialize payment methods
+        // Initialize payment methods
+        paymentMethodCombo.setItems(FXCollections.observableArrayList(
+                "Cash",
+                "InstaPay",
+                "Visa",
+                "Vodafone Cash"));
+
+        paymentMethodCombo.setCellFactory(param -> new PaymentMethodListCell());
+        paymentMethodCombo.setButtonCell(new PaymentMethodListCell());
+
+        paymentMethodCombo.getSelectionModel().selectFirst();
+
+        loadQuickKeys();
+    }
+
+    private void loadQuickKeys() {
+        try (InputStream input = getClass().getResourceAsStream("/quick_keys.properties")) {
+            if (input != null) {
+                quickKeys.load(input);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void setUser(User user) {
@@ -197,33 +233,106 @@ public class CashierController {
     }
 
     private void handleFunctionKey(KeyCode code) {
-        // Quick product shortcuts (would be configured by user)
+        // Quick product shortcuts from configuration
         String barcode = null;
-        switch (code) {
-            case F1:
-                barcode = "1001";
-                break;
-            case F2:
-                barcode = "1002";
-                break;
-            case F3:
-                barcode = "1003";
-                break;
-            case F4:
-                barcode = "1004";
-                break;
-            case F5:
-                barcode = "1005";
-                break;
-            case F6:
-                barcode = "1006";
-                break;
-            default:
-                break;
+        String keyName = code.getName(); // F1, F2...
+
+        if (quickKeys.containsKey(keyName)) {
+            barcode = quickKeys.getProperty(keyName);
         }
+
         if (barcode != null) {
             searchAndSelectProduct(barcode);
         }
+    }
+
+    private void setupCartTableClickHandler() {
+        // Allow clicking on cart rows to quickly edit quantity
+        cartTable.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 1) {
+                CartItem selectedItem = cartTable.getSelectionModel().getSelectedItem();
+                if (selectedItem != null) {
+                    showQuantityEditDialog(selectedItem);
+                }
+            }
+        });
+    }
+
+    private void showQuantityEditDialog(CartItem item) {
+        Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initStyle(StageStyle.UNDECORATED);
+        dialog.setTitle("تعديل الكمية");
+
+        VBox root = new VBox(20);
+        root.setPadding(new Insets(24));
+        root.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
+
+        // Header
+        Label header = new Label(item.getProduct().getName());
+        header.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+        header.setWrapText(true);
+
+        // Current quantity info
+        HBox infoBox = new HBox(10);
+        infoBox.setAlignment(Pos.CENTER_LEFT);
+        infoBox.setStyle("-fx-background-color: #334155; -fx-padding: 12; -fx-background-radius: 8;");
+        Label infoLabel = new Label("الكمية الحالية: " + item.getQuantity());
+        infoLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #94a3b8;");
+        infoBox.getChildren().add(infoLabel);
+
+        // Quantity input
+        VBox qtyBox = new VBox(8);
+        Label qtyLabel = new Label("الكمية الجديدة:");
+        qtyLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #94a3b8;");
+        TextField qtyField = new TextField(String.valueOf(item.getQuantity()));
+        qtyField.setStyle("-fx-font-size: 28px; -fx-background-color: #334155; -fx-text-fill: white; " +
+                "-fx-border-color: #475569; -fx-border-radius: 8; -fx-background-radius: 8; " +
+                "-fx-padding: 12; -fx-alignment: center;");
+        qtyField.selectAll();
+        qtyBox.getChildren().addAll(qtyLabel, qtyField);
+
+        // Buttons
+        HBox buttons = new HBox(12);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+        Button cancelBtn = new Button("إلغاء");
+        cancelBtn.setStyle("-fx-background-color: #334155; -fx-text-fill: white; -fx-padding: 12 24; " +
+                "-fx-background-radius: 8; -fx-cursor: hand;");
+        cancelBtn.setOnAction(e -> dialog.close());
+
+        Button confirmBtn = new Button("✓ تأكيد");
+        confirmBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
+        confirmBtn.setOnAction(e -> {
+            try {
+                int newQty = Integer.parseInt(qtyField.getText().trim());
+                if (newQty <= 0) {
+                    showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.qty"));
+                    return;
+                }
+                if (newQty > item.getProduct().getQuantity()) {
+                    showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
+                    return;
+                }
+                item.setQuantity(newQty);
+                cartTable.refresh();
+                updateSummary();
+                dialog.close();
+            } catch (NumberFormatException ex) {
+                showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.qty"));
+            }
+        });
+        buttons.getChildren().addAll(cancelBtn, confirmBtn);
+
+        // Enter key to confirm
+        qtyField.setOnAction(e -> confirmBtn.fire());
+
+        root.getChildren().addAll(header, infoBox, qtyBox, buttons);
+
+        Scene scene = new Scene(root, 400, 350);
+        dialog.setScene(scene);
+        javafx.application.Platform.runLater(() -> qtyField.requestFocus());
+        dialog.showAndWait();
     }
 
     private void setupColumns() {
@@ -293,9 +402,39 @@ public class CashierController {
             resetSelection();
             barcodeField.selectAll();
         } else {
-            selectProduct(results.get(0));
+            // Auto-add to cart with quantity 1
+            Product product = results.get(0);
+            addProductToCart(product, 1);
             barcodeField.clear();
+            barcodeField.requestFocus();
         }
+    }
+
+    private void addProductToCart(Product product, int qty) {
+        // Check stock
+        if (qty > product.getQuantity()) {
+            showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
+            return;
+        }
+
+        // Add to cart or update existing
+        Optional<CartItem> existing = cartItems.stream()
+                .filter(i -> i.getProduct().getId().equals(product.getId()))
+                .findFirst();
+
+        if (existing.isPresent()) {
+            int newQty = existing.get().getQuantity() + qty;
+            if (newQty > product.getQuantity()) {
+                showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
+                return;
+            }
+            existing.get().setQuantity(newQty);
+            cartTable.refresh();
+        } else {
+            cartItems.add(new CartItem(product, qty));
+        }
+
+        updateSummary();
     }
 
     private void selectProduct(Product p) {
@@ -424,12 +563,27 @@ public class CashierController {
     }
 
     @FXML
-    private void handleCashPayment() {
+    private void handlePayment() {
         if (cartItems.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.empty"));
             return;
         }
-        showCashPaymentDialog();
+        String selected = paymentMethodCombo.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert(Alert.AlertType.WARNING, "الرجاء اختيار طريقة الدفع");
+            return;
+        }
+        // Extract payment method (remove emoji and parentheses)
+        String paymentMethod = selected.contains("(")
+                ? selected.substring(selected.indexOf("(") + 1, selected.indexOf(")"))
+                : selected.substring(selected.indexOf(" ") + 1);
+        showPaymentDialog(paymentMethod);
+    }
+
+    @FXML
+    private void handleCashPayment() {
+        // Keep for backward compatibility if needed
+        handlePayment();
     }
 
     @FXML
@@ -441,21 +595,25 @@ public class CashierController {
         showDeferredPaymentDialog();
     }
 
-    private void showCashPaymentDialog() {
+    private void showPaymentDialog(String paymentMethod) {
         double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
 
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initStyle(StageStyle.UNDECORATED);
-        dialog.setTitle(bundle.getString("cashier.cash"));
+        dialog.setTitle("تأكيد الدفع - " + paymentMethod);
 
         VBox root = new VBox(20);
         root.setPadding(new Insets(24));
         root.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
 
-        // Header
-        Label header = new Label(bundle.getString("cashier.cash"));
+        // Header with payment method
+        VBox headerBox = new VBox(4);
+        Label header = new Label("تأكيد الدفع");
         header.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+        Label methodLabel = new Label("طريقة الدفع: " + paymentMethod);
+        methodLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981;");
+        headerBox.getChildren().addAll(header, methodLabel);
 
         // Total
         HBox totalBox = new HBox(10);
@@ -524,7 +682,7 @@ public class CashierController {
                     showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.insufficient"));
                     return;
                 }
-                completeSale("CASH", null);
+                completeSale(paymentMethod, null);
                 dialog.close();
             } catch (NumberFormatException ex) {
                 showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.amount"));
@@ -535,7 +693,7 @@ public class CashierController {
         });
         buttons.getChildren().addAll(cancelBtn, confirmBtn);
 
-        root.getChildren().addAll(header, totalBox, cashBox, changeBox, buttons);
+        root.getChildren().addAll(headerBox, totalBox, cashBox, changeBox, buttons);
 
         Scene scene = new Scene(root, 450, 550);
         dialog.setScene(scene);
@@ -664,7 +822,7 @@ public class CashierController {
                     item.getTotal(),
                     com.library.pos.model.SaleStatus.SOLD,
                     worker,
-                    paymentType.equals("DEFERRED") ? "Deferred: " + customerName : "Cash Payment");
+                    paymentType.equals("DEFERRED") ? "Deferred: " + customerName : paymentType + " Payment");
 
             // Set transient customer if we had it, but we lack service.
             // sale.setCustomer(customer);
@@ -685,8 +843,20 @@ public class CashierController {
     }
 
     @FXML
-    private void handleQuickBtn() {
-        // Placeholder for quick buttons - would be configured
+    private void handleQuickBtn(ActionEvent event) {
+        if (event.getSource() instanceof Button) {
+            Button btn = (Button) event.getSource();
+            String text = btn.getText(); // "F1", "F2", etc.
+
+            if (quickKeys.containsKey(text)) {
+                String barcode = quickKeys.getProperty(text);
+                searchAndSelectProduct(barcode);
+                // Return focus to barcode field
+                if (barcodeField != null) {
+                    barcodeField.requestFocus();
+                }
+            }
+        }
     }
 
     @FXML
@@ -712,6 +882,7 @@ public class CashierController {
 
             stage.setTitle(bundle.getString("app.title"));
             stage.setScene(scene);
+            stage.setMaximized(true); // Keep full screen
             stage.centerOnScreen();
         } catch (java.io.IOException e) {
             e.printStackTrace();
@@ -738,6 +909,7 @@ public class CashierController {
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             stage.setTitle(bundle.getString("app.title"));
             stage.setScene(scene);
+            stage.setMaximized(true); // Keep full screen
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -778,6 +950,42 @@ public class CashierController {
 
         public void setQuantity(int q) {
             this.quantity = q;
+        }
+    }
+
+    private class PaymentMethodListCell extends ListCell<String> {
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                setText(item);
+
+                String imagePath = null;
+                if (item.contains("InstaPay")) {
+                    imagePath = "/images/instapay.png";
+                } else if (item.contains("Vodafone")) {
+                    imagePath = "/images/vodafone_cash.png";
+                }
+
+                if (imagePath != null) {
+                    try {
+                        javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(
+                                new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+                        iv.setFitHeight(24);
+                        iv.setFitWidth(24);
+                        iv.setPreserveRatio(true);
+                        setGraphic(iv);
+                    } catch (Exception e) {
+                        System.err.println("Failed to load icon: " + imagePath);
+                        setGraphic(null);
+                    }
+                } else {
+                    setGraphic(null);
+                }
+            }
         }
     }
 }

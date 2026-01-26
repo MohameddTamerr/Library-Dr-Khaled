@@ -157,12 +157,19 @@
                     </HBox>
                 </VBox>
                 
+                <!-- Payment Method Selection -->
+                <VBox styleClass="payment-method-section" spacing="8">
+                    <padding><Insets top="12" right="16" bottom="0" left="16"/></padding>
+                    <Label text="طريقة الدفع:" styleClass="section-label-small"/>
+                    <ComboBox fx:id="paymentMethodCombo" styleClass="payment-method-combo" maxWidth="Infinity"/>
+                </VBox>
+                
                 <!-- Payment Buttons -->
                 <HBox styleClass="payment-buttons" spacing="12">
                     <padding><Insets top="12" right="16" bottom="16" left="16"/></padding>
-                    <Button text="%cashier.cash" onAction="#handleCashPayment" 
+                    <Button text="✓ تأكيد الدفع" onAction="#handlePayment" 
                             styleClass="btn-success-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                    <Button text="%cashier.deferred" onAction="#handleDeferredPayment" 
+                    <Button text="📋 دفع آجل" onAction="#handleDeferredPayment" 
                             styleClass="btn-warning-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                 </HBox>
             </VBox>

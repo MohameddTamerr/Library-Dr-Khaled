@@ -4,8 +4,8 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TreeTableColumn?>
+<?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -14,9 +14,42 @@
 <VBox xmlns:fx="http://javafx.com/fxml/1" 
       xmlns="http://javafx.com/javafx/21" 
       fx:controller="com.library.pos.controller.OrdersController"
-      spacing="20" style="-fx-padding: 30;">
+      spacing="20" style="-fx-padding: 10;">
 
     <Label text="📜 نظرة عامة على المبيعات" styleClass="h1"/>
+
+    <!-- Payment Method Summary Cards -->
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <VBox styleClass="summary-card" spacing="5" prefWidth="180">
+            <Label text="💵 نقدي (Cash)" styleClass="card-title"/>
+            <Label fx:id="cashTotalLabel" text="0.00 ج.م" styleClass="card-value-green"/>
+        </VBox>
+        <VBox styleClass="summary-card" spacing="5" prefWidth="180">
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                 <javafx.scene.image.ImageView fitHeight="20" fitWidth="60" preserveRatio="true">
+                    <image>
+                        <javafx.scene.image.Image url="@../images/instapay.png"/>
+                    </image>
+                 </javafx.scene.image.ImageView>
+            </HBox>
+            <Label fx:id="instapayTotalLabel" text="0.00 ج.م" styleClass="card-value"/>
+        </VBox>
+        <VBox styleClass="summary-card" spacing="5" prefWidth="180">
+            <Label text="💳 Visa" styleClass="card-title"/>
+            <Label fx:id="visaTotalLabel" text="0.00 ج.م" styleClass="card-value"/>
+        </VBox>
+        <VBox styleClass="summary-card" spacing="5" prefWidth="180">
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                 <javafx.scene.image.ImageView fitHeight="20" fitWidth="20" preserveRatio="true">
+                    <image>
+                        <javafx.scene.image.Image url="@../images/vodafone_cash.png"/>
+                    </image>
+                 </javafx.scene.image.ImageView>
+                 <Label text="Vodafone Cash" styleClass="card-title"/>
+            </HBox>
+            <Label fx:id="vodafoneTotalLabel" text="0.00 ج.م" styleClass="card-value"/>
+        </VBox>
+    </HBox>
 
     <!-- Filter Bar -->
     <HBox spacing="10" alignment="CENTER_LEFT" styleClass="card">
@@ -31,23 +64,23 @@
         <Button text="عرض الكل" onAction="#loadAll" styleClass="button-sidebar" style="-fx-text-fill: -text-primary; -fx-background-color: -bg-panel;"/>
     </HBox>
 
-    <!-- Orders Table -->
-    <TableView fx:id="ordersTable" VBox.vgrow="ALWAYS" styleClass="table-view">
+    <!-- Orders Tree Table -->
+    <TreeTableView fx:id="ordersTable" VBox.vgrow="ALWAYS" styleClass="tree-table-view" showRoot="false">
         <columns>
-            <TableColumn fx:id="idCol" text="#" prefWidth="50"/>
-            <TableColumn fx:id="dateCol" text="التاريخ" prefWidth="100"/>
-            <TableColumn fx:id="timeCol" text="الوقت" prefWidth="80"/>
-            <TableColumn fx:id="itemCol" text="الصنف" prefWidth="150"/>
-            <TableColumn fx:id="quantityCol" text="الكمية" prefWidth="60"/>
-            <TableColumn fx:id="amountCol" text="الإجمالي" prefWidth="90"/>
-            <TableColumn fx:id="statusCol" text="الحالة" prefWidth="90"/>
-            <TableColumn fx:id="workerCol" text="الموظف" prefWidth="120"/>
-            <TableColumn fx:id="customerCol" text="العميل" prefWidth="120"/>
-            <TableColumn fx:id="notesCol" text="ملاحظات" prefWidth="150"/>
+            <TreeTableColumn fx:id="idCol" text="#" prefWidth="50"/>
+            <TreeTableColumn fx:id="dateCol" text="التاريخ" prefWidth="100"/>
+            <TreeTableColumn fx:id="timeCol" text="الوقت" prefWidth="80"/>
+            <TreeTableColumn fx:id="itemCol" text="البيان" prefWidth="250"/> <!-- Item or Verification -->
+            <TreeTableColumn fx:id="quantityCol" text="الكمية" prefWidth="60"/>
+            <TreeTableColumn fx:id="amountCol" text="الإجمالي" prefWidth="90"/>
+            <TreeTableColumn fx:id="statusCol" text="الحالة" prefWidth="90"/>
+            <TreeTableColumn fx:id="workerCol" text="الموظف" prefWidth="120"/>
+            <TreeTableColumn fx:id="customerCol" text="العميل" prefWidth="120"/>
+            <TreeTableColumn fx:id="notesCol" text="ملاحظات" prefWidth="150"/>
         </columns>
         <columnResizePolicy>
-            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            <TreeTableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
         </columnResizePolicy>
-    </TableView>
+    </TreeTableView>
 
 </VBox>

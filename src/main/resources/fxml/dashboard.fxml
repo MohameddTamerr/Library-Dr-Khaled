@@ -57,7 +57,7 @@
 
     <!-- Main Content -->
     <center>
-        <StackPane fx:id="contentArea" styleClass="content-area">
+        <StackPane fx:id="contentArea" style="-fx-padding: 15;">
             <VBox spacing="25" maxWidth="Infinity">
                 
                 <!-- 1. Header & Filters -->

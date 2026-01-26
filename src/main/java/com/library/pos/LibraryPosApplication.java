@@ -32,14 +32,23 @@ public class LibraryPosApplication extends Application {
         fxmlLoader.setControllerFactory(applicationContext::getBean);
         fxmlLoader.setResources(ResourceBundle.getBundle("messages")); // Will look for messages_ar.properties
 
-        Scene scene = new Scene(fxmlLoader.load(), 1000, 700);
+        // Don't set fixed scene size - let it use full screen dimensions
+        Scene scene = new Scene(fxmlLoader.load());
         scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
 
         stage.setMinWidth(900);
         stage.setMinHeight(600);
         stage.setTitle(fxmlLoader.getResources().getString("app.title"));
         stage.setScene(scene);
+
+        // Set maximized BEFORE showing
+        stage.setMaximized(true);
         stage.show();
+
+        // GUARANTEE full screen by setting it again after show (bulletproof approach)
+        Platform.runLater(() -> {
+            stage.setMaximized(true);
+        });
     }
 
     @Override

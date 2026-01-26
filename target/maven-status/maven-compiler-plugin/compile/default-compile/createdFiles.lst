@@ -8,6 +8,7 @@ com\library\pos\controller\WorkersController$1$1.class
 com\library\pos\service\UserService.class
 com\library\pos\controller\ProductsController$2.class
 com\library\pos\controller\CashierController$CartItem.class
+com\library\pos\controller\OrdersController$1.class
 com\library\pos\service\ProductService.class
 com\library\pos\controller\CashierController$3.class
 com\library\pos\repository\CustomerRepository.class

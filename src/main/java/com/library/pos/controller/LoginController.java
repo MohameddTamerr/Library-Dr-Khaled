@@ -95,6 +95,7 @@ public class LoginController {
 
             stage.setResizable(true);
             stage.centerOnScreen();
+            stage.setMaximized(true); // Always full screen - must be LAST
         } catch (Exception e) {
             e.printStackTrace();
         }

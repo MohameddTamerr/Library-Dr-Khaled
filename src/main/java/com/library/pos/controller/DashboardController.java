@@ -337,6 +337,7 @@ public class DashboardController {
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             stage.setScene(scene);
             stage.setTitle(bundle.getString("cashier.title"));
+            stage.setMaximized(true); // Keep full screen
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -353,6 +354,7 @@ public class DashboardController {
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             stage.setTitle(bundle.getString("app.title"));
             stage.setScene(scene);
+            stage.setMaximized(true); // Keep full screen
         } catch (IOException e) {
             e.printStackTrace();
         }

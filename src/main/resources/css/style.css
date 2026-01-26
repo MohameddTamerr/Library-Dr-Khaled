@@ -576,6 +576,45 @@
     -fx-background-color: -color-warning-dark;
 }
 
+/* Payment Method Selection */
+.payment-method-section {
+    -fx-background-color: white;
+}
+
+.payment-method-combo {
+    -fx-background-color: -bg-panel;
+    -fx-text-fill: -text-primary;
+    -fx-font-size: 16px;
+    -fx-padding: 10;
+    -fx-background-radius: 8;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 8;
+}
+
+.payment-method-combo:hover {
+    -fx-border-color: -color-primary;
+}
+
+.payment-method-combo:focused {
+    -fx-border-color: -color-primary;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 4, 0, 0, 0);
+}
+
+.payment-method-combo .list-cell {
+    -fx-background-color: -bg-panel;
+    -fx-text-fill: -text-primary;
+    -fx-padding: 8;
+}
+
+.payment-method-combo .list-cell:hover {
+    -fx-background-color: -bg-main;
+}
+
+.payment-method-combo .list-cell:selected {
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+}
+
 /* Badge Style */
 .badge-red {
     -fx-background-color: -color-danger;
