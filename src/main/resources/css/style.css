@@ -271,11 +271,24 @@
     -fx-background-color: -bg-main;
 }
 
+.cashier-body {
+    -fx-padding: 12 16 16 16;
+    -fx-background-color: -bg-main;
+}
+
+.cashier-top-row {
+    -fx-padding: 0;
+}
+
+.cashier-left {
+    -fx-spacing: 16;
+}
+
 .product-card {
     -fx-background-color: -bg-panel;
-    -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, 4);
-    -fx-padding: 20;
+    -fx-background-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 12, 0, 0, 4);
+    -fx-padding: 16;
 }
 
 .product-name {
@@ -323,9 +336,9 @@
 
 .barcode-section {
     -fx-background-color: -bg-panel;
-    -fx-background-radius: 10;
-    -fx-padding: 15;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 5, 0, 0, 2);
+    -fx-background-radius: 12;
+    -fx-padding: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 3);
 }
 
 .section-label {
@@ -348,6 +361,29 @@
     -fx-border-color: -color-primary;
     -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.2), 5, 0, 0, 0);
 }
+
+.suggestion-list {
+    -fx-background-color: -bg-panel;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 4;
+}
+
+.suggestion-list .list-cell {
+    -fx-padding: 6 10;
+    -fx-text-fill: -text-primary;
+}
+
+.suggestion-list .list-cell:filled:hover {
+    -fx-background-color: -bg-main;
+}
+
+.suggestion-list .list-cell:filled:selected {
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+}
+
 
 /* Product Card Details */
 .product-stock {
@@ -446,9 +482,20 @@
 /* Quick Buttons */
 .quick-section {
     -fx-background-color: -bg-panel;
-    -fx-background-radius: 10;
-    -fx-padding: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 5, 0, 0, 2);
+    -fx-background-radius: 12;
+    -fx-padding: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 3);
+}
+
+.quick-inline {
+    -fx-padding: 10 12;
+    -fx-min-width: 240;
+}
+
+.quick-inline .quick-btn {
+    -fx-min-width: 50;
+    -fx-min-height: 34;
+    -fx-font-size: 13px;
 }
 
 .section-label-small {
@@ -477,13 +524,32 @@
 
 /* Cart Panel */
 .cart-panel {
-    -fx-background-color: white;
+    -fx-background-color: -bg-panel;
+    -fx-background-radius: 14;
     -fx-border-color: -border-color;
-    -fx-border-width: 0 0 0 1;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 12, 0, 0, 4);
+}
+
+.cashier-right {
+    -fx-spacing: 8;
+}
+
+.cart-full {
+    -fx-padding: 0;
+}
+
+.cart-header-inline {
+    -fx-background-color: -bg-panel;
+    -fx-background-radius: 12;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
 }
 
 .cart-header {
-    -fx-background-color: -bg-main;
+    -fx-background-color: transparent;
     -fx-border-color: -border-color;
     -fx-border-width: 0 0 1 0;
 }
@@ -496,20 +562,20 @@
 
 /* Cart Table */
 .cart-table {
-    -fx-background-color: white;
+    -fx-background-color: transparent;
 }
 
 .cart-table .column-header-background {
-    -fx-background-color: -bg-main;
+    -fx-background-color: transparent;
 }
 
 .cart-table .table-row-cell:odd {
-    -fx-background-color: -bg-input;
+    -fx-background-color: #f9fbff;
 }
 
 /* Cart Summary */
 .cart-summary {
-    -fx-background-color: -bg-main;
+    -fx-background-color: transparent;
     -fx-border-color: -border-color;
     -fx-border-width: 1 0 0 0;
 }
@@ -544,8 +610,8 @@
 
 /* Payment Buttons */
 .payment-buttons {
-    -fx-background-color: white;
-    -fx-padding: 15;
+    -fx-background-color: transparent;
+    -fx-padding: 12 16 16 16;
 }
 
 .btn-success-large {
@@ -578,7 +644,7 @@
 
 /* Payment Method Selection */
 .payment-method-section {
-    -fx-background-color: white;
+    -fx-background-color: transparent;
 }
 
 .payment-method-combo {

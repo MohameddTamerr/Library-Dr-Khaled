@@ -2,10 +2,14 @@ package com.library.pos.controller;
 
 import com.library.pos.model.User;
 import com.library.pos.service.UserService;
+import com.library.pos.util.AutoRefreshUtil;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.Duration;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -45,6 +49,8 @@ public class WorkersController {
     private Long editingUserId = null;
 
     private final UserService userService;
+    private Timeline autoRefreshTimeline;
+    private static final int AUTO_REFRESH_SECONDS = 3;
 
     public WorkersController(UserService userService) {
         this.userService = userService;
@@ -61,6 +67,7 @@ public class WorkersController {
 
         addActionButtonsToTable();
         loadWorkers();
+        setupAutoRefresh();
     }
 
     private void addActionButtonsToTable() {
@@ -168,6 +175,16 @@ public class WorkersController {
 
     private void loadWorkers() {
         workersTable.setItems(FXCollections.observableArrayList(userService.getAllWorkers()));
+    }
+
+    private void setupAutoRefresh() {
+        if (workersTable == null) {
+            return;
+        }
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> loadWorkers()));
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+        AutoRefreshUtil.bind(autoRefreshTimeline, workersTable, 0.5);
     }
 
     @FXML

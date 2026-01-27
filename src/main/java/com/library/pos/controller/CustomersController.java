@@ -2,11 +2,15 @@ package com.library.pos.controller;
 
 import com.library.pos.model.Customer;
 import com.library.pos.service.CustomerService;
+import com.library.pos.util.AutoRefreshUtil;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
+import javafx.util.Duration;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -34,6 +38,8 @@ public class CustomersController {
 
     private final CustomerService customerService;
     private Long editingId = null;
+    private Timeline autoRefreshTimeline;
+    private static final int AUTO_REFRESH_SECONDS = 3;
 
     public CustomersController(CustomerService customerService) {
         this.customerService = customerService;
@@ -47,11 +53,34 @@ public class CustomersController {
 
         setupActions();
         loadData();
+        setupAutoRefresh();
     }
 
     @FXML
     public void loadData() {
         customersTable.setItems(FXCollections.observableArrayList(customerService.getAll()));
+    }
+
+    private void refreshFromCurrentFilter() {
+        if (customersTable == null) {
+            return;
+        }
+        String term = searchField != null ? searchField.getText() : null;
+        if (term != null && !term.isBlank()) {
+            customersTable.setItems(FXCollections.observableArrayList(customerService.search(term.trim())));
+        } else {
+            loadData();
+        }
+    }
+
+    private void setupAutoRefresh() {
+        if (customersTable == null) {
+            return;
+        }
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> refreshFromCurrentFilter()));
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+        AutoRefreshUtil.bind(autoRefreshTimeline, customersTable, 0.5);
     }
 
     @FXML

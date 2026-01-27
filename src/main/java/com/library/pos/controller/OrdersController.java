@@ -2,6 +2,9 @@ package com.library.pos.controller;
 
 import com.library.pos.model.Sale;
 import com.library.pos.service.SaleService;
+import com.library.pos.util.AutoRefreshUtil;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -11,6 +14,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
+import javafx.util.Duration;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -68,6 +72,8 @@ public class OrdersController {
 
     private final SaleService saleService;
     private final com.library.pos.service.UserService userService;
+    private Timeline autoRefreshTimeline;
+    private static final int AUTO_REFRESH_SECONDS = 3;
     // Formatters can be static or instance, but now used locally in OrderViewModel
     // kept here if needed for other things, but OrderViewModel now has its own.
 
@@ -115,6 +121,17 @@ public class OrdersController {
 
         // Initial Load
         handleFilter();
+        setupAutoRefresh();
+    }
+
+    private void setupAutoRefresh() {
+        if (ordersTable == null) {
+            return;
+        }
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> handleFilter()));
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+        AutoRefreshUtil.bind(autoRefreshTimeline, ordersTable, 0.5);
     }
 
     @FXML
@@ -194,18 +211,20 @@ public class OrdersController {
 
         for (Sale sale : sales) {
             String notes = sale.getNotes();
-            if (notes == null)
+            if (notes == null) {
                 notes = "";
+            }
+            String notesLower = notes.toLowerCase(Locale.ROOT);
             double amount = sale.getTotalAmount() != null ? sale.getTotalAmount() : 0;
 
-            if (notes.contains("Cash") || notes.contains("نقدي")) {
-                cashTotal += amount;
-            } else if (notes.contains("InstaPay")) {
+            if (notesLower.contains("instapay")) {
                 instapayTotal += amount;
-            } else if (notes.contains("Visa")) {
+            } else if (notesLower.contains("visa")) {
                 visaTotal += amount;
-            } else if (notes.contains("Vodafone")) {
+            } else if (notesLower.contains("vodafone")) {
                 vodafoneTotal += amount;
+            } else if (notesLower.contains("cash") || notes.contains("نقدي")) {
+                cashTotal += amount;
             } else {
                 // Default to cash if no payment method specified
                 cashTotal += amount;

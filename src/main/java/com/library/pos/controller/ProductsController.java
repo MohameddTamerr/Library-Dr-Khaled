@@ -2,11 +2,15 @@ package com.library.pos.controller;
 
 import com.library.pos.model.Product;
 import com.library.pos.service.ProductService;
+import com.library.pos.util.AutoRefreshUtil;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.util.Duration;
 import javafx.util.Callback;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +43,8 @@ public class ProductsController {
     private TextField barcodeSearchField;
 
     private final ProductService productService;
+    private Timeline autoRefreshTimeline;
+    private static final int AUTO_REFRESH_SECONDS = 3;
 
     public ProductsController(ProductService productService) {
         this.productService = productService;
@@ -73,6 +79,7 @@ public class ProductsController {
         });
 
         refreshTable();
+        setupAutoRefresh();
     }
 
     @FXML
@@ -113,6 +120,30 @@ public class ProductsController {
 
     private void refreshTable() {
         productsTable.setItems(FXCollections.observableArrayList(productService.getAll()));
+    }
+
+    private void refreshFromCurrentFilter() {
+        if (productsTable == null) {
+            return;
+        }
+        String term = barcodeSearchField != null ? barcodeSearchField.getText() : null;
+        if (term != null && !term.isBlank()) {
+            var results = productService.searchByBarcodeOrName(term.trim());
+            productsTable.setItems(FXCollections.observableArrayList(results));
+        } else {
+            refreshTable();
+        }
+        productsTable.refresh();
+    }
+
+    private void setupAutoRefresh() {
+        if (productsTable == null) {
+            return;
+        }
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> refreshFromCurrentFilter()));
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+        AutoRefreshUtil.bind(autoRefreshTimeline, productsTable, 0.5);
     }
 
     private void setupActionColumn() {

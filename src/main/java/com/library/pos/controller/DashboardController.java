@@ -5,6 +5,10 @@ import com.library.pos.model.Sale;
 import com.library.pos.model.User;
 import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
+import com.library.pos.util.AutoRefreshUtil;
+import com.library.pos.util.StageUtil;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -19,6 +23,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -84,6 +89,8 @@ public class DashboardController {
     private User currentUser;
     private Parent defaultDashboardView;
     private ResourceBundle bundle;
+    private Timeline autoRefreshTimeline;
+    private static final int AUTO_REFRESH_SECONDS = 3;
 
     public DashboardController(ConfigurableApplicationContext applicationContext,
             SaleService saleService,
@@ -110,6 +117,22 @@ public class DashboardController {
             toDatePicker.setValue(LocalDate.now());
             refreshAnalytics();
         }
+
+        setupAutoRefresh();
+    }
+
+    private void setupAutoRefresh() {
+        if (contentArea == null) {
+            return;
+        }
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> {
+            if (stockTable != null) {
+                refreshAnalytics();
+            }
+        }));
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+        AutoRefreshUtil.bind(autoRefreshTimeline, contentArea, 0.5);
     }
 
     private void setupFilters() {
@@ -333,11 +356,11 @@ public class DashboardController {
             CashierController controller = loader.getController();
             if (currentUser != null)
                 controller.setUser(currentUser);
-            Scene scene = new Scene(root, 1200, 800);
+            Scene scene = new Scene(root);
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             stage.setScene(scene);
             stage.setTitle(bundle.getString("cashier.title"));
-            stage.setMaximized(true); // Keep full screen
+            StageUtil.applyWindowedFullScreenIfMaximized(stage);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -350,11 +373,11 @@ public class DashboardController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
             loader.setControllerFactory(applicationContext::getBean);
             loader.setResources(bundle);
-            Scene scene = new Scene(loader.load(), 1000, 700);
+            Scene scene = new Scene(loader.load());
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             stage.setTitle(bundle.getString("app.title"));
             stage.setScene(scene);
-            stage.setMaximized(true); // Keep full screen
+            StageUtil.applyWindowedFullScreenIfMaximized(stage);
         } catch (IOException e) {
             e.printStackTrace();
         }

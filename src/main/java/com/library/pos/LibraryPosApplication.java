@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import com.library.pos.util.StageUtil;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -41,14 +42,8 @@ public class LibraryPosApplication extends Application {
         stage.setTitle(fxmlLoader.getResources().getString("app.title"));
         stage.setScene(scene);
 
-        // Set maximized BEFORE showing
-        stage.setMaximized(true);
         stage.show();
-
-        // GUARANTEE full screen by setting it again after show (bulletproof approach)
-        Platform.runLater(() -> {
-            stage.setMaximized(true);
-        });
+        StageUtil.applyWindowedFullScreen(stage);
     }
 
     @Override

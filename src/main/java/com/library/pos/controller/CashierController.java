@@ -28,10 +28,13 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import org.springframework.stereotype.Component;
 import org.springframework.context.ApplicationContext;
+import com.library.pos.util.AutoRefreshUtil;
+import com.library.pos.util.StageUtil;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import java.util.List;
 import java.util.ResourceBundle;
 import javafx.animation.Timeline;
 import javafx.animation.KeyFrame;
@@ -56,6 +59,9 @@ public class CashierController {
     // Barcode input
     @FXML
     private TextField barcodeField;
+
+    @FXML
+    private ListView<Product> suggestionList;
 
     // Product display
     @FXML
@@ -112,9 +118,12 @@ public class CashierController {
     private User currentUser;
     private Product selectedProduct;
     private final ObservableList<CartItem> cartItems = FXCollections.observableArrayList();
+    private final ObservableList<Product> suggestionItems = FXCollections.observableArrayList();
     private ResourceBundle bundle;
     private com.library.pos.model.WorkSession currentSession;
     private final Properties quickKeys = new Properties();
+    private Timeline autoRefreshTimeline;
+    private static final int AUTO_REFRESH_SECONDS = 3;
 
     public CashierController(ProductService productService, SaleService saleService,
             ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
@@ -143,6 +152,8 @@ public class CashierController {
 
         // Setup cart table row click for quick quantity edit
         setupCartTableClickHandler();
+        setupAutoRefresh();
+        setupSuggestions();
 
         // Initialize payment methods
         // Initialize payment methods
@@ -158,6 +169,16 @@ public class CashierController {
         paymentMethodCombo.getSelectionModel().selectFirst();
 
         loadQuickKeys();
+    }
+
+    private void setupAutoRefresh() {
+        if (barcodeField == null) {
+            return;
+        }
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> updateDailyCash()));
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
+        AutoRefreshUtil.bind(autoRefreshTimeline, barcodeField, 0.5);
     }
 
     private void loadQuickKeys() {
@@ -254,6 +275,82 @@ public class CashierController {
                 if (selectedItem != null) {
                     showQuantityEditDialog(selectedItem);
                 }
+            }
+        });
+    }
+
+    private void setupSuggestions() {
+        if (suggestionList == null || barcodeField == null) {
+            return;
+        }
+
+        suggestionList.setItems(suggestionItems);
+        suggestionList.setVisible(false);
+        suggestionList.setManaged(false);
+        suggestionList.setFixedCellSize(34);
+
+        suggestionList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Product item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    String name = item.getName() != null ? item.getName() : "";
+                    String barcode = item.getBarcode() != null ? item.getBarcode() : "";
+                    setText(name + " | " + barcode);
+                    setGraphic(null);
+                }
+            }
+        });
+
+        suggestionList.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 1) {
+                Product selected = suggestionList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    addProductToCart(selected, 1);
+                    hideSuggestions();
+                    barcodeField.clear();
+                    barcodeField.requestFocus();
+                }
+            }
+        });
+
+        barcodeField.textProperty().addListener((obs, old, value) -> {
+            if (value == null || value.trim().isEmpty()) {
+                hideSuggestions();
+                return;
+            }
+            List<Product> results = productService.searchByBarcodeOrName(value.trim());
+            if (results.isEmpty()) {
+                hideSuggestions();
+                return;
+            }
+            showSuggestions(results);
+        });
+
+        barcodeField.focusedProperty().addListener((obs, old, focused) -> {
+            if (!focused) {
+                hideSuggestions();
+            }
+        });
+
+        barcodeField.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (!suggestionList.isVisible()) {
+                return;
+            }
+            if (event.getCode() == KeyCode.DOWN) {
+                suggestionList.getSelectionModel().selectNext();
+                suggestionList.scrollTo(suggestionList.getSelectionModel().getSelectedIndex());
+                event.consume();
+            } else if (event.getCode() == KeyCode.UP) {
+                suggestionList.getSelectionModel().selectPrevious();
+                suggestionList.scrollTo(suggestionList.getSelectionModel().getSelectedIndex());
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                hideSuggestions();
+                event.consume();
             }
         });
     }
@@ -385,9 +482,11 @@ public class CashierController {
     @FXML
     private void handleBarcodeEnter() {
         String term = barcodeField.getText();
-        if (term == null || term.isBlank())
+        if (term == null || term.isBlank()) {
+            hideSuggestions();
             return;
-        searchAndSelectProduct(term.trim());
+        }
+        processSearch(term.trim(), true);
     }
 
     @FXML
@@ -396,18 +495,94 @@ public class CashierController {
     }
 
     private void searchAndSelectProduct(String term) {
-        var results = productService.searchByBarcodeOrName(term);
+        processSearch(term, false);
+    }
+
+    private void processSearch(String term, boolean allowSuggestions) {
+        if (term == null || term.isBlank()) {
+            hideSuggestions();
+            return;
+        }
+
+        String trimmed = term.trim();
+        List<Product> results = productService.searchByBarcodeOrName(trimmed);
         if (results.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.notfound"));
             resetSelection();
-            barcodeField.selectAll();
-        } else {
-            // Auto-add to cart with quantity 1
-            Product product = results.get(0);
-            addProductToCart(product, 1);
-            barcodeField.clear();
-            barcodeField.requestFocus();
+            if (barcodeField != null) {
+                barcodeField.selectAll();
+            }
+            hideSuggestions();
+            return;
         }
+
+        Product exact = results.stream()
+                .filter(p -> p.getBarcode() != null && p.getBarcode().equalsIgnoreCase(trimmed))
+                .findFirst()
+                .orElse(null);
+
+        Product chosen = exact;
+
+        if (chosen == null && allowSuggestions && suggestionList != null && suggestionList.isVisible()) {
+            Product selected = suggestionList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                chosen = selected;
+            }
+        }
+
+        if (chosen == null) {
+            if (!allowSuggestions || results.size() == 1) {
+                chosen = results.get(0);
+            }
+        }
+
+        if (chosen != null) {
+            addProductToCart(chosen, 1);
+            if (barcodeField != null) {
+                barcodeField.clear();
+                barcodeField.requestFocus();
+            }
+            hideSuggestions();
+        } else if (allowSuggestions) {
+            showSuggestions(results);
+        }
+    }
+
+    private void showSuggestions(List<Product> results) {
+        if (suggestionList == null) {
+            return;
+        }
+        suggestionItems.setAll(results);
+        boolean show = !suggestionItems.isEmpty();
+        suggestionList.setVisible(show);
+        suggestionList.setManaged(show);
+        updateSuggestionHeight();
+        if (show) {
+            suggestionList.getSelectionModel().selectFirst();
+        }
+    }
+
+    private void hideSuggestions() {
+        if (suggestionList == null) {
+            return;
+        }
+        suggestionItems.clear();
+        suggestionList.setVisible(false);
+        suggestionList.setManaged(false);
+    }
+
+    private void updateSuggestionHeight() {
+        if (suggestionList == null) {
+            return;
+        }
+        int count = suggestionItems.size();
+        if (count <= 0) {
+            return;
+        }
+        double height = suggestionList.getFixedCellSize() * count + 8;
+        suggestionList.setPrefHeight(height);
+        suggestionList.setMinHeight(Region.USE_PREF_SIZE);
+        suggestionList.setMaxHeight(Region.USE_PREF_SIZE);
     }
 
     private void addProductToCart(Product product, int qty) {
@@ -439,39 +614,68 @@ public class CashierController {
 
     private void selectProduct(Product p) {
         this.selectedProduct = p;
-        productNameLabel.setText(p.getName());
-        priceLabel.setText(String.format("%.2f", p.getSellPrice()));
-        stockLabel.setText(String.valueOf(p.getQuantity()));
-        barcodeDisplayLabel.setText(p.getBarcode());
-
-        // Update stock label color based on quantity
-        if (p.getQuantity() <= 0) {
-            stockLabel.setStyle("-fx-text-fill: #ef4444;");
-        } else if (p.getQuantity() <= p.getMinStock()) {
-            stockLabel.setStyle("-fx-text-fill: #f59e0b;");
-        } else {
-            stockLabel.setStyle("-fx-text-fill: #94a3b8;");
+        if (productNameLabel != null) {
+            productNameLabel.setText(p.getName());
+        }
+        if (priceLabel != null) {
+            priceLabel.setText(String.format("%.2f", p.getSellPrice()));
+        }
+        if (stockLabel != null) {
+            stockLabel.setText(String.valueOf(p.getQuantity()));
+        }
+        if (barcodeDisplayLabel != null) {
+            barcodeDisplayLabel.setText(p.getBarcode());
         }
 
-        addButton.setDisable(false);
-        qtyField.setText("1");
-        qtyField.requestFocus();
-        qtyField.selectAll();
+        // Update stock label color based on quantity
+        if (stockLabel != null) {
+            if (p.getQuantity() <= 0) {
+                stockLabel.setStyle("-fx-text-fill: #ef4444;");
+            } else if (p.getQuantity() <= p.getMinStock()) {
+                stockLabel.setStyle("-fx-text-fill: #f59e0b;");
+            } else {
+                stockLabel.setStyle("-fx-text-fill: #94a3b8;");
+            }
+        }
+
+        if (addButton != null) {
+            addButton.setDisable(false);
+        }
+        if (qtyField != null) {
+            qtyField.setText("1");
+            qtyField.requestFocus();
+            qtyField.selectAll();
+        }
     }
 
     private void resetSelection() {
         selectedProduct = null;
-        productNameLabel.setText("-");
-        priceLabel.setText("0.00");
-        stockLabel.setText("-");
-        stockLabel.setStyle("-fx-text-fill: #94a3b8;");
-        barcodeDisplayLabel.setText("-");
-        addButton.setDisable(true);
-        qtyField.setText("1");
+        if (productNameLabel != null) {
+            productNameLabel.setText("-");
+        }
+        if (priceLabel != null) {
+            priceLabel.setText("0.00");
+        }
+        if (stockLabel != null) {
+            stockLabel.setText("-");
+            stockLabel.setStyle("-fx-text-fill: #94a3b8;");
+        }
+        if (barcodeDisplayLabel != null) {
+            barcodeDisplayLabel.setText("-");
+        }
+        if (addButton != null) {
+            addButton.setDisable(true);
+        }
+        if (qtyField != null) {
+            qtyField.setText("1");
+        }
     }
 
     @FXML
     private void handleQtyMinus() {
+        if (qtyField == null) {
+            return;
+        }
         try {
             int qty = Integer.parseInt(qtyField.getText().trim());
             if (qty > 1) {
@@ -484,6 +688,9 @@ public class CashierController {
 
     @FXML
     private void handleQtyPlus() {
+        if (qtyField == null) {
+            return;
+        }
         try {
             int qty = Integer.parseInt(qtyField.getText().trim());
             if (selectedProduct != null && qty < selectedProduct.getQuantity()) {
@@ -500,7 +707,10 @@ public class CashierController {
             return;
 
         try {
-            int qty = Integer.parseInt(qtyField.getText().trim());
+            int qty = 1;
+            if (qtyField != null) {
+                qty = Integer.parseInt(qtyField.getText().trim());
+            }
             if (qty <= 0) {
                 showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.qty"));
                 return;
@@ -574,9 +784,10 @@ public class CashierController {
             return;
         }
         // Extract payment method (remove emoji and parentheses)
+        // If no parentheses, keep full label to avoid truncating values like "Vodafone Cash"
         String paymentMethod = selected.contains("(")
                 ? selected.substring(selected.indexOf("(") + 1, selected.indexOf(")"))
-                : selected.substring(selected.indexOf(" ") + 1);
+                : selected;
         showPaymentDialog(paymentMethod);
     }
 
@@ -654,7 +865,7 @@ public class CashierController {
         // Update change on input
         cashField.textProperty().addListener((obs, old, newVal) -> {
             try {
-                double received = Double.parseDouble(newVal);
+                double received = parseAmount(newVal);
                 double change = received - total;
                 changeValue.setText(String.format("%.2f ج.م", Math.max(0, change)));
                 changeValue.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; " +
@@ -663,6 +874,9 @@ public class CashierController {
                 changeValue.setText("0.00 ج.م");
             }
         });
+        // Default cash received to total amount
+        cashField.setText(String.format("%.2f", total));
+        cashField.selectAll();
 
         // Buttons
         HBox buttons = new HBox(12);
@@ -677,7 +891,7 @@ public class CashierController {
                 "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
         confirmBtn.setOnAction(e -> {
             try {
-                double received = Double.parseDouble(cashField.getText());
+                double received = parseAmount(cashField.getText());
                 if (received < total) {
                     showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.insufficient"));
                     return;
@@ -842,6 +1056,27 @@ public class CashierController {
         showAlert(Alert.AlertType.INFORMATION, bundle.getString("cashier.success"));
     }
 
+    private double parseAmount(String value) {
+        if (value == null) {
+            throw new NumberFormatException("null");
+        }
+        String normalized = value.trim()
+                .replace('٠', '0')
+                .replace('١', '1')
+                .replace('٢', '2')
+                .replace('٣', '3')
+                .replace('٤', '4')
+                .replace('٥', '5')
+                .replace('٦', '6')
+                .replace('٧', '7')
+                .replace('٨', '8')
+                .replace('٩', '9')
+                .replace('٫', '.')
+                .replace('٬', ',')
+                .replace(",", "");
+        return Double.parseDouble(normalized);
+    }
+
     @FXML
     private void handleQuickBtn(ActionEvent event) {
         if (event.getSource() instanceof Button) {
@@ -871,7 +1106,7 @@ public class CashierController {
             DashboardController controller = loader.getController();
             controller.setUser(currentUser);
 
-            Scene scene = new Scene(root, 1280, 850);
+            Scene scene = new Scene(root);
             // scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             // Assuming stylesheet is set in FXML or globally?
             // But DashboardController doesn't set it in showDashboard?
@@ -882,8 +1117,7 @@ public class CashierController {
 
             stage.setTitle(bundle.getString("app.title"));
             stage.setScene(scene);
-            stage.setMaximized(true); // Keep full screen
-            stage.centerOnScreen();
+            StageUtil.applyWindowedFullScreenIfMaximized(stage);
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
@@ -905,11 +1139,11 @@ public class CashierController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
             loader.setControllerFactory(applicationContext::getBean);
             loader.setResources(bundle);
-            Scene scene = new Scene(loader.load(), 1000, 700);
+            Scene scene = new Scene(loader.load());
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             stage.setTitle(bundle.getString("app.title"));
             stage.setScene(scene);
-            stage.setMaximized(true); // Keep full screen
+            StageUtil.applyWindowedFullScreenIfMaximized(stage);
         } catch (Exception e) {
             e.printStackTrace();
         }

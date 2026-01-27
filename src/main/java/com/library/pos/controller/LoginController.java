@@ -2,6 +2,7 @@ package com.library.pos.controller;
 
 import com.library.pos.model.User;
 import com.library.pos.service.AuthService;
+import com.library.pos.util.StageUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -68,7 +69,7 @@ public class LoginController {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/cashier.fxml"));
                 loader.setControllerFactory(applicationContext::getBean);
                 loader.setResources(ResourceBundle.getBundle("messages"));
-                Scene scene = new Scene(loader.load(), 1200, 800);
+                Scene scene = new Scene(loader.load());
                 scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
 
                 CashierController cashierController = loader.getController();
@@ -82,7 +83,7 @@ public class LoginController {
                 loader.setControllerFactory(applicationContext::getBean);
                 loader.setResources(ResourceBundle.getBundle("messages")); // Using same messages bundle
 
-                Scene scene = new Scene(loader.load(), 1200, 800);
+                Scene scene = new Scene(loader.load());
                 scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
 
                 // Pass user info to dashboard
@@ -93,9 +94,7 @@ public class LoginController {
                 stage.setScene(scene);
             }
 
-            stage.setResizable(true);
-            stage.centerOnScreen();
-            stage.setMaximized(true); // Always full screen - must be LAST
+            StageUtil.applyWindowedFullScreenIfMaximized(stage);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -121,9 +120,10 @@ public class LoginController {
             fxmlLoader.setControllerFactory(applicationContext::getBean);
             fxmlLoader.setResources(bundle);
 
-            Scene scene = new Scene(fxmlLoader.load(), 800, 600);
+            Scene scene = new Scene(fxmlLoader.load());
             stage.setScene(scene);
             stage.setTitle(bundle.getString("app.title"));
+            StageUtil.applyWindowedFullScreenIfMaximized(stage);
         } catch (Exception e) {
             e.printStackTrace();
         }
