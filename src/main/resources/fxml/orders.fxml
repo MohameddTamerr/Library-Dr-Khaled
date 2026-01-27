@@ -16,12 +16,12 @@
       fx:controller="com.library.pos.controller.OrdersController"
       spacing="20" style="-fx-padding: 10;">
 
-    <Label text="📜 نظرة عامة على المبيعات" styleClass="h1"/>
+    <Label text="نظرة عامة على المبيعات" styleClass="h1"/>
 
     <!-- Payment Method Summary Cards -->
     <HBox spacing="15" alignment="CENTER_LEFT">
         <VBox styleClass="summary-card" spacing="5" prefWidth="180">
-            <Label text="💵 نقدي (Cash)" styleClass="card-title"/>
+            <Label text="نقدي (Cash)" styleClass="card-title"/>
             <Label fx:id="cashTotalLabel" text="0.00 ج.م" styleClass="card-value-green"/>
         </VBox>
         <VBox styleClass="summary-card" spacing="5" prefWidth="180">
@@ -35,7 +35,7 @@
             <Label fx:id="instapayTotalLabel" text="0.00 ج.م" styleClass="card-value"/>
         </VBox>
         <VBox styleClass="summary-card" spacing="5" prefWidth="180">
-            <Label text="💳 Visa" styleClass="card-title"/>
+            <Label text="Visa" styleClass="card-title"/>
             <Label fx:id="visaTotalLabel" text="0.00 ج.م" styleClass="card-value"/>
         </VBox>
         <VBox styleClass="summary-card" spacing="5" prefWidth="180">
@@ -51,6 +51,22 @@
         </VBox>
     </HBox>
 
+    <!-- Order Type Counts -->
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <VBox styleClass="summary-card" spacing="5" prefWidth="180">
+            <Label text="عدد طلبات التوصيل" styleClass="card-title"/>
+            <Label fx:id="deliveryCountLabel" text="0" styleClass="card-value"/>
+        </VBox>
+        <VBox styleClass="summary-card" spacing="5" prefWidth="180">
+            <Label text="عدد طلبات داخل المحل" styleClass="card-title"/>
+            <Label fx:id="shopCountLabel" text="0" styleClass="card-value"/>
+        </VBox>
+        <VBox styleClass="summary-card" spacing="5" prefWidth="180">
+            <Label text="إجمالي الطلبات" styleClass="card-title"/>
+            <Label fx:id="totalOrdersLabel" text="0" styleClass="card-value"/>
+        </VBox>
+    </HBox>
+
     <!-- Filter Bar -->
     <HBox spacing="10" alignment="CENTER_LEFT" styleClass="card">
         <Label text="من:"/>
@@ -58,6 +74,7 @@
         <Label text="إلى:"/>
         <DatePicker fx:id="toDatePicker"/>
         <ComboBox fx:id="filterWorkerCombo" promptText="الموظف" prefWidth="150"/>
+        <ComboBox fx:id="filterOrderTypeCombo" promptText="نوع الطلب" prefWidth="150"/>
         <TextField fx:id="filterProductField" promptText="بحث عن منتج..." prefWidth="150"/>
         <Button text="تصفية" onAction="#handleFilter" styleClass="button-primary"/>
         <Region HBox.hgrow="ALWAYS"/>

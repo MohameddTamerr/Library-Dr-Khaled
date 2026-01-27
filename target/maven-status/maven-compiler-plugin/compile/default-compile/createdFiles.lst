@@ -1,6 +1,7 @@
 com\library\pos\controller\CashierController$4.class
 com\library\pos\controller\DashboardController.class
 com\library\pos\controller\LoginController.class
+com\library\pos\util\StageUtil.class
 com\library\pos\service\CustomerService.class
 com\library\pos\config\SchemaFixer.class
 com\library\pos\controller\ProductsController$HBoxWrapper.class
@@ -23,6 +24,7 @@ com\library\pos\model\Sale.class
 com\library\pos\repository\SaleRepository.class
 com\library\pos\model\OrderItem.class
 com\library\pos\model\Product.class
+com\library\pos\controller\OrdersController$OrderViewModel.class
 com\library\pos\controller\OrdersController.class
 com\library\pos\model\Customer.class
 com\library\pos\model\SalaryAdvance.class
@@ -34,12 +36,16 @@ com\library\pos\LibraryPosApplication.class
 com\library\pos\model\WorkerShift.class
 com\library\pos\controller\WorkersController.class
 com\library\pos\model\SaleStatus.class
+com\library\pos\controller\CashierController$PaymentMethodListCell.class
 com\library\pos\repository\UserRepository.class
+com\library\pos\util\AutoRefreshUtil.class
 com\library\pos\controller\DashboardController$1.class
 com\library\pos\controller\ProductsController$1.class
 com\library\pos\controller\CashierController$1.class
 com\library\pos\controller\CustomersController.class
 com\library\pos\repository\ProductRepository.class
+com\library\pos\controller\DeliveryPopupController$1.class
+com\library\pos\controller\DeliveryPopupController.class
 com\library\pos\service\SaleService.class
 com\library\pos\controller\CustomersController$1.class
 com\library\pos\LibraryPosApplicationLauncher.class

@@ -64,4 +64,10 @@ public class SaleService {
     public long getTotalCount() {
         return saleRepository.count();
     }
+
+    public void saveSales(List<Sale> sales) {
+        for (Sale sale : sales) {
+            save(sale);
+        }
+    }
 }

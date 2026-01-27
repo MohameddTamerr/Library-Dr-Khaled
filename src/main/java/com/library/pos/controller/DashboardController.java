@@ -450,11 +450,11 @@ public class DashboardController {
     public void setUser(User user) {
         this.currentUser = user;
         if (welcomeLabel != null && user != null)
-            welcomeLabel.setText("👤 " + user.getFullName());
+            welcomeLabel.setText(user.getFullName());
     }
 
     public void setUsername(String username) {
         if (welcomeLabel != null)
-            welcomeLabel.setText("👤 " + username);
+            welcomeLabel.setText(username);
     }
 }

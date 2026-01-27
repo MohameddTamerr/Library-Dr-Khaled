@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.Region?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1" 
+      xmlns="http://javafx.com/javafx/21" 
+      fx:controller="com.library.pos.controller.DeliveryPopupController"
+      spacing="0" styleClass="delivery-popup-root" stylesheets="@../styles.css"
+      style="-fx-background-color: -bg-panel; -fx-background-radius: 12; -fx-padding: 0; -fx-border-color: -border-color; -fx-border-width: 1; -fx-border-radius: 12;">
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 16; -fx-background-color: -bg-sub; -fx-background-radius: 12 12 0 0; -fx-border-color: -border-color; -fx-border-width: 0 0 1 0;">
+        <Label text="بيانات التوصيل" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -text-primary;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="✕" onAction="#handleClose" styleClass="btn-icon"/>
+    </HBox>
+
+    <HBox spacing="0" VBox.vgrow="ALWAYS" prefHeight="500" prefWidth="800">
+        
+        <!-- RIGHT PANEL: Existing Customer Search -->
+        <VBox spacing="16" style="-fx-padding: 20; -fx-background-color: -bg-panel;" HBox.hgrow="ALWAYS" prefWidth="400">
+            <Label text="بحث عن عميل" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: -text-primary;"/>
+            
+            <VBox spacing="8">
+            <Label text="رقم الهاتف أو الاسم أو الكود" styleClass="field-label"/>
+            <HBox spacing="8">
+                <TextField fx:id="searchField" promptText="بحث..." HBox.hgrow="ALWAYS" styleClass="text-input" onAction="#handleSearch"/>
+                    <Button text="بحث" onAction="#handleSearch" styleClass="btn-primary"/>
+                </HBox>
+            </VBox>
+
+            <ListView fx:id="customerListView" VBox.vgrow="ALWAYS" styleClass="list-view"/>
+            
+            <Button fx:id="selectBtn" text="اختيار العميل المحدد" onAction="#handleSelectCustomer" 
+                    styleClass="btn-success" maxWidth="Infinity" disable="true"/>
+        </VBox>
+
+        <Separator orientation="VERTICAL"/>
+
+        <!-- LEFT PANEL: New Customer / Edit Address -->
+        <VBox spacing="16" style="-fx-padding: 20; -fx-background-color: -bg-sub;" HBox.hgrow="ALWAYS" prefWidth="400">
+             <Label text="بيانات العميل (جديد / تعديل)" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: -text-primary;"/>
+
+             <VBox spacing="8">
+                <Label text="اسم العميل" styleClass="field-label"/>
+                <TextField fx:id="nameField" promptText="ادخل اسم العميل"/>
+             </VBox>
+
+             <VBox spacing="8">
+                <Label text="رقم الهاتف" styleClass="field-label"/>
+                <TextField fx:id="phoneField" promptText="01xxxxxxxxx"/>
+             </VBox>
+
+             <VBox spacing="8" VBox.vgrow="ALWAYS">
+                <Label text="العنوان بالتفصيل" styleClass="field-label"/>
+                <TextArea fx:id="addressArea" promptText="العنوان..." wrapText="true" VBox.vgrow="ALWAYS"/>
+             </VBox>
+
+             <HBox spacing="12">
+                 <Button text="مسح الحقول" onAction="#handleClearForm" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                 <Button fx:id="saveBtn" text="حفظ واختيار" onAction="#handleSaveAndSelect" 
+                         styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+             </HBox>
+        </VBox>
+    </HBox>
+</VBox>

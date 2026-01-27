@@ -13,6 +13,7 @@ C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\model\SaleStatus.j
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\LibraryPosApplicationLauncher.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\controller\WorkersController.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\repository\CustomerRepository.java
+C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\config\DatabaseFixer.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\model\Role.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\model\Sale.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\repository\SaleRepository.java
@@ -23,10 +24,13 @@ C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\controller\Custome
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\model\WorkerShift.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\model\SalaryAdvance.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\service\CustomerService.java
+C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\controller\DeliveryPopupController.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\service\UserService.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\controller\LoginController.java
+C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\util\AutoRefreshUtil.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\repository\SalaryAdvanceRepository.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\controller\CashierController.java
+C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\util\StageUtil.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\service\SaleService.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\model\OrderItem.java
 C:\Users\user\Library-Dr-Khaled\src\main\java\com\library\pos\model\Customer.java

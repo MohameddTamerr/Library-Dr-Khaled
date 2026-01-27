@@ -59,6 +59,8 @@ public class OrdersController {
     private javafx.scene.control.TextField filterProductField;
     @FXML
     private javafx.scene.control.ComboBox<com.library.pos.model.User> filterWorkerCombo;
+    @FXML
+    private javafx.scene.control.ComboBox<String> filterOrderTypeCombo;
 
     // Payment Method Summary Labels
     @FXML
@@ -69,6 +71,12 @@ public class OrdersController {
     private javafx.scene.control.Label visaTotalLabel;
     @FXML
     private javafx.scene.control.Label vodafoneTotalLabel;
+    @FXML
+    private javafx.scene.control.Label deliveryCountLabel;
+    @FXML
+    private javafx.scene.control.Label shopCountLabel;
+    @FXML
+    private javafx.scene.control.Label totalOrdersLabel;
 
     private final SaleService saleService;
     private final com.library.pos.service.UserService userService;
@@ -118,6 +126,15 @@ public class OrdersController {
         filterWorkerCombo.getItems().addAll(userService.getAllWorkers());
         filterWorkerCombo.getSelectionModel().selectFirst();
 
+        // Order type filter
+        if (filterOrderTypeCombo != null) {
+            filterOrderTypeCombo.setItems(FXCollections.observableArrayList(
+                    "الكل",
+                    "توصيل",
+                    "داخل المحل"));
+            filterOrderTypeCombo.getSelectionModel().selectFirst();
+        }
+
         // Default: This month
         fromDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
         toDatePicker.setValue(LocalDate.now());
@@ -154,7 +171,8 @@ public class OrdersController {
         return (filterProductField != null && filterProductField.isFocused())
                 || (fromDatePicker != null && fromDatePicker.isFocused())
                 || (toDatePicker != null && toDatePicker.isFocused())
-                || (filterWorkerCombo != null && filterWorkerCombo.isFocused());
+                || (filterWorkerCombo != null && filterWorkerCombo.isFocused())
+                || (filterOrderTypeCombo != null && filterOrderTypeCombo.isFocused());
     }
 
     private boolean hasDataChanged() {
@@ -192,8 +210,11 @@ public class OrdersController {
             LocalDateTime start = from.atStartOfDay();
             LocalDateTime end = to.atTime(LocalTime.MAX);
             sales = saleService.search(start, end, workerId, productName);
-            updatePaymentMethodTotals(sales);
         }
+
+        sales = applyOrderTypeFilter(sales);
+        updatePaymentMethodTotals(sales);
+        updateOrderCounts(sales);
 
         // Populate Tree
         populateTree(sales);
@@ -282,10 +303,56 @@ public class OrdersController {
             vodafoneTotalLabel.setText(String.format("%.2f ج.م", vodafoneTotal));
     }
 
+    private void updateOrderCounts(List<Sale> sales) {
+        Map<String, List<Sale>> groupedSales = sales.stream()
+                .collect(Collectors.groupingBy(s -> (s.getTimestamp() != null ? s.getTimestamp().toString() : "NULL")
+                        + "_" + (s.getWorker() != null ? s.getWorker().getId() : "0")
+                        + "_" + (s.getCustomer() != null ? s.getCustomer().getId() : "CASH")));
+
+        long deliveryCount = groupedSales.values().stream()
+                .filter(this::isDeliveryOrder)
+                .count();
+        long totalCount = groupedSales.size();
+        long shopCount = Math.max(0, totalCount - deliveryCount);
+
+        if (deliveryCountLabel != null)
+            deliveryCountLabel.setText(String.valueOf(deliveryCount));
+        if (shopCountLabel != null)
+            shopCountLabel.setText(String.valueOf(shopCount));
+        if (totalOrdersLabel != null)
+            totalOrdersLabel.setText(String.valueOf(totalCount));
+    }
+
+    private List<Sale> applyOrderTypeFilter(List<Sale> sales) {
+        if (filterOrderTypeCombo == null || filterOrderTypeCombo.getValue() == null) {
+            return sales;
+        }
+        String type = filterOrderTypeCombo.getValue();
+        if ("توصيل".equals(type)) {
+            return sales.stream().filter(this::isDelivery).collect(Collectors.toList());
+        }
+        if ("داخل المحل".equals(type)) {
+            return sales.stream().filter(s -> !isDelivery(s)).collect(Collectors.toList());
+        }
+        return sales;
+    }
+
+    private boolean isDelivery(Sale sale) {
+        if (sale == null || sale.getStatus() == null) {
+            return false;
+        }
+        return sale.getStatus() == com.library.pos.model.SaleStatus.DELIVERY;
+    }
+
+    private boolean isDeliveryOrder(List<Sale> sales) {
+        return sales != null && sales.stream().anyMatch(this::isDelivery);
+    }
+
     @FXML
     public void loadAll() {
         List<Sale> sales = saleService.getAll();
         updatePaymentMethodTotals(sales);
+        updateOrderCounts(sales);
         populateTree(sales);
     }
 

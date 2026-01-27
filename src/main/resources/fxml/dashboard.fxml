@@ -31,27 +31,27 @@
     <!-- Sidebar (Dark Slate) -->
     <left>
         <VBox spacing="10" styleClass="sidebar-box">
-            <Label text="📚 %app.title" styleClass="sidebar-title"/>
+            <Label text="%app.title" styleClass="sidebar-title"/>
             <Region prefHeight="20"/>
 
-            <Button text="📊 لوحة التحكم" onAction="#showDashboard" maxWidth="Infinity" styleClass="button-sidebar"/>
-            <Button text="🛒 الكاشير" onAction="#openCashier" maxWidth="Infinity" styleClass="button-sidebar"/>
-            <Button fx:id="workersButton" text="👥 الموظفين" onAction="#showWorkers" maxWidth="Infinity" styleClass="button-sidebar"/>
+            <Button text="لوحة التحكم" onAction="#showDashboard" maxWidth="Infinity" styleClass="button-sidebar"/>
+            <Button text="الكاشير" onAction="#openCashier" maxWidth="Infinity" styleClass="button-sidebar"/>
+            <Button fx:id="workersButton" text="الموظفين" onAction="#showWorkers" maxWidth="Infinity" styleClass="button-sidebar"/>
             
             <!-- Products with Badge -->
             <StackPane alignment="TOP_RIGHT">
-                 <Button text="📦 المنتجات" onAction="#showProducts" maxWidth="Infinity" styleClass="button-sidebar"/>
+                 <Button text="المنتجات" onAction="#showProducts" maxWidth="Infinity" styleClass="button-sidebar"/>
                  <Label fx:id="productsBadge" text="!" styleClass="badge-red" visible="false" translateX="-10" translateY="5"/>
             </StackPane>
 
-            <Button text="👥 العملاء" onAction="#showCustomers" maxWidth="Infinity" styleClass="button-sidebar"/>
-            <Button text="📜 الاوردرات" onAction="#showOrders" maxWidth="Infinity" styleClass="button-sidebar"/>
+            <Button text="العملاء" onAction="#showCustomers" maxWidth="Infinity" styleClass="button-sidebar"/>
+            <Button text="الاوردرات" onAction="#showOrders" maxWidth="Infinity" styleClass="button-sidebar"/>
             
             <Region VBox.vgrow="ALWAYS"/>
             
             <Separator style="-fx-background-color: rgba(255,255,255,0.1);"/>
-            <Label fx:id="welcomeLabel" text="👤 المستخدم" styleClass="sidebar-user"/>
-            <Button text="🚪 تسجيل خروج" onAction="#handleLogout" maxWidth="Infinity" styleClass="button-danger"/>
+            <Label fx:id="welcomeLabel" text="المستخدم" styleClass="sidebar-user"/>
+            <Button text="تسجيل خروج" onAction="#handleLogout" maxWidth="Infinity" styleClass="button-danger"/>
         </VBox>
     </left>
 
@@ -138,7 +138,7 @@
                 <!-- 4. Stock Table (Collapsible or Bottom) -->
                 <VBox styleClass="panel-card" prefHeight="200">
                     <HBox alignment="CENTER_LEFT" spacing="10">
-                         <Label text="📦 نظرة سريعة على المخزون" styleClass="panel-title"/>
+                         <Label text="نظرة سريعة على المخزون" styleClass="panel-title"/>
                          <Region HBox.hgrow="ALWAYS"/>
                          <TextField fx:id="searchField" promptText="بحث عن منتج..." onAction="#handleSearch"/>
                     </HBox>

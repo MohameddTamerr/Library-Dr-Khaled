@@ -25,7 +25,7 @@ public class Sale {
     private Double totalAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", columnDefinition = "VARCHAR(50)")
     private SaleStatus status;
 
     @ManyToOne

@@ -26,8 +26,10 @@ CREATE TABLE `customers` (
   `customer_id` int(11) NOT NULL AUTO_INCREMENT,
   `customer_name` varchar(100) NOT NULL,
   `mobile` varchar(20) DEFAULT NULL,
+  `customer_code` varchar(5) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`customer_id`)
+  PRIMARY KEY (`customer_id`),
+  UNIQUE KEY `uk_customers_customer_code` (`customer_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

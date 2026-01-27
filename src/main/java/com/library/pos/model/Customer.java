@@ -18,6 +18,12 @@ public class Customer {
     @Column(name = "mobile")
     private String mobile;
 
+    @Column(name = "customer_code", unique = true, length = 5)
+    private String customerCode;
+
+    @Column(name = "address")
+    private String address;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -40,6 +46,14 @@ public class Customer {
         return mobile;
     }
 
+    public String getAddress() {
+        return address;
+    }
+
+    public String getCustomerCode() {
+        return customerCode;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -59,6 +73,14 @@ public class Customer {
 
     public void setMobile(String mobile) {
         this.mobile = mobile;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public void setCustomerCode(String customerCode) {
+        this.customerCode = customerCode;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {

@@ -16,7 +16,7 @@
       fx:controller="com.library.pos.controller.CustomersController"
       spacing="20" style="-fx-padding: 10;">
 
-    <Label text="👥 إدارة العملاء" styleClass="h1"/>
+    <Label text="إدارة العملاء" styleClass="h1"/>
 
     <!-- Add/Edit Form -->
     <VBox spacing="15" styleClass="card">
@@ -44,7 +44,7 @@
     </VBox>
 
     <HBox spacing="10" alignment="CENTER_LEFT">
-        <TextField fx:id="searchField" promptText="بحث باسم العميل أو الهاتف..." prefWidth="300" onAction="#handleSearch"/>
+        <TextField fx:id="searchField" promptText="بحث بالاسم أو الهاتف أو الكود..." prefWidth="300" onAction="#handleSearch"/>
         <Button text="بحث" onAction="#handleSearch" styleClass="button-primary"/>
         <Button text="عرض الكل" onAction="#loadData" styleClass="button-sidebar" style="-fx-text-fill: -text-primary; -fx-background-color: -bg-panel;"/>
     </HBox>
@@ -53,6 +53,7 @@
     <TableView fx:id="customersTable" VBox.vgrow="ALWAYS" styleClass="table-view">
         <columns>
             <TableColumn fx:id="idCol" text="#" prefWidth="50"/>
+            <TableColumn fx:id="codeCol" text="الكود" prefWidth="80"/>
             <TableColumn fx:id="nameCol" text="الاسم" prefWidth="250"/>
             <TableColumn fx:id="phoneCol" text="الهاتف" prefWidth="150"/>
             <!-- Action Column added functionally -->

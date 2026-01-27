@@ -25,6 +25,8 @@ public class CustomersController {
     @FXML
     private TableColumn<Customer, Long> idCol;
     @FXML
+    private TableColumn<Customer, String> codeCol;
+    @FXML
     private TableColumn<Customer, String> nameCol;
     @FXML
     private TableColumn<Customer, String> phoneCol;
@@ -53,6 +55,7 @@ public class CustomersController {
     @FXML
     public void initialize() {
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        codeCol.setCellValueFactory(new PropertyValueFactory<>("customerCode"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("customerName"));
         phoneCol.setCellValueFactory(new PropertyValueFactory<>("mobile"));
 
@@ -173,8 +176,8 @@ public class CustomersController {
     private void setupActions() {
         TableColumn<Customer, Void> colBtn = new TableColumn<>("إجراءات");
         colBtn.setCellFactory(col -> new TableCell<>() {
-            private final Button btnEdit = new Button("✏️");
-            private final Button btnDelete = new Button("❌");
+            private final Button btnEdit = new Button("تعديل");
+            private final Button btnDelete = new Button("حذف");
             private final HBox pane = new HBox(10, btnEdit, btnDelete);
 
             {
@@ -198,8 +201,12 @@ public class CustomersController {
                     Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "حذف العميل " + c.getCustomerName() + "؟",
                             ButtonType.YES, ButtonType.NO);
                     if (alert.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-                        customerService.deleteById(c.getId());
-                        loadData();
+                        try {
+                            customerService.deleteById(c.getId());
+                            loadData();
+                        } catch (Exception ex) {
+                            showAlert("لا يمكن حذف العميل لأنه مرتبط بطلبات/مبيعات سابقة.");
+                        }
                     }
                 });
             }

@@ -104,6 +104,66 @@
     -fx-background-color: -color-primary-dark;
 }
 
+/* Cashier/Dashboard Button System */
+.btn-primary {
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 18;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.25), 8, 0, 0, 2);
+}
+
+.btn-primary:hover {
+    -fx-background-color: -color-primary-dark;
+}
+
+.btn-secondary {
+    -fx-background-color: -bg-panel;
+    -fx-text-fill: -text-primary;
+    -fx-font-weight: bold;
+    -fx-padding: 10 18;
+    -fx-background-radius: 10;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 10;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover {
+    -fx-border-color: -color-primary;
+    -fx-text-fill: -color-primary;
+}
+
+.btn-danger {
+    -fx-background-color: -color-danger;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 18;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.25), 8, 0, 0, 2);
+}
+
+.btn-danger:hover {
+    -fx-background-color: -color-danger-dark;
+}
+
+.btn-info-large {
+    -fx-background-color: #0ea5e9;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 14 20;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(14, 165, 233, 0.25), 10, 0, 0, 3);
+}
+
+.btn-info-large:hover {
+    -fx-background-color: #0284c7;
+}
+
 .button-danger {
     -fx-background-color: rgba(239, 68, 68, 0.15);
     -fx-text-fill: #fca5a5;
@@ -620,8 +680,9 @@
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-padding: 14 20;
-    -fx-background-radius: 8;
+    -fx-background-radius: 10;
     -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.25), 10, 0, 0, 3);
 }
 
 .btn-success-large:hover {
@@ -634,8 +695,9 @@
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-padding: 14 20;
-    -fx-background-radius: 8;
+    -fx-background-radius: 10;
     -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.25), 10, 0, 0, 3);
 }
 
 .btn-warning-large:hover {

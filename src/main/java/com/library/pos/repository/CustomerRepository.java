@@ -7,7 +7,10 @@ import java.util.List;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
-    List<Customer> findByCustomerNameContainingIgnoreCaseOrMobileContainingIgnoreCase(String name, String mobile);
+    List<Customer> findByCustomerNameContainingIgnoreCaseOrMobileContainingIgnoreCaseOrCustomerCodeContainingIgnoreCase(
+            String name, String mobile, String code);
+
+    boolean existsByCustomerCode(String customerCode);
 
     @org.springframework.data.jpa.repository.Query("SELECT MAX(c.updatedAt) FROM Customer c")
     java.time.LocalDateTime findLatestUpdate();

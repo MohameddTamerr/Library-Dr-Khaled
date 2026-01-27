@@ -48,4 +48,14 @@ public class ProductService {
     public long getTotalCount() {
         return productRepository.count();
     }
+
+    public void updateStock(Long productId, int quantityChange) {
+        Optional<Product> productOpt = productRepository.findById(productId);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            int newQty = product.getQuantity() + quantityChange;
+            product.setQuantity(newQty);
+            productRepository.save(product);
+        }
+    }
 }

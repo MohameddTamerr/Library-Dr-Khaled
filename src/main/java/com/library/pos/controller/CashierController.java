@@ -1,5 +1,6 @@
 package com.library.pos.controller;
 
+import com.library.pos.model.Customer;
 import com.library.pos.model.Product;
 import com.library.pos.model.Sale;
 import com.library.pos.model.SaleStatus;
@@ -108,6 +109,18 @@ public class CashierController {
     // Payment Method
     @FXML
     private ComboBox<String> paymentMethodCombo;
+    @FXML
+    private Label deliveryCustomerLabel;
+    @FXML
+    private Button deliveryOrderButton;
+    @FXML
+    private ListView<DeliveryDraft> deliveryDraftsList;
+    @FXML
+    private Button saveDraftButton;
+    @FXML
+    private Button loadDraftButton;
+    @FXML
+    private Button deleteDraftButton;
 
     private final ProductService productService;
     private final SaleService saleService;
@@ -116,9 +129,12 @@ public class CashierController {
     private final com.library.pos.service.UserService userService;
 
     private User currentUser;
+    private Customer deliveryCustomer;
+    private DeliveryDraft activeDraft;
     private Product selectedProduct;
     private final ObservableList<CartItem> cartItems = FXCollections.observableArrayList();
     private final ObservableList<Product> suggestionItems = FXCollections.observableArrayList();
+    private final ObservableList<DeliveryDraft> deliveryDrafts = FXCollections.observableArrayList();
     private ResourceBundle bundle;
     private com.library.pos.model.WorkSession currentSession;
     private final Properties quickKeys = new Properties();
@@ -172,6 +188,8 @@ public class CashierController {
         paymentMethodCombo.getSelectionModel().selectFirst();
 
         loadQuickKeys();
+        updateDeliveryCustomerUI();
+        setupDeliveryDrafts();
     }
 
     private void setupAutoRefresh() {
@@ -230,7 +248,7 @@ public class CashierController {
     public void setUser(User user) {
         this.currentUser = user;
         if (user != null) {
-            workerNameLabel.setText("👤 " + user.getFullName());
+            workerNameLabel.setText(user.getFullName());
 
             // Start Session
             currentSession = new com.library.pos.model.WorkSession(user, LocalDateTime.now());
@@ -251,9 +269,9 @@ public class CashierController {
     private void updateDailyCash() {
         if (dailyCashLabel != null && currentUser != null) {
             Double total = saleService.getDailyCash(currentUser.getId());
-            dailyCashLabel.setText(String.format("💰 %.2f", total));
+            dailyCashLabel.setText(String.format("%.2f ج.م", total));
         } else if (dailyCashLabel != null) {
-            dailyCashLabel.setText("💰 0.00");
+            dailyCashLabel.setText("0.00 ج.م");
         }
     }
 
@@ -279,11 +297,77 @@ public class CashierController {
                         handleFunctionKey(event.getCode());
                         event.consume();
                     }
+                    // Delivery shortcuts
+                    if (event.getCode() == KeyCode.F8) {
+                        openDeliveryCustomerPopup();
+                        event.consume();
+                    }
+                    if (event.getCode() == KeyCode.F9) {
+                        handleDeliveryOrder();
+                        event.consume();
+                    }
+                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT1) {
+                        openDeliveryCustomerPopup();
+                        event.consume();
+                    }
+                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT2) {
+                        handleDeliveryOrder();
+                        event.consume();
+                    }
+                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT3) {
+                        if (saveDraftButton != null) {
+                            saveDraftButton.fire();
+                            event.consume();
+                        }
+                    }
+                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT4) {
+                        if (loadDraftButton != null) {
+                            loadDraftButton.fire();
+                            event.consume();
+                        }
+                    }
+                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT5) {
+                        if (deleteDraftButton != null) {
+                            deleteDraftButton.fire();
+                            event.consume();
+                        }
+                    }
+                    if (event.isControlDown() && event.getCode() == KeyCode.S) {
+                        if (saveDraftButton != null) {
+                            saveDraftButton.fire();
+                            event.consume();
+                        }
+                    }
+                    if (event.isControlDown() && event.getCode() == KeyCode.L) {
+                        if (loadDraftButton != null) {
+                            loadDraftButton.fire();
+                            event.consume();
+                        }
+                    }
+                    if ((event.isControlDown() && event.getCode() == KeyCode.DELETE)
+                            || (event.isControlDown() && event.getCode() == KeyCode.D)) {
+                        if (deleteDraftButton != null) {
+                            deleteDraftButton.fire();
+                            event.consume();
+                        }
+                    }
                     // Enter to add to cart when product is selected
                     if (event.getCode() == KeyCode.ESCAPE) {
                         resetSelection();
                         barcodeField.requestFocus();
                         event.consume();
+                    }
+                    if (event.getCode() == KeyCode.ENTER) {
+                        boolean hasCart = !cartItems.isEmpty();
+                        boolean barcodeFocused = barcodeField != null && barcodeField.isFocused();
+                        boolean barcodeHasText = barcodeField != null
+                                && barcodeField.getText() != null
+                                && !barcodeField.getText().trim().isEmpty();
+                        boolean canPay = hasCart && (!barcodeFocused || !barcodeHasText);
+                        if (canPay) {
+                            handlePayment();
+                            event.consume();
+                        }
                     }
                 });
             }
@@ -392,6 +476,28 @@ public class CashierController {
         });
     }
 
+    private void setupDeliveryDrafts() {
+        if (deliveryDraftsList == null) {
+            return;
+        }
+        deliveryDraftsList.setItems(deliveryDrafts);
+        deliveryDraftsList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(DeliveryDraft item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getTitle());
+                }
+            }
+        });
+        deliveryDraftsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            updateDraftButtons();
+        });
+        updateDraftButtons();
+    }
+
     private void showQuantityEditDialog(CartItem item) {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
@@ -434,7 +540,7 @@ public class CashierController {
                 "-fx-background-radius: 8; -fx-cursor: hand;");
         cancelBtn.setOnAction(e -> dialog.close());
 
-        Button confirmBtn = new Button("✓ تأكيد");
+        Button confirmBtn = new Button("تأكيد");
         confirmBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; " +
                 "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
         confirmBtn.setOnAction(e -> {
@@ -798,6 +904,96 @@ public class CashierController {
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             cartItems.clear();
             updateSummary();
+            activeDraft = null;
+        }
+    }
+
+    @FXML
+    private void handleDeliveryOrder() {
+        if (cartItems.isEmpty()) {
+            openDeliveryCustomerPopup();
+            return;
+        }
+        if (deliveryCustomer == null) {
+            openDeliveryCustomerPopup();
+            return;
+        }
+        processDeliveryOrder(deliveryCustomer);
+    }
+
+    private void openDeliveryCustomerPopup() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/delivery_popup.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+            javafx.scene.Parent root = loader.load();
+
+            DeliveryPopupController controller = loader.getController();
+
+            Stage popup = new Stage();
+            popup.initModality(Modality.APPLICATION_MODAL);
+            popup.initStyle(StageStyle.UNDECORATED);
+            popup.setTitle("Delivery Order");
+            popup.setScene(new Scene(root));
+
+            controller.selectedCustomerProperty().addListener((obs, old, customer) -> {
+                if (customer != null) {
+                    deliveryCustomer = customer;
+                    updateDeliveryCustomerUI();
+                }
+            });
+
+            popup.showAndWait();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Error opening delivery popup: " + e.getMessage());
+        }
+    }
+
+    private void processDeliveryOrder(Customer customer) {
+        try {
+            double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
+
+            // Create sale records
+            List<Sale> sales = new java.util.ArrayList<>();
+            LocalDateTime now = LocalDateTime.now();
+
+            for (CartItem item : cartItems) {
+                Sale sale = new Sale();
+                sale.setTimestamp(now);
+                sale.setItemName(item.getProduct().getName());
+                sale.setQuantity(item.getQuantity());
+                sale.setTotalAmount(item.getTotal());
+                sale.setStatus(SaleStatus.DELIVERY);
+                sale.setWorker(currentUser);
+                sale.setCustomer(customer);
+                sale.setProduct(item.getProduct());
+                sale.setNotes("Delivery to: " + customer.getAddress());
+
+                sales.add(sale);
+
+                // Update stock
+                productService.updateStock(item.getProduct().getId(), -item.getQuantity());
+            }
+
+            saleService.saveSales(sales);
+
+            showAlert(Alert.AlertType.INFORMATION, "تم حفظ طلب التوصيل بنجاح");
+
+            cartItems.clear();
+            updateSummary();
+            updateDataSignature();
+            deliveryCustomer = null;
+            updateDeliveryCustomerUI();
+            if (activeDraft != null) {
+                deliveryDrafts.remove(activeDraft);
+                activeDraft = null;
+                updateDraftButtons();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "فشل حفظ الطلب: " + e.getMessage());
         }
     }
 
@@ -807,6 +1003,104 @@ public class CashierController {
 
         itemCountLabel.setText(String.valueOf(itemCount));
         grandTotalLabel.setText(String.format("%.2f", total));
+    }
+
+    private void updateDeliveryCustomerUI() {
+        if (deliveryCustomerLabel != null) {
+            if (deliveryCustomer == null) {
+                deliveryCustomerLabel.setText("لم يتم اختيار عميل");
+            } else {
+                String name = deliveryCustomer.getCustomerName() != null ? deliveryCustomer.getCustomerName() : "";
+                String phone = deliveryCustomer.getMobile() != null ? deliveryCustomer.getMobile() : "";
+                String display = name;
+                if (!phone.isBlank()) {
+                    display = name + " - " + phone;
+                }
+                deliveryCustomerLabel.setText(display);
+            }
+        }
+        if (deliveryOrderButton != null) {
+            if (deliveryCustomer == null) {
+                deliveryOrderButton.setText("اختيار عميل التوصيل");
+            } else {
+                deliveryOrderButton.setText("تأكيد التوصيل");
+            }
+        }
+    }
+
+    @FXML
+    private void handleSaveDeliveryDraft() {
+        if (deliveryCustomer == null) {
+            openDeliveryCustomerPopup();
+            return;
+        }
+        if (cartItems.isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.empty"));
+            return;
+        }
+        DeliveryDraft draft = DeliveryDraft.fromCart(deliveryCustomer, cartItems);
+        deliveryDrafts.add(0, draft);
+        activeDraft = null;
+        cartItems.clear();
+        updateSummary();
+        deliveryCustomer = null;
+        updateDeliveryCustomerUI();
+        updateDraftButtons();
+        showAlert(Alert.AlertType.INFORMATION, "تم حفظ مسودة التوصيل");
+    }
+
+    @FXML
+    private void handleLoadDeliveryDraft() {
+        if (deliveryDraftsList == null) {
+            return;
+        }
+        DeliveryDraft selected = deliveryDraftsList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+        if (!cartItems.isEmpty()) {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle(bundle.getString("cashier.confirm"));
+            confirm.setHeaderText("استبدال السلة الحالية؟");
+            confirm.setContentText("سيتم استبدال السلة الحالية بمحتوى المسودة المحددة.");
+            if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+                return;
+            }
+        }
+        cartItems.clear();
+        cartItems.addAll(selected.copyItems());
+        deliveryCustomer = selected.getCustomer();
+        activeDraft = selected;
+        updateSummary();
+        updateDeliveryCustomerUI();
+        updateDraftButtons();
+    }
+
+    @FXML
+    private void handleDeleteDeliveryDraft() {
+        if (deliveryDraftsList == null) {
+            return;
+        }
+        DeliveryDraft selected = deliveryDraftsList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+        deliveryDrafts.remove(selected);
+        if (activeDraft == selected) {
+            activeDraft = null;
+        }
+        updateDraftButtons();
+    }
+
+    private void updateDraftButtons() {
+        boolean hasSelection = deliveryDraftsList != null
+                && deliveryDraftsList.getSelectionModel().getSelectedItem() != null;
+        if (loadDraftButton != null) {
+            loadDraftButton.setDisable(!hasSelection);
+        }
+        if (deleteDraftButton != null) {
+            deleteDraftButton.setDisable(!hasSelection);
+        }
     }
 
     @FXML
@@ -821,7 +1115,8 @@ public class CashierController {
             return;
         }
         // Extract payment method (remove emoji and parentheses)
-        // If no parentheses, keep full label to avoid truncating values like "Vodafone Cash"
+        // If no parentheses, keep full label to avoid truncating values like "Vodafone
+        // Cash"
         String paymentMethod = selected.contains("(")
                 ? selected.substring(selected.indexOf("(") + 1, selected.indexOf(")"))
                 : selected;
@@ -923,7 +1218,7 @@ public class CashierController {
                 "-fx-background-radius: 8; -fx-cursor: hand;");
         cancelBtn.setOnAction(e -> dialog.close());
 
-        Button confirmBtn = new Button("✓ " + bundle.getString("cashier.confirm"));
+        Button confirmBtn = new Button(bundle.getString("cashier.confirm"));
         confirmBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; " +
                 "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
         confirmBtn.setOnAction(e -> {
@@ -1010,7 +1305,7 @@ public class CashierController {
                 "-fx-background-radius: 8; -fx-cursor: hand;");
         cancelBtn.setOnAction(e -> dialog.close());
 
-        Button confirmBtn = new Button("✓ " + bundle.getString("cashier.register.deferred"));
+        Button confirmBtn = new Button(bundle.getString("cashier.register.deferred"));
         confirmBtn.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: #1e293b; -fx-font-weight: bold; " +
                 "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
         confirmBtn.setOnAction(e -> {
@@ -1221,6 +1516,53 @@ public class CashierController {
 
         public void setQuantity(int q) {
             this.quantity = q;
+        }
+    }
+
+    public static class DeliveryDraft {
+        private static int nextId = 1;
+        private final int id;
+        private final Customer customer;
+        private final List<CartItem> items;
+        private final String title;
+
+        private DeliveryDraft(Customer customer, List<CartItem> items, String title) {
+            this.id = nextId++;
+            this.customer = customer;
+            this.items = items;
+            this.title = title;
+        }
+
+        public static DeliveryDraft fromCart(Customer customer, List<CartItem> cartItems) {
+            List<CartItem> items = new java.util.ArrayList<>();
+            for (CartItem item : cartItems) {
+                items.add(new CartItem(item.getProduct(), item.getQuantity()));
+            }
+            String name = customer.getCustomerName() != null ? customer.getCustomerName() : "";
+            String phone = customer.getMobile() != null ? customer.getMobile() : "";
+            String when = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            String display = name;
+            if (!phone.isBlank()) {
+                display = name + " - " + phone;
+            }
+            String title = "مسودة #" + nextId + " | " + display + " | " + when;
+            return new DeliveryDraft(customer, items, title);
+        }
+
+        public Customer getCustomer() {
+            return customer;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public List<CartItem> copyItems() {
+            List<CartItem> copy = new java.util.ArrayList<>();
+            for (CartItem item : items) {
+                copy.add(new CartItem(item.getProduct(), item.getQuantity()));
+            }
+            return copy;
         }
     }
 

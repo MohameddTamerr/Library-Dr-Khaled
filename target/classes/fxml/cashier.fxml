@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -29,16 +30,15 @@
         <HBox styleClass="header-bar" alignment="CENTER_LEFT" spacing="14">
             <padding><Insets top="8" right="16" bottom="8" left="16"/></padding>
             
-            <Label text="📚" style="-fx-font-size: 28px;"/>
             <Label text="%cashier.title" styleClass="header-title"/>
             
             <Region HBox.hgrow="ALWAYS"/>
             
-            <Button fx:id="backButton" text="🔙 لوحة التحكم" onAction="#handleBackToDashboard" styleClass="btn-secondary" visible="false"/>
+            <Button fx:id="backButton" text="لوحة التحكم" onAction="#handleBackToDashboard" styleClass="btn-secondary" visible="false"/>
             <Region prefWidth="20"/>
 
             <Label fx:id="workerNameLabel" styleClass="worker-label"/>
-            <Label fx:id="dailyCashLabel" text="💰 0.00" style="-fx-text-fill: -color-success; -fx-font-weight: bold; -fx-font-size: 16px;"/>
+            <Label fx:id="dailyCashLabel" text="0.00 ج.م" style="-fx-text-fill: -color-success; -fx-font-weight: bold; -fx-font-size: 16px;"/>
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
             <Button text="%cashier.logout" onAction="#handleLogout" styleClass="btn-danger"/>
@@ -121,13 +121,40 @@
                     <padding><Insets top="12" right="16" bottom="0" left="16"/></padding>
                     <Label text="طريقة الدفع:" styleClass="section-label-small"/>
                     <ComboBox fx:id="paymentMethodCombo" styleClass="payment-method-combo" maxWidth="Infinity"/>
+                    <Label text="عميل التوصيل (Alt+1):" styleClass="section-label-small"/>
+                    <Label fx:id="deliveryCustomerLabel" text="لم يتم اختيار عميل" styleClass="field-label"/>
+                    <Label text="مسودات التوصيل:" styleClass="section-label-small"/>
+                    <ListView fx:id="deliveryDraftsList" styleClass="list-view" prefHeight="120"/>
+                    <HBox spacing="8">
+                        <Button fx:id="saveDraftButton" text="حفظ الاوردر (Alt+3)" onAction="#handleSaveDeliveryDraft" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                            <tooltip>
+                                <Tooltip text="اختصار: Alt+3 أو Ctrl+S"/>
+                            </tooltip>
+                        </Button>
+                        <Button fx:id="loadDraftButton" text="تحميل (Alt+4)" onAction="#handleLoadDeliveryDraft" styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                            <tooltip>
+                                <Tooltip text="اختصار: Alt+4 أو Ctrl+L"/>
+                            </tooltip>
+                        </Button>
+                        <Button fx:id="deleteDraftButton" text="حذف (Alt+5)" onAction="#handleDeleteDeliveryDraft" styleClass="btn-danger" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                            <tooltip>
+                                <Tooltip text="اختصار: Alt+5 أو Ctrl+D أو Ctrl+Delete"/>
+                            </tooltip>
+                        </Button>
+                    </HBox>
                 </VBox>
 
                 <HBox styleClass="payment-buttons" spacing="12">
                     <padding><Insets top="12" right="16" bottom="16" left="16"/></padding>
-                    <Button text="✓ تأكيد الدفع" onAction="#handlePayment" 
+                    <Button fx:id="deliveryOrderButton" text="توصيل (Alt+2)" onAction="#handleDeliveryOrder" 
+                            styleClass="btn-info-large" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <tooltip>
+                            <Tooltip text="اختصار: Alt+1 لاختيار العميل، Alt+2 لتأكيد التوصيل"/>
+                        </tooltip>
+                    </Button>
+                    <Button text="تأكيد الدفع (Enter)" onAction="#handlePayment" 
                             styleClass="btn-success-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                    <Button text="📋 دفع آجل" onAction="#handleDeferredPayment" 
+                    <Button text="دفع آجل" onAction="#handleDeferredPayment" 
                             styleClass="btn-warning-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                 </HBox>
             </VBox>
