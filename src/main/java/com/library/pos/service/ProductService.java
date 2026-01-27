@@ -40,4 +40,12 @@ public class ProductService {
         productRepository.deleteById(id);
 
     }
+
+    public java.time.LocalDateTime getLatestUpdateTime() {
+        return productRepository.findLatestUpdate();
+    }
+
+    public long getTotalCount() {
+        return productRepository.count();
+    }
 }

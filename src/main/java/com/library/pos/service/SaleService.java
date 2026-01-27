@@ -56,4 +56,12 @@ public class SaleService {
         }
         return saved;
     }
+
+    public LocalDateTime getLatestSaleTimestamp() {
+        return saleRepository.findLatestTimestamp();
+    }
+
+    public long getTotalCount() {
+        return saleRepository.count();
+    }
 }

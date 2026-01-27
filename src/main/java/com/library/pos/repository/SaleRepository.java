@@ -22,4 +22,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
         Double calculateDailyCash(@org.springframework.data.repository.query.Param("workerId") Long workerId,
                         @org.springframework.data.repository.query.Param("start") LocalDateTime start,
                         @org.springframework.data.repository.query.Param("end") LocalDateTime end);
+
+        @org.springframework.data.jpa.repository.Query("SELECT MAX(s.timestamp) FROM Sale s")
+        LocalDateTime findLatestTimestamp();
 }

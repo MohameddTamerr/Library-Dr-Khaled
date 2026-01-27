@@ -30,4 +30,12 @@ public class CustomerService {
     public void deleteById(Long id) {
         customerRepository.deleteById(id);
     }
+
+    public java.time.LocalDateTime getLatestUpdateTime() {
+        return customerRepository.findLatestUpdate();
+    }
+
+    public long getTotalCount() {
+        return customerRepository.count();
+    }
 }

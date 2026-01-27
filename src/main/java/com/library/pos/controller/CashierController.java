@@ -123,7 +123,10 @@ public class CashierController {
     private com.library.pos.model.WorkSession currentSession;
     private final Properties quickKeys = new Properties();
     private Timeline autoRefreshTimeline;
-    private static final int AUTO_REFRESH_SECONDS = 3;
+    private static final int REFRESH_SECONDS_VISIBLE = 3;
+    private static final int REFRESH_SECONDS_HIDDEN = 6;
+    private java.time.LocalDateTime lastSaleTimestamp;
+    private long lastSaleCount = -1;
 
     public CashierController(ProductService productService, SaleService saleService,
             ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
@@ -175,10 +178,43 @@ public class CashierController {
         if (barcodeField == null) {
             return;
         }
-        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> updateDailyCash()));
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(REFRESH_SECONDS_VISIBLE), e -> {
+            if (shouldRefresh()) {
+                updateDailyCash();
+            }
+        }));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
-        AutoRefreshUtil.bind(autoRefreshTimeline, barcodeField, 0.5);
+        AutoRefreshUtil.bind(autoRefreshTimeline, barcodeField,
+                (double) REFRESH_SECONDS_VISIBLE / (double) REFRESH_SECONDS_HIDDEN);
+        updateDataSignature();
+    }
+
+    private boolean shouldRefresh() {
+        if (isUserEditing()) {
+            return false;
+        }
+        return hasDataChanged();
+    }
+
+    private boolean isUserEditing() {
+        return barcodeField != null && barcodeField.isFocused();
+    }
+
+    private boolean hasDataChanged() {
+        java.time.LocalDateTime latest = saleService.getLatestSaleTimestamp();
+        long count = saleService.getTotalCount();
+        boolean changed = !java.util.Objects.equals(latest, lastSaleTimestamp) || count != lastSaleCount;
+        if (changed) {
+            lastSaleTimestamp = latest;
+            lastSaleCount = count;
+        }
+        return changed;
+    }
+
+    private void updateDataSignature() {
+        lastSaleTimestamp = saleService.getLatestSaleTimestamp();
+        lastSaleCount = saleService.getTotalCount();
     }
 
     private void loadQuickKeys() {
@@ -209,6 +245,7 @@ public class CashierController {
         }
 
         updateDailyCash();
+        updateDataSignature();
     }
 
     private void updateDailyCash() {

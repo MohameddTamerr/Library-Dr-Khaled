@@ -13,4 +13,7 @@ public interface SalaryAdvanceRepository extends JpaRepository<SalaryAdvance, Lo
     List<SalaryAdvance> findByWorkerAndAdvanceDateBetween(User worker, LocalDate start, LocalDate end);
 
     List<SalaryAdvance> findByWorker(User worker);
+
+    @org.springframework.data.jpa.repository.Query("SELECT MAX(a.id) FROM SalaryAdvance a")
+    Long findLatestId();
 }

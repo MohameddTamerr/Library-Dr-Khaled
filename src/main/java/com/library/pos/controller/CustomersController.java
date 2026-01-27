@@ -13,6 +13,8 @@ import javafx.scene.layout.HBox;
 import javafx.util.Duration;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 @Component
@@ -39,7 +41,10 @@ public class CustomersController {
     private final CustomerService customerService;
     private Long editingId = null;
     private Timeline autoRefreshTimeline;
-    private static final int AUTO_REFRESH_SECONDS = 3;
+    private static final int REFRESH_SECONDS_VISIBLE = 8;
+    private static final int REFRESH_SECONDS_HIDDEN = 16;
+    private LocalDateTime lastUpdatedAt;
+    private long lastCount = -1;
 
     public CustomersController(CustomerService customerService) {
         this.customerService = customerService;
@@ -53,12 +58,14 @@ public class CustomersController {
 
         setupActions();
         loadData();
+        updateDataSignature();
         setupAutoRefresh();
     }
 
     @FXML
     public void loadData() {
         customersTable.setItems(FXCollections.observableArrayList(customerService.getAll()));
+        updateDataSignature();
     }
 
     private void refreshFromCurrentFilter() {
@@ -71,16 +78,51 @@ public class CustomersController {
         } else {
             loadData();
         }
+        updateDataSignature();
     }
 
     private void setupAutoRefresh() {
         if (customersTable == null) {
             return;
         }
-        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> refreshFromCurrentFilter()));
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(REFRESH_SECONDS_VISIBLE), e -> {
+            if (shouldRefresh()) {
+                refreshFromCurrentFilter();
+            }
+        }));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
-        AutoRefreshUtil.bind(autoRefreshTimeline, customersTable, 0.5);
+        AutoRefreshUtil.bind(autoRefreshTimeline, customersTable,
+                (double) REFRESH_SECONDS_VISIBLE / (double) REFRESH_SECONDS_HIDDEN);
+    }
+
+    private boolean shouldRefresh() {
+        if (isUserEditing()) {
+            return false;
+        }
+        return hasDataChanged();
+    }
+
+    private boolean isUserEditing() {
+        return (nameField != null && nameField.isFocused())
+                || (phoneField != null && phoneField.isFocused())
+                || (searchField != null && searchField.isFocused());
+    }
+
+    private boolean hasDataChanged() {
+        LocalDateTime latest = customerService.getLatestUpdateTime();
+        long count = customerService.getTotalCount();
+        boolean changed = !Objects.equals(latest, lastUpdatedAt) || count != lastCount;
+        if (changed) {
+            lastUpdatedAt = latest;
+            lastCount = count;
+        }
+        return changed;
+    }
+
+    private void updateDataSignature() {
+        lastUpdatedAt = customerService.getLatestUpdateTime();
+        lastCount = customerService.getTotalCount();
     }
 
     @FXML
@@ -91,6 +133,7 @@ public class CustomersController {
             return;
         }
         customersTable.setItems(FXCollections.observableArrayList(customerService.search(term.trim())));
+        updateDataSignature();
     }
 
     @FXML

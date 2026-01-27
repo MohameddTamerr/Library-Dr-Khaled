@@ -14,6 +14,8 @@ import javafx.util.Duration;
 import javafx.util.Callback;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 @Component
@@ -44,7 +46,10 @@ public class ProductsController {
 
     private final ProductService productService;
     private Timeline autoRefreshTimeline;
-    private static final int AUTO_REFRESH_SECONDS = 3;
+    private static final int REFRESH_SECONDS_VISIBLE = 8;
+    private static final int REFRESH_SECONDS_HIDDEN = 16;
+    private LocalDateTime lastUpdatedAt;
+    private long lastCount = -1;
 
     public ProductsController(ProductService productService) {
         this.productService = productService;
@@ -79,6 +84,7 @@ public class ProductsController {
         });
 
         refreshTable();
+        updateDataSignature();
         setupAutoRefresh();
     }
 
@@ -120,6 +126,7 @@ public class ProductsController {
 
     private void refreshTable() {
         productsTable.setItems(FXCollections.observableArrayList(productService.getAll()));
+        updateDataSignature();
     }
 
     private void refreshFromCurrentFilter() {
@@ -134,16 +141,49 @@ public class ProductsController {
             refreshTable();
         }
         productsTable.refresh();
+        updateDataSignature();
     }
 
     private void setupAutoRefresh() {
         if (productsTable == null) {
             return;
         }
-        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> refreshFromCurrentFilter()));
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(REFRESH_SECONDS_VISIBLE), e -> {
+            if (shouldRefresh()) {
+                refreshFromCurrentFilter();
+            }
+        }));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
-        AutoRefreshUtil.bind(autoRefreshTimeline, productsTable, 0.5);
+        AutoRefreshUtil.bind(autoRefreshTimeline, productsTable,
+                (double) REFRESH_SECONDS_VISIBLE / (double) REFRESH_SECONDS_HIDDEN);
+    }
+
+    private boolean shouldRefresh() {
+        if (isUserEditing()) {
+            return false;
+        }
+        return hasDataChanged();
+    }
+
+    private boolean isUserEditing() {
+        return barcodeSearchField != null && barcodeSearchField.isFocused();
+    }
+
+    private boolean hasDataChanged() {
+        LocalDateTime latest = productService.getLatestUpdateTime();
+        long count = productService.getTotalCount();
+        boolean changed = !Objects.equals(latest, lastUpdatedAt) || count != lastCount;
+        if (changed) {
+            lastUpdatedAt = latest;
+            lastCount = count;
+        }
+        return changed;
+    }
+
+    private void updateDataSignature() {
+        lastUpdatedAt = productService.getLatestUpdateTime();
+        lastCount = productService.getTotalCount();
     }
 
     private void setupActionColumn() {

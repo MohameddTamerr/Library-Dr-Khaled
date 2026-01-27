@@ -12,6 +12,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Duration;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+
 @Component
 public class WorkersController {
 
@@ -50,7 +53,12 @@ public class WorkersController {
 
     private final UserService userService;
     private Timeline autoRefreshTimeline;
-    private static final int AUTO_REFRESH_SECONDS = 3;
+    private static final int REFRESH_SECONDS_VISIBLE = 8;
+    private static final int REFRESH_SECONDS_HIDDEN = 16;
+    private LocalDateTime lastUserUpdatedAt;
+    private long lastUserCount = -1;
+    private Long lastAdvanceId = null;
+    private long lastAdvanceCount = -1;
 
     public WorkersController(UserService userService) {
         this.userService = userService;
@@ -67,6 +75,7 @@ public class WorkersController {
 
         addActionButtonsToTable();
         loadWorkers();
+        updateDataSignature();
         setupAutoRefresh();
     }
 
@@ -175,16 +184,65 @@ public class WorkersController {
 
     private void loadWorkers() {
         workersTable.setItems(FXCollections.observableArrayList(userService.getAllWorkers()));
+        updateDataSignature();
     }
 
     private void setupAutoRefresh() {
         if (workersTable == null) {
             return;
         }
-        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> loadWorkers()));
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(REFRESH_SECONDS_VISIBLE), e -> {
+            if (shouldRefresh()) {
+                loadWorkers();
+            }
+        }));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
-        AutoRefreshUtil.bind(autoRefreshTimeline, workersTable, 0.5);
+        AutoRefreshUtil.bind(autoRefreshTimeline, workersTable,
+                (double) REFRESH_SECONDS_VISIBLE / (double) REFRESH_SECONDS_HIDDEN);
+    }
+
+    private boolean shouldRefresh() {
+        if (isUserEditing()) {
+            return false;
+        }
+        return hasDataChanged();
+    }
+
+    private boolean isUserEditing() {
+        return (nameField != null && nameField.isFocused())
+                || (usernameField != null && usernameField.isFocused())
+                || (passwordField != null && passwordField.isFocused())
+                || (phoneField != null && phoneField.isFocused())
+                || (rateField != null && rateField.isFocused())
+                || (limitField != null && limitField.isFocused());
+    }
+
+    private boolean hasDataChanged() {
+        LocalDateTime latestUserUpdate = userService.getWorkersLatestUpdateTime();
+        long userCount = userService.getWorkersCount();
+        Long latestAdvanceId = userService.getLatestAdvanceId();
+        long advanceCount = userService.getAdvanceCount();
+
+        boolean changed = !Objects.equals(latestUserUpdate, lastUserUpdatedAt)
+                || userCount != lastUserCount
+                || !Objects.equals(latestAdvanceId, lastAdvanceId)
+                || advanceCount != lastAdvanceCount;
+
+        if (changed) {
+            lastUserUpdatedAt = latestUserUpdate;
+            lastUserCount = userCount;
+            lastAdvanceId = latestAdvanceId;
+            lastAdvanceCount = advanceCount;
+        }
+        return changed;
+    }
+
+    private void updateDataSignature() {
+        lastUserUpdatedAt = userService.getWorkersLatestUpdateTime();
+        lastUserCount = userService.getWorkersCount();
+        lastAdvanceId = userService.getLatestAdvanceId();
+        lastAdvanceCount = userService.getAdvanceCount();
     }
 
     @FXML

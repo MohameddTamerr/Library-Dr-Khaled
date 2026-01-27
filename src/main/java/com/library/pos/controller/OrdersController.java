@@ -73,7 +73,10 @@ public class OrdersController {
     private final SaleService saleService;
     private final com.library.pos.service.UserService userService;
     private Timeline autoRefreshTimeline;
-    private static final int AUTO_REFRESH_SECONDS = 3;
+    private static final int REFRESH_SECONDS_VISIBLE = 3;
+    private static final int REFRESH_SECONDS_HIDDEN = 6;
+    private LocalDateTime lastSaleTimestamp;
+    private long lastSaleCount = -1;
     // Formatters can be static or instance, but now used locally in OrderViewModel
     // kept here if needed for other things, but OrderViewModel now has its own.
 
@@ -121,6 +124,7 @@ public class OrdersController {
 
         // Initial Load
         handleFilter();
+        updateDataSignature();
         setupAutoRefresh();
     }
 
@@ -128,10 +132,45 @@ public class OrdersController {
         if (ordersTable == null) {
             return;
         }
-        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> handleFilter()));
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(REFRESH_SECONDS_VISIBLE), e -> {
+            if (shouldRefresh()) {
+                handleFilter();
+            }
+        }));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
-        AutoRefreshUtil.bind(autoRefreshTimeline, ordersTable, 0.5);
+        AutoRefreshUtil.bind(autoRefreshTimeline, ordersTable,
+                (double) REFRESH_SECONDS_VISIBLE / (double) REFRESH_SECONDS_HIDDEN);
+    }
+
+    private boolean shouldRefresh() {
+        if (isUserEditing()) {
+            return false;
+        }
+        return hasDataChanged();
+    }
+
+    private boolean isUserEditing() {
+        return (filterProductField != null && filterProductField.isFocused())
+                || (fromDatePicker != null && fromDatePicker.isFocused())
+                || (toDatePicker != null && toDatePicker.isFocused())
+                || (filterWorkerCombo != null && filterWorkerCombo.isFocused());
+    }
+
+    private boolean hasDataChanged() {
+        LocalDateTime latest = saleService.getLatestSaleTimestamp();
+        long count = saleService.getTotalCount();
+        boolean changed = !Objects.equals(latest, lastSaleTimestamp) || count != lastSaleCount;
+        if (changed) {
+            lastSaleTimestamp = latest;
+            lastSaleCount = count;
+        }
+        return changed;
+    }
+
+    private void updateDataSignature() {
+        lastSaleTimestamp = saleService.getLatestSaleTimestamp();
+        lastSaleCount = saleService.getTotalCount();
     }
 
     @FXML
@@ -158,6 +197,7 @@ public class OrdersController {
 
         // Populate Tree
         populateTree(sales);
+        updateDataSignature();
     }
 
     private void populateTree(List<Sale> sales) {

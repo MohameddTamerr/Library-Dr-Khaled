@@ -34,6 +34,9 @@ public class User {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @Column(name = "withdrawal_limit")
     private Double salaryLimit;
 
@@ -88,6 +91,10 @@ public class User {
         return createdAt;
     }
 
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
     public Double getSalaryLimit() {
         return salaryLimit;
     }
@@ -129,11 +136,27 @@ public class User {
         this.createdAt = createdAt;
     }
 
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public void setSalaryLimit(Double salaryLimit) {
         this.salaryLimit = salaryLimit;
     }
 
     public void setCurrentWithdrawal(Double currentWithdrawal) {
         this.currentWithdrawal = currentWithdrawal;
+    }
+
+    @PrePersist
+    private void onCreate() {
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    private void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

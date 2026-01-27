@@ -90,7 +90,12 @@ public class DashboardController {
     private Parent defaultDashboardView;
     private ResourceBundle bundle;
     private Timeline autoRefreshTimeline;
-    private static final int AUTO_REFRESH_SECONDS = 3;
+    private static final int REFRESH_SECONDS_VISIBLE = 8;
+    private static final int REFRESH_SECONDS_HIDDEN = 16;
+    private LocalDateTime lastSaleTimestamp;
+    private long lastSaleCount = -1;
+    private java.time.LocalDateTime lastProductUpdatedAt;
+    private long lastProductCount = -1;
 
     public DashboardController(ConfigurableApplicationContext applicationContext,
             SaleService saleService,
@@ -118,6 +123,7 @@ public class DashboardController {
             refreshAnalytics();
         }
 
+        updateDataSignature();
         setupAutoRefresh();
     }
 
@@ -125,14 +131,55 @@ public class DashboardController {
         if (contentArea == null) {
             return;
         }
-        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_SECONDS), e -> {
-            if (stockTable != null) {
+        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(REFRESH_SECONDS_VISIBLE), e -> {
+            if (shouldRefresh() && stockTable != null) {
                 refreshAnalytics();
             }
         }));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
-        AutoRefreshUtil.bind(autoRefreshTimeline, contentArea, 0.5);
+        AutoRefreshUtil.bind(autoRefreshTimeline, contentArea,
+                (double) REFRESH_SECONDS_VISIBLE / (double) REFRESH_SECONDS_HIDDEN);
+    }
+
+    private boolean shouldRefresh() {
+        if (isUserEditing()) {
+            return false;
+        }
+        return hasDataChanged();
+    }
+
+    private boolean isUserEditing() {
+        return (searchField != null && searchField.isFocused())
+                || (fromDatePicker != null && fromDatePicker.isFocused())
+                || (toDatePicker != null && toDatePicker.isFocused())
+                || (categoryFilter != null && categoryFilter.isFocused());
+    }
+
+    private boolean hasDataChanged() {
+        LocalDateTime latestSale = saleService.getLatestSaleTimestamp();
+        long saleCount = saleService.getTotalCount();
+        java.time.LocalDateTime latestProduct = productService.getLatestUpdateTime();
+        long productCount = productService.getTotalCount();
+
+        boolean changed = !Objects.equals(latestSale, lastSaleTimestamp)
+                || saleCount != lastSaleCount
+                || !Objects.equals(latestProduct, lastProductUpdatedAt)
+                || productCount != lastProductCount;
+        if (changed) {
+            lastSaleTimestamp = latestSale;
+            lastSaleCount = saleCount;
+            lastProductUpdatedAt = latestProduct;
+            lastProductCount = productCount;
+        }
+        return changed;
+    }
+
+    private void updateDataSignature() {
+        lastSaleTimestamp = saleService.getLatestSaleTimestamp();
+        lastSaleCount = saleService.getTotalCount();
+        lastProductUpdatedAt = productService.getLatestUpdateTime();
+        lastProductCount = productService.getTotalCount();
     }
 
     private void setupFilters() {
@@ -165,6 +212,7 @@ public class DashboardController {
         updateKPICards(sales, products);
         updateCharts(sales);
         updateStockTable(products);
+        updateDataSignature();
     }
 
     @FXML

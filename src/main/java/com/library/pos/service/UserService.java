@@ -71,4 +71,20 @@ public class UserService {
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
+
+    public java.time.LocalDateTime getWorkersLatestUpdateTime() {
+        return userRepository.findLatestUpdateByRole(Role.WORKER);
+    }
+
+    public long getWorkersCount() {
+        return userRepository.countByRole(Role.WORKER);
+    }
+
+    public Long getLatestAdvanceId() {
+        return advanceRepository.findLatestId();
+    }
+
+    public long getAdvanceCount() {
+        return advanceRepository.count();
+    }
 }
