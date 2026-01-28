@@ -45,6 +45,14 @@ public class UserService {
         return workers;
     }
 
+    public List<User> getDeliveryMen() {
+        return userRepository.findByRoleOrderByFullNameAsc(Role.DELIVERY_MEN);
+    }
+
+    public List<User> getStaff() {
+        return userRepository.findByRoleInOrderByFullNameAsc(List.of(Role.WORKER, Role.DELIVERY_MEN));
+    }
+
     public long getWorkMinutes(User worker, java.time.LocalDate start, java.time.LocalDate end) {
         return sessionRepository
                 .findByWorkerAndStartTimeBetween(worker, start.atStartOfDay(), end.atTime(java.time.LocalTime.MAX))
@@ -68,6 +76,10 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User saveStaff(User user) {
+        return userRepository.save(user);
+    }
+
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
@@ -80,11 +92,40 @@ public class UserService {
         return userRepository.countByRole(Role.WORKER);
     }
 
+    public java.time.LocalDateTime getStaffLatestUpdateTime() {
+        return userRepository.findLatestUpdateByRoles(List.of(Role.WORKER, Role.DELIVERY_MEN));
+    }
+
+    public long getStaffCount() {
+        return userRepository.countByRoleIn(List.of(Role.WORKER, Role.DELIVERY_MEN));
+    }
+
     public Long getLatestAdvanceId() {
         return advanceRepository.findLatestId();
     }
 
     public long getAdvanceCount() {
         return advanceRepository.count();
+    }
+
+    public String generateDeliveryUsername(String name, String phone) {
+        String base = "delivery";
+        String digits = phone != null ? phone.replaceAll("[^0-9]", "") : "";
+        if (!digits.isBlank()) {
+            String suffix = digits.length() > 4 ? digits.substring(digits.length() - 4) : digits;
+            base = "delivery" + suffix;
+        } else if (name != null && !name.isBlank()) {
+            base = "delivery" + Math.abs(name.hashCode());
+        }
+        String candidate = base;
+        int counter = 1;
+        while (userRepository.existsByUsername(candidate)) {
+            candidate = base + "_" + counter++;
+        }
+        return candidate;
+    }
+
+    public String generateDeliveryPassword() {
+        return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 10);
     }
 }

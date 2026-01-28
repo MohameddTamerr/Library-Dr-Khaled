@@ -1,10 +1,14 @@
 package com.library.pos.controller;
 
 import com.library.pos.model.Customer;
+import com.library.pos.model.OpenOrder;
+import com.library.pos.model.OpenOrderItem;
+import com.library.pos.model.OpenOrderStatus;
 import com.library.pos.model.Product;
 import com.library.pos.model.Sale;
-import com.library.pos.model.SaleStatus;
 import com.library.pos.model.User;
+import com.library.pos.service.CustomerService;
+import com.library.pos.service.OpenOrderService;
 import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -109,32 +113,46 @@ public class CashierController {
     // Payment Method
     @FXML
     private ComboBox<String> paymentMethodCombo;
+
+    // Customer & Orders (Right Panel)
     @FXML
-    private Label deliveryCustomerLabel;
+    private TextField customerSearchField;
     @FXML
-    private Button deliveryOrderButton;
+    private ListView<Customer> customerSearchList;
     @FXML
-    private ListView<DeliveryDraft> deliveryDraftsList;
+    private Label customerAddressLabel;
     @FXML
-    private Button saveDraftButton;
+    private ComboBox<User> deliveryManCombo;
     @FXML
-    private Button loadDraftButton;
+    private Label deliveryManSummaryLabel;
     @FXML
-    private Button deleteDraftButton;
+    private ListView<OpenOrder> openDeliveryOrdersList;
+    @FXML
+    private ListView<OpenOrder> openStoreOrdersList;
+    @FXML
+    private Button newOrderButton;
+    @FXML
+    private Button saveOrderButton;
+    @FXML
+    private Button deleteOrderButton;
 
     private final ProductService productService;
     private final SaleService saleService;
+    private final CustomerService customerService;
+    private final OpenOrderService openOrderService;
     private final ApplicationContext applicationContext;
     private final com.library.pos.repository.WorkSessionRepository sessionRepository;
     private final com.library.pos.service.UserService userService;
 
     private User currentUser;
-    private Customer deliveryCustomer;
-    private DeliveryDraft activeDraft;
+    private Customer selectedCustomer;
+    private OpenOrder activeOrder;
     private Product selectedProduct;
     private final ObservableList<CartItem> cartItems = FXCollections.observableArrayList();
     private final ObservableList<Product> suggestionItems = FXCollections.observableArrayList();
-    private final ObservableList<DeliveryDraft> deliveryDrafts = FXCollections.observableArrayList();
+    private final ObservableList<Customer> customerSearchResults = FXCollections.observableArrayList();
+    private final ObservableList<OpenOrder> openDeliveryOrders = FXCollections.observableArrayList();
+    private final ObservableList<OpenOrder> openStoreOrders = FXCollections.observableArrayList();
     private ResourceBundle bundle;
     private com.library.pos.model.WorkSession currentSession;
     private final Properties quickKeys = new Properties();
@@ -145,10 +163,13 @@ public class CashierController {
     private long lastSaleCount = -1;
 
     public CashierController(ProductService productService, SaleService saleService,
+            CustomerService customerService, OpenOrderService openOrderService,
             ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
             com.library.pos.service.UserService userService) {
         this.productService = productService;
         this.saleService = saleService;
+        this.customerService = customerService;
+        this.openOrderService = openOrderService;
         this.applicationContext = applicationContext;
         this.sessionRepository = sessionRepository;
         this.userService = userService;
@@ -188,8 +209,12 @@ public class CashierController {
         paymentMethodCombo.getSelectionModel().selectFirst();
 
         loadQuickKeys();
-        updateDeliveryCustomerUI();
-        setupDeliveryDrafts();
+        setupCustomerSearch();
+        setupOpenOrdersList();
+        loadDeliveryMen();
+        loadOpenOrders();
+        updateOrderButtons();
+        updateDeliveryManSummary();
     }
 
     private void setupAutoRefresh() {
@@ -296,60 +321,6 @@ public class CashierController {
                     if (event.getCode().isFunctionKey()) {
                         handleFunctionKey(event.getCode());
                         event.consume();
-                    }
-                    // Delivery shortcuts
-                    if (event.getCode() == KeyCode.F8) {
-                        openDeliveryCustomerPopup();
-                        event.consume();
-                    }
-                    if (event.getCode() == KeyCode.F9) {
-                        handleDeliveryOrder();
-                        event.consume();
-                    }
-                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT1) {
-                        openDeliveryCustomerPopup();
-                        event.consume();
-                    }
-                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT2) {
-                        handleDeliveryOrder();
-                        event.consume();
-                    }
-                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT3) {
-                        if (saveDraftButton != null) {
-                            saveDraftButton.fire();
-                            event.consume();
-                        }
-                    }
-                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT4) {
-                        if (loadDraftButton != null) {
-                            loadDraftButton.fire();
-                            event.consume();
-                        }
-                    }
-                    if (event.isAltDown() && event.getCode() == KeyCode.DIGIT5) {
-                        if (deleteDraftButton != null) {
-                            deleteDraftButton.fire();
-                            event.consume();
-                        }
-                    }
-                    if (event.isControlDown() && event.getCode() == KeyCode.S) {
-                        if (saveDraftButton != null) {
-                            saveDraftButton.fire();
-                            event.consume();
-                        }
-                    }
-                    if (event.isControlDown() && event.getCode() == KeyCode.L) {
-                        if (loadDraftButton != null) {
-                            loadDraftButton.fire();
-                            event.consume();
-                        }
-                    }
-                    if ((event.isControlDown() && event.getCode() == KeyCode.DELETE)
-                            || (event.isControlDown() && event.getCode() == KeyCode.D)) {
-                        if (deleteDraftButton != null) {
-                            deleteDraftButton.fire();
-                            event.consume();
-                        }
                     }
                     // Enter to add to cart when product is selected
                     if (event.getCode() == KeyCode.ESCAPE) {
@@ -476,26 +447,494 @@ public class CashierController {
         });
     }
 
-    private void setupDeliveryDrafts() {
-        if (deliveryDraftsList == null) {
+    private void setupCustomerSearch() {
+        if (customerSearchField == null || customerSearchList == null) {
             return;
         }
-        deliveryDraftsList.setItems(deliveryDrafts);
-        deliveryDraftsList.setCellFactory(list -> new ListCell<>() {
+
+        customerSearchList.setItems(customerSearchResults);
+        customerSearchList.setVisible(false);
+        customerSearchList.setManaged(false);
+        customerSearchList.setFixedCellSize(34);
+
+        customerSearchList.setCellFactory(list -> new ListCell<>() {
             @Override
-            protected void updateItem(DeliveryDraft item, boolean empty) {
+            protected void updateItem(Customer item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(item.getTitle());
+                    String name = item.getCustomerName() != null ? item.getCustomerName() : "";
+                    String phone = item.getMobile() != null ? item.getMobile() : "";
+                    String code = item.getCustomerCode() != null ? item.getCustomerCode() : "";
+                    String display = name;
+                    if (!code.isBlank()) {
+                        display = display + " | " + code;
+                    }
+                    if (!phone.isBlank()) {
+                        display = display + " | " + phone;
+                    }
+                    setText(display);
                 }
             }
         });
-        deliveryDraftsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            updateDraftButtons();
+
+        customerSearchList.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 1) {
+                Customer selected = customerSearchList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    selectCustomer(selected);
+                }
+            }
         });
-        updateDraftButtons();
+
+        customerSearchField.textProperty().addListener((obs, old, value) -> {
+            if (value == null || value.trim().isEmpty()) {
+                hideCustomerSuggestions();
+                return;
+            }
+            List<Customer> results = customerService.search(value.trim());
+            if (results.isEmpty()) {
+                hideCustomerSuggestions();
+                return;
+            }
+            showCustomerSuggestions(results);
+        });
+
+        customerSearchField.focusedProperty().addListener((obs, old, focused) -> {
+            if (!focused) {
+                hideCustomerSuggestions();
+            }
+        });
+
+        customerSearchField.setOnAction(e -> {
+            String term = customerSearchField.getText();
+            if (term == null || term.trim().isEmpty()) {
+                hideCustomerSuggestions();
+                return;
+            }
+            processCustomerSearch(term.trim(), true);
+        });
+
+        customerSearchField.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (!customerSearchList.isVisible()) {
+                return;
+            }
+            if (event.getCode() == KeyCode.DOWN) {
+                customerSearchList.getSelectionModel().selectNext();
+                customerSearchList.scrollTo(customerSearchList.getSelectionModel().getSelectedIndex());
+                event.consume();
+            } else if (event.getCode() == KeyCode.UP) {
+                customerSearchList.getSelectionModel().selectPrevious();
+                customerSearchList.scrollTo(customerSearchList.getSelectionModel().getSelectedIndex());
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                hideCustomerSuggestions();
+                event.consume();
+            }
+        });
+    }
+
+    private void processCustomerSearch(String term, boolean allowSuggestions) {
+        if (term == null || term.isBlank()) {
+            hideCustomerSuggestions();
+            return;
+        }
+        List<Customer> results = customerService.search(term.trim());
+        if (results.isEmpty()) {
+            hideCustomerSuggestions();
+            return;
+        }
+
+        String trimmed = term.trim();
+        Customer exact = results.stream()
+                .filter(c -> matchesCustomerTerm(c, trimmed))
+                .findFirst()
+                .orElse(null);
+
+        Customer chosen = exact;
+        if (chosen == null && allowSuggestions && customerSearchList != null && customerSearchList.isVisible()) {
+            Customer selected = customerSearchList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                chosen = selected;
+            }
+        }
+        if (chosen == null) {
+            if (!allowSuggestions || results.size() == 1) {
+                chosen = results.get(0);
+            }
+        }
+
+        if (chosen != null) {
+            selectCustomer(chosen);
+            hideCustomerSuggestions();
+        } else if (allowSuggestions) {
+            showCustomerSuggestions(results);
+        }
+    }
+
+    private boolean matchesCustomerTerm(Customer customer, String term) {
+        if (customer == null || term == null) {
+            return false;
+        }
+        String code = customer.getCustomerCode();
+        String phone = customer.getMobile();
+        String name = customer.getCustomerName();
+        return (code != null && code.equalsIgnoreCase(term))
+                || (phone != null && phone.equalsIgnoreCase(term))
+                || (name != null && name.equalsIgnoreCase(term));
+    }
+
+    private void showCustomerSuggestions(List<Customer> results) {
+        if (customerSearchList == null) {
+            return;
+        }
+        customerSearchResults.setAll(results);
+        boolean show = !customerSearchResults.isEmpty();
+        customerSearchList.setVisible(show);
+        customerSearchList.setManaged(show);
+        updateCustomerSuggestionHeight();
+        if (show) {
+            customerSearchList.getSelectionModel().selectFirst();
+        }
+    }
+
+    private void hideCustomerSuggestions() {
+        if (customerSearchList == null) {
+            return;
+        }
+        customerSearchResults.clear();
+        customerSearchList.setVisible(false);
+        customerSearchList.setManaged(false);
+    }
+
+    private void updateCustomerSuggestionHeight() {
+        if (customerSearchList == null) {
+            return;
+        }
+        int count = customerSearchResults.size();
+        if (count <= 0) {
+            return;
+        }
+        double height = customerSearchList.getFixedCellSize() * count + 8;
+        customerSearchList.setPrefHeight(height);
+        customerSearchList.setMinHeight(Region.USE_PREF_SIZE);
+        customerSearchList.setMaxHeight(Region.USE_PREF_SIZE);
+    }
+
+    private void selectCustomer(Customer customer) {
+        selectedCustomer = customer;
+        if (customerAddressLabel != null) {
+            String address = customer != null ? customer.getAddress() : "";
+            customerAddressLabel.setText(address != null && !address.isBlank() ? address : "-");
+        }
+        if (customerSearchField != null && customer != null) {
+            String text = customer.getCustomerCode();
+            if (text == null || text.isBlank()) {
+                text = customer.getMobile();
+            }
+            if (text == null || text.isBlank()) {
+                text = customer.getCustomerName();
+            }
+            customerSearchField.setText(text != null ? text : "");
+        }
+        hideCustomerSuggestions();
+        updateOrderButtons();
+    }
+
+    private void setupOpenOrdersList() {
+        if (openDeliveryOrdersList == null || openStoreOrdersList == null) {
+            return;
+        }
+        openDeliveryOrdersList.setItems(openDeliveryOrders);
+        openStoreOrdersList.setItems(openStoreOrders);
+
+        openDeliveryOrdersList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(OpenOrder item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    int displayIndex = getIndex() + 1;
+                    setText(displayIndex + " - " + formatOpenOrderLabel(item));
+                }
+            }
+        });
+
+        openStoreOrdersList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(OpenOrder item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    int displayIndex = getIndex() + 1;
+                    setText("طلب " + displayIndex);
+                }
+            }
+        });
+
+        openDeliveryOrdersList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                if (openStoreOrdersList != null) {
+                    openStoreOrdersList.getSelectionModel().clearSelection();
+                }
+                loadOrderToCart(newVal);
+            }
+        });
+
+        openStoreOrdersList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                if (openDeliveryOrdersList != null) {
+                    openDeliveryOrdersList.getSelectionModel().clearSelection();
+                }
+                loadOrderToCart(newVal);
+            }
+        });
+    }
+
+    private void loadDeliveryMen() {
+        if (deliveryManCombo == null) {
+            return;
+        }
+        List<User> men = userService.getDeliveryMen();
+        deliveryManCombo.setItems(FXCollections.observableArrayList(men));
+        deliveryManCombo.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(User user) {
+                return formatDeliveryMan(user);
+            }
+
+            @Override
+            public User fromString(String string) {
+                return null;
+            }
+        });
+        deliveryManCombo.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(User item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(formatDeliveryMan(item));
+                }
+            }
+        });
+        deliveryManCombo.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(User item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(bundle.getString("cashier.delivery.none"));
+                } else {
+                    setText(formatDeliveryMan(item));
+                }
+            }
+        });
+        deliveryManCombo.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldVal, newVal) -> updateDeliveryManSummary());
+    }
+
+    private String formatDeliveryMan(User user) {
+        if (user == null) {
+            return "";
+        }
+        String phone = user.getPhoneNumber() != null ? user.getPhoneNumber() : "";
+        String name = user.getFullName() != null ? user.getFullName() : "";
+        if (!phone.isBlank()) {
+            return name + " | " + phone;
+        }
+        return name;
+    }
+
+    private String formatOpenOrderLabel(OpenOrder item) {
+        if (item == null) {
+            return "";
+        }
+        Customer customer = item.getCustomer();
+        String address = customer != null ? customer.getAddress() : "";
+        String name = customer != null ? customer.getCustomerName() : "";
+        String label = (address != null && !address.isBlank()) ? address : name;
+        if (label == null || label.isBlank()) {
+            label = "طلب #" + item.getId();
+        }
+        return label;
+    }
+
+    private void loadOpenOrders() {
+        if (openDeliveryOrdersList == null || openStoreOrdersList == null) {
+            return;
+        }
+        List<OpenOrder> all = openOrderService.getOpenOrders();
+        openDeliveryOrders.clear();
+        openStoreOrders.clear();
+        for (OpenOrder order : all) {
+            if (isDeliveryOrder(order)) {
+                openDeliveryOrders.add(order);
+            } else {
+                openStoreOrders.add(order);
+            }
+        }
+    }
+
+    @FXML
+    private void handleNewOrder() {
+        resetOrderState();
+    }
+
+    @FXML
+    private void handleSaveOrder() {
+        if (cartItems.isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.order.alert.empty"));
+            return;
+        }
+        OpenOrder order = activeOrder != null ? activeOrder : new OpenOrder();
+        order.setStatus(OpenOrderStatus.OPEN);
+        order.setCustomer(selectedCustomer);
+        order.setDeliveryMan(deliveryManCombo != null
+                ? deliveryManCombo.getSelectionModel().getSelectedItem()
+                : null);
+        order.clearItems();
+        for (CartItem item : cartItems) {
+            OpenOrderItem orderItem = new OpenOrderItem(order, item.getProduct(), item.getQuantity(), item.getPrice());
+            order.addItem(orderItem);
+        }
+        OpenOrder saved = openOrderService.save(order);
+        activeOrder = saved;
+        loadOpenOrders();
+        selectOpenOrder(saved);
+        showAlert(Alert.AlertType.INFORMATION, bundle.getString("cashier.order.alert.saved"));
+        resetOrderState();
+    }
+
+    @FXML
+    private void handleDeleteOrder() {
+        OpenOrder target = activeOrder != null ? activeOrder : getSelectedOpenOrder();
+        if (target == null || target.getId() == null) {
+            return;
+        }
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle(bundle.getString("cashier.confirm"));
+        confirm.setHeaderText(bundle.getString("cashier.order.confirm.delete"));
+        confirm.setContentText(bundle.getString("cashier.order.confirm.delete.message"));
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+        openOrderService.delete(target);
+        if (activeOrder != null && target.getId().equals(activeOrder.getId())) {
+            activeOrder = null;
+            cartItems.clear();
+            updateSummary();
+        }
+        loadOpenOrders();
+        resetOrderState();
+        showAlert(Alert.AlertType.INFORMATION, bundle.getString("cashier.order.alert.deleted"));
+    }
+
+    private void selectOpenOrder(OpenOrder order) {
+        if (order == null || order.getId() == null) {
+            return;
+        }
+        for (OpenOrder item : openDeliveryOrders) {
+            if (item.getId().equals(order.getId())) {
+                if (openDeliveryOrdersList != null) {
+                    openDeliveryOrdersList.getSelectionModel().select(item);
+                }
+                break;
+            }
+        }
+        for (OpenOrder item : openStoreOrders) {
+            if (item.getId().equals(order.getId())) {
+                if (openStoreOrdersList != null) {
+                    openStoreOrdersList.getSelectionModel().select(item);
+                }
+                break;
+            }
+        }
+    }
+
+    private boolean isDeliveryOrder(OpenOrder order) {
+        if (order == null) {
+            return false;
+        }
+        return order.getDeliveryMan() != null;
+    }
+
+    private OpenOrder getSelectedOpenOrder() {
+        if (openDeliveryOrdersList != null) {
+            OpenOrder selected = openDeliveryOrdersList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                return selected;
+            }
+        }
+        if (openStoreOrdersList != null) {
+            return openStoreOrdersList.getSelectionModel().getSelectedItem();
+        }
+        return null;
+    }
+
+    private void loadOrderToCart(OpenOrder order) {
+        activeOrder = order;
+        Customer customer = order.getCustomer();
+        if (customer != null) {
+            selectCustomer(customer);
+        } else {
+            selectedCustomer = null;
+            if (customerSearchField != null) {
+                customerSearchField.clear();
+            }
+            if (customerAddressLabel != null) {
+                customerAddressLabel.setText("-");
+            }
+        }
+        if (deliveryManCombo != null) {
+            User deliveryMan = order.getDeliveryMan();
+            if (deliveryMan != null) {
+                deliveryManCombo.getSelectionModel().select(deliveryMan);
+            } else {
+                deliveryManCombo.getSelectionModel().clearSelection();
+                deliveryManCombo.setValue(null);
+            }
+        }
+        cartItems.clear();
+        for (OpenOrderItem item : order.getItems()) {
+            cartItems.add(new CartItem(item.getProduct(), item.getQuantity()));
+        }
+        updateSummary();
+        updateOrderButtons();
+        updateDeliveryManSummary();
+    }
+
+    private void updateOrderButtons() {
+        boolean hasCart = !cartItems.isEmpty();
+        if (newOrderButton != null) {
+            newOrderButton.setDisable(false);
+        }
+        if (saveOrderButton != null) {
+            saveOrderButton.setDisable(!hasCart);
+        }
+        if (deleteOrderButton != null) {
+            deleteOrderButton.setDisable(activeOrder == null || activeOrder.getId() == null);
+        }
+    }
+
+    private void updateDeliveryManSummary() {
+        if (deliveryManSummaryLabel == null) {
+            return;
+        }
+        User deliveryMan = deliveryManCombo != null
+                ? deliveryManCombo.getSelectionModel().getSelectedItem()
+                : null;
+        boolean show = deliveryMan != null;
+        deliveryManSummaryLabel.setVisible(show);
+        deliveryManSummaryLabel.setManaged(show);
+        if (show) {
+            deliveryManSummaryLabel.setText("التوصيل: " + formatDeliveryMan(deliveryMan));
+        } else {
+            deliveryManSummaryLabel.setText("");
+        }
     }
 
     private void showQuantityEditDialog(CartItem item) {
@@ -904,96 +1343,6 @@ public class CashierController {
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             cartItems.clear();
             updateSummary();
-            activeDraft = null;
-        }
-    }
-
-    @FXML
-    private void handleDeliveryOrder() {
-        if (cartItems.isEmpty()) {
-            openDeliveryCustomerPopup();
-            return;
-        }
-        if (deliveryCustomer == null) {
-            openDeliveryCustomerPopup();
-            return;
-        }
-        processDeliveryOrder(deliveryCustomer);
-    }
-
-    private void openDeliveryCustomerPopup() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/delivery_popup.fxml"));
-            loader.setControllerFactory(applicationContext::getBean);
-            javafx.scene.Parent root = loader.load();
-
-            DeliveryPopupController controller = loader.getController();
-
-            Stage popup = new Stage();
-            popup.initModality(Modality.APPLICATION_MODAL);
-            popup.initStyle(StageStyle.UNDECORATED);
-            popup.setTitle("Delivery Order");
-            popup.setScene(new Scene(root));
-
-            controller.selectedCustomerProperty().addListener((obs, old, customer) -> {
-                if (customer != null) {
-                    deliveryCustomer = customer;
-                    updateDeliveryCustomerUI();
-                }
-            });
-
-            popup.showAndWait();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Error opening delivery popup: " + e.getMessage());
-        }
-    }
-
-    private void processDeliveryOrder(Customer customer) {
-        try {
-            double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
-
-            // Create sale records
-            List<Sale> sales = new java.util.ArrayList<>();
-            LocalDateTime now = LocalDateTime.now();
-
-            for (CartItem item : cartItems) {
-                Sale sale = new Sale();
-                sale.setTimestamp(now);
-                sale.setItemName(item.getProduct().getName());
-                sale.setQuantity(item.getQuantity());
-                sale.setTotalAmount(item.getTotal());
-                sale.setStatus(SaleStatus.DELIVERY);
-                sale.setWorker(currentUser);
-                sale.setCustomer(customer);
-                sale.setProduct(item.getProduct());
-                sale.setNotes("Delivery to: " + customer.getAddress());
-
-                sales.add(sale);
-
-                // Update stock
-                productService.updateStock(item.getProduct().getId(), -item.getQuantity());
-            }
-
-            saleService.saveSales(sales);
-
-            showAlert(Alert.AlertType.INFORMATION, "تم حفظ طلب التوصيل بنجاح");
-
-            cartItems.clear();
-            updateSummary();
-            updateDataSignature();
-            deliveryCustomer = null;
-            updateDeliveryCustomerUI();
-            if (activeDraft != null) {
-                deliveryDrafts.remove(activeDraft);
-                activeDraft = null;
-                updateDraftButtons();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "فشل حفظ الطلب: " + e.getMessage());
         }
     }
 
@@ -1003,105 +1352,9 @@ public class CashierController {
 
         itemCountLabel.setText(String.valueOf(itemCount));
         grandTotalLabel.setText(String.format("%.2f", total));
+        updateOrderButtons();
     }
 
-    private void updateDeliveryCustomerUI() {
-        if (deliveryCustomerLabel != null) {
-            if (deliveryCustomer == null) {
-                deliveryCustomerLabel.setText("لم يتم اختيار عميل");
-            } else {
-                String name = deliveryCustomer.getCustomerName() != null ? deliveryCustomer.getCustomerName() : "";
-                String phone = deliveryCustomer.getMobile() != null ? deliveryCustomer.getMobile() : "";
-                String display = name;
-                if (!phone.isBlank()) {
-                    display = name + " - " + phone;
-                }
-                deliveryCustomerLabel.setText(display);
-            }
-        }
-        if (deliveryOrderButton != null) {
-            if (deliveryCustomer == null) {
-                deliveryOrderButton.setText("اختيار عميل التوصيل");
-            } else {
-                deliveryOrderButton.setText("تأكيد التوصيل");
-            }
-        }
-    }
-
-    @FXML
-    private void handleSaveDeliveryDraft() {
-        if (deliveryCustomer == null) {
-            openDeliveryCustomerPopup();
-            return;
-        }
-        if (cartItems.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.empty"));
-            return;
-        }
-        DeliveryDraft draft = DeliveryDraft.fromCart(deliveryCustomer, cartItems);
-        deliveryDrafts.add(0, draft);
-        activeDraft = null;
-        cartItems.clear();
-        updateSummary();
-        deliveryCustomer = null;
-        updateDeliveryCustomerUI();
-        updateDraftButtons();
-        showAlert(Alert.AlertType.INFORMATION, "تم حفظ مسودة التوصيل");
-    }
-
-    @FXML
-    private void handleLoadDeliveryDraft() {
-        if (deliveryDraftsList == null) {
-            return;
-        }
-        DeliveryDraft selected = deliveryDraftsList.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            return;
-        }
-        if (!cartItems.isEmpty()) {
-            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-            confirm.setTitle(bundle.getString("cashier.confirm"));
-            confirm.setHeaderText("استبدال السلة الحالية؟");
-            confirm.setContentText("سيتم استبدال السلة الحالية بمحتوى المسودة المحددة.");
-            if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
-                return;
-            }
-        }
-        cartItems.clear();
-        cartItems.addAll(selected.copyItems());
-        deliveryCustomer = selected.getCustomer();
-        activeDraft = selected;
-        updateSummary();
-        updateDeliveryCustomerUI();
-        updateDraftButtons();
-    }
-
-    @FXML
-    private void handleDeleteDeliveryDraft() {
-        if (deliveryDraftsList == null) {
-            return;
-        }
-        DeliveryDraft selected = deliveryDraftsList.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            return;
-        }
-        deliveryDrafts.remove(selected);
-        if (activeDraft == selected) {
-            activeDraft = null;
-        }
-        updateDraftButtons();
-    }
-
-    private void updateDraftButtons() {
-        boolean hasSelection = deliveryDraftsList != null
-                && deliveryDraftsList.getSelectionModel().getSelectedItem() != null;
-        if (loadDraftButton != null) {
-            loadDraftButton.setDisable(!hasSelection);
-        }
-        if (deleteDraftButton != null) {
-            deleteDraftButton.setDisable(!hasSelection);
-        }
-    }
 
     @FXML
     private void handlePayment() {
@@ -1221,6 +1474,7 @@ public class CashierController {
         Button confirmBtn = new Button(bundle.getString("cashier.confirm"));
         confirmBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; " +
                 "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
+        confirmBtn.setDefaultButton(true);
         confirmBtn.setOnAction(e -> {
             try {
                 double received = parseAmount(cashField.getText());
@@ -1243,6 +1497,7 @@ public class CashierController {
 
         Scene scene = new Scene(root, 450, 550);
         dialog.setScene(scene);
+        dialog.setOnShown(e -> cashField.requestFocus());
         dialog.showAndWait();
     }
 
@@ -1345,22 +1600,29 @@ public class CashierController {
             // for sale.
         }
 
-        // Ensure customer if needed (for Deferred)
-        com.library.pos.model.Customer customer = null;
-        if ("DEFERRED".equals(paymentType) && customerName != null) {
-            // Logic to find/create customer...
-            // For now we just use name in notes or if we have CustomerService
-            // But Sale entity has customer_id.
-            // We need CustomerService to find/create customer!
-            // Wait, do we have CustomerService here? No.
-            // We only have SaleService and ProductService.
-            // Given constraint, if Customer is required? Sale.customer is nullable?
-            // Sale.java: @ManyToOne @JoinColumn(name="customer_id") -> Default is nullable.
-            // So we are safe for now. We can put customer name in Notes.
-        }
+        Customer orderCustomer = selectedCustomer;
+        User assignedDeliveryMan = deliveryManCombo != null
+                ? deliveryManCombo.getSelectionModel().getSelectedItem()
+                : null;
 
         // Process sales
         for (CartItem item : cartItems) {
+            String baseNotes = paymentType.equals("DEFERRED")
+                    ? "Deferred: " + customerName
+                    : paymentType + " Payment";
+            String notes = baseNotes;
+            if (orderCustomer != null) {
+                StringBuilder extra = new StringBuilder();
+                extra.append("Customer: ").append(orderCustomer.getCustomerName());
+                String address = orderCustomer.getAddress();
+                if (address != null && !address.isBlank()) {
+                    extra.append(", Address: ").append(address);
+                }
+                if (assignedDeliveryMan != null) {
+                    extra.append(", Delivery: ").append(assignedDeliveryMan.getFullName());
+                }
+                notes = baseNotes + " | " + extra;
+            }
             Sale sale = new Sale(
                     java.time.LocalDateTime.now(),
                     item.getProduct().getName(),
@@ -1368,10 +1630,11 @@ public class CashierController {
                     item.getTotal(),
                     com.library.pos.model.SaleStatus.SOLD,
                     worker,
-                    paymentType.equals("DEFERRED") ? "Deferred: " + customerName : paymentType + " Payment");
+                    notes);
 
-            // Set transient customer if we had it, but we lack service.
-            // sale.setCustomer(customer);
+            if (orderCustomer != null) {
+                sale.setCustomer(orderCustomer);
+            }
 
             sale.setProduct(item.getProduct());
             if (paymentType.equals("DEFERRED")) {
@@ -1386,6 +1649,44 @@ public class CashierController {
         barcodeField.requestFocus();
 
         showAlert(Alert.AlertType.INFORMATION, bundle.getString("cashier.success"));
+        clearActiveOrderAfterPayment();
+        resetOrderState();
+    }
+
+    private void resetOrderState() {
+        activeOrder = null;
+        selectedCustomer = null;
+        cartItems.clear();
+        updateSummary();
+        if (customerSearchField != null) {
+            customerSearchField.clear();
+        }
+        if (customerAddressLabel != null) {
+            customerAddressLabel.setText("-");
+        }
+        hideCustomerSuggestions();
+        if (deliveryManCombo != null) {
+            deliveryManCombo.getSelectionModel().clearSelection();
+            deliveryManCombo.setValue(null);
+        }
+        if (openDeliveryOrdersList != null) {
+            openDeliveryOrdersList.getSelectionModel().clearSelection();
+        }
+        if (openStoreOrdersList != null) {
+            openStoreOrdersList.getSelectionModel().clearSelection();
+        }
+        updateDeliveryManSummary();
+        updateOrderButtons();
+    }
+
+    private void clearActiveOrderAfterPayment() {
+        OpenOrder target = activeOrder != null ? activeOrder : getSelectedOpenOrder();
+        if (target != null && target.getId() != null) {
+            openOrderService.delete(target);
+            loadOpenOrders();
+        }
+        activeOrder = null;
+        updateOrderButtons();
     }
 
     private double parseAmount(String value) {
@@ -1516,53 +1817,6 @@ public class CashierController {
 
         public void setQuantity(int q) {
             this.quantity = q;
-        }
-    }
-
-    public static class DeliveryDraft {
-        private static int nextId = 1;
-        private final int id;
-        private final Customer customer;
-        private final List<CartItem> items;
-        private final String title;
-
-        private DeliveryDraft(Customer customer, List<CartItem> items, String title) {
-            this.id = nextId++;
-            this.customer = customer;
-            this.items = items;
-            this.title = title;
-        }
-
-        public static DeliveryDraft fromCart(Customer customer, List<CartItem> cartItems) {
-            List<CartItem> items = new java.util.ArrayList<>();
-            for (CartItem item : cartItems) {
-                items.add(new CartItem(item.getProduct(), item.getQuantity()));
-            }
-            String name = customer.getCustomerName() != null ? customer.getCustomerName() : "";
-            String phone = customer.getMobile() != null ? customer.getMobile() : "";
-            String when = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
-            String display = name;
-            if (!phone.isBlank()) {
-                display = name + " - " + phone;
-            }
-            String title = "مسودة #" + nextId + " | " + display + " | " + when;
-            return new DeliveryDraft(customer, items, title);
-        }
-
-        public Customer getCustomer() {
-            return customer;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public List<CartItem> copyItems() {
-            List<CartItem> copy = new java.util.ArrayList<>();
-            for (CartItem item : items) {
-                copy.add(new CartItem(item.getProduct(), item.getQuantity()));
-            }
-            return copy;
         }
     }
 

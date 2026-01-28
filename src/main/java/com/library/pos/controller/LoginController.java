@@ -53,6 +53,11 @@ public class LoginController {
         if (user != null) {
             errorLabel.setVisible(false);
             System.out.println("Login successful for: " + user.getUsername());
+            if (user.getRole() == com.library.pos.model.Role.DELIVERY_MEN) {
+                errorLabel.setVisible(true);
+                errorLabel.setText(ResourceBundle.getBundle("messages").getString("login.error.delivery"));
+                return;
+            }
             navigateToDashboard(user);
         } else {
             errorLabel.setVisible(true);

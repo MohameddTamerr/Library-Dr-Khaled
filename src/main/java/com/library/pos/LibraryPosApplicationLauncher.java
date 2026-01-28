@@ -1,7 +1,8 @@
 package com.library.pos;
 
-import javafx.application.Application;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import javafx.application.Application;
 
 @SpringBootApplication
 public class LibraryPosApplicationLauncher {

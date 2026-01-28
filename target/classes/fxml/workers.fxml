@@ -7,6 +7,7 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.GridPane?>
@@ -40,13 +41,17 @@
                 <TextField fx:id="phoneField" promptText="01xxxxxxxxx"/>
             </VBox>
 
-            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1">
+            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1" fx:id="usernameBox">
                 <Label text="%workers.username"/>
                 <TextField fx:id="usernameField" promptText="%workers.username.prompt"/>
             </VBox>
-            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1" fx:id="passwordBox">
                 <Label text="%workers.password"/>
                 <PasswordField fx:id="passwordField"/>
+            </VBox>
+            <VBox spacing="5" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                <Label text="%workers.role"/>
+                <ComboBox fx:id="roleCombo"/>
             </VBox>
             
             <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="2">

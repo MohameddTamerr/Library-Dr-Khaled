@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ResourceBundle;
 
 @Component
 public class ProductsController {
@@ -43,6 +44,9 @@ public class ProductsController {
 
     @FXML
     private TextField barcodeSearchField;
+
+    @FXML
+    private ResourceBundle resources;
 
     private final ProductService productService;
     private Timeline autoRefreshTimeline;
@@ -92,12 +96,12 @@ public class ProductsController {
     private void handleSearch() {
         String term = barcodeSearchField.getText();
         if (term == null || term.isBlank()) {
-            showAlert("Enter a name or barcode to search.");
+            showAlert(t("products.alert.search.empty"));
             return;
         }
         var results = productService.searchByBarcodeOrName(term.trim());
         if (results.isEmpty()) {
-            showAlert("No products found for this search.");
+            showAlert(t("products.alert.search.none"));
             return;
         }
         productsTable.setItems(FXCollections.observableArrayList(results));
@@ -109,7 +113,7 @@ public class ProductsController {
         Optional<Product> result = showProductDialog(null);
         result.ifPresent(product -> {
             if (productService.findByBarcode(product.getBarcode()).isPresent()) {
-                showAlert("Barcode already exists.");
+                showAlert(t("products.alert.barcode.exists"));
                 return;
             }
             productService.save(product);
@@ -188,8 +192,8 @@ public class ProductsController {
 
     private void setupActionColumn() {
         Callback<TableColumn<Product, Void>, TableCell<Product, Void>> cellFactory = col -> new TableCell<>() {
-            private final Button editBtn = new Button("Edit");
-            private final Button delBtn = new Button("Delete");
+            private final Button editBtn = new Button(t("products.action.edit"));
+            private final Button delBtn = new Button(t("products.action.delete"));
             private final HBoxWrapper box = new HBoxWrapper(editBtn, delBtn);
 
             {
@@ -202,7 +206,7 @@ public class ProductsController {
                     updated.ifPresent(p -> {
                         if (!product.getBarcode().equals(p.getBarcode())
                                 && productService.findByBarcode(p.getBarcode()).isPresent()) {
-                            showAlert("Barcode already exists.");
+                            showAlert(t("products.alert.barcode.exists"));
                             return;
                         }
                         product.setName(p.getName());
@@ -246,10 +250,11 @@ public class ProductsController {
 
     private Optional<Product> showProductDialog(Product existing) {
         Dialog<Product> dialog = new Dialog<>();
-        dialog.setTitle(existing == null ? "Add Product" : "Edit Product");
+        dialog.setTitle(existing == null ? t("products.dialog.add.title") : t("products.dialog.edit.title"));
 
-        ButtonType saveButton = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveButton, ButtonType.CANCEL);
+        ButtonType saveButton = new ButtonType(t("products.dialog.save"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType(t("products.dialog.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButton, cancelButton);
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -279,14 +284,14 @@ public class ProductsController {
             minStock.setText(String.valueOf(existing.getMinStock()));
         }
 
-        grid.addRow(0, new Label("Name"), name);
-        grid.addRow(1, new Label("Barcode"), barcode);
-        grid.addRow(2, new Label("Category"), category);
-        grid.addRow(3, new Label("Supplier"), supplier);
-        grid.addRow(4, new Label("Cost"), cost);
-        grid.addRow(5, new Label("Sell Price"), sellPrice);
-        grid.addRow(6, new Label("Quantity"), qty);
-        grid.addRow(7, new Label("Min Stock"), minStock);
+        grid.addRow(0, new Label(t("products.field.name")), name);
+        grid.addRow(1, new Label(t("products.field.barcode")), barcode);
+        grid.addRow(2, new Label(t("products.field.category")), category);
+        grid.addRow(3, new Label(t("products.field.supplier")), supplier);
+        grid.addRow(4, new Label(t("products.field.cost")), cost);
+        grid.addRow(5, new Label(t("products.field.sellPrice")), sellPrice);
+        grid.addRow(6, new Label(t("products.field.qty")), qty);
+        grid.addRow(7, new Label(t("products.field.minStock")), minStock);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -309,7 +314,7 @@ public class ProductsController {
                             Integer.parseInt(minStock.getText().trim()),
                             supplier.getText().trim());
                 } catch (Exception e) {
-                    showAlert("Please enter valid values in all fields.");
+                    showAlert(t("products.alert.invalid"));
                     return null;
                 }
             }
@@ -321,10 +326,15 @@ public class ProductsController {
 
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Info");
+        alert.setTitle(t("products.alert.info.title"));
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private String t(String key) {
+        ResourceBundle bundle = resources != null ? resources : ResourceBundle.getBundle("messages");
+        return bundle.getString(key);
     }
 
     private static class HBoxWrapper extends javafx.scene.layout.HBox {

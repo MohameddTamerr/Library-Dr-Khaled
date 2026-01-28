@@ -13,6 +13,7 @@ import javafx.util.Duration;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 @Component
@@ -47,6 +48,13 @@ public class WorkersController {
     private TextField limitField;
 
     @FXML
+    private ComboBox<String> roleCombo;
+    @FXML
+    private javafx.scene.layout.VBox usernameBox;
+    @FXML
+    private javafx.scene.layout.VBox passwordBox;
+
+    @FXML
     private Button addWorkerBtn;
 
     private Long editingUserId = null;
@@ -74,9 +82,57 @@ public class WorkersController {
         currentWithdrawalCol.setCellValueFactory(new PropertyValueFactory<>("currentWithdrawal"));
 
         addActionButtonsToTable();
+        setupRoleCombo();
         loadWorkers();
         updateDataSignature();
         setupAutoRefresh();
+    }
+
+    private void setupRoleCombo() {
+        if (roleCombo == null) {
+            return;
+        }
+        List<String> roles = List.of(
+                getString("workers.role.worker"),
+                getString("workers.role.delivery"));
+        roleCombo.setItems(FXCollections.observableArrayList(roles));
+        roleCombo.getSelectionModel().selectFirst();
+        roleCombo.valueProperty().addListener((obs, old, value) -> updateRoleUI(value));
+        updateRoleUI(roleCombo.getSelectionModel().getSelectedItem());
+    }
+
+    private void updateRoleUI(String selectedRole) {
+        boolean isDelivery = isDeliveryRole(selectedRole);
+        if (usernameBox != null) {
+            usernameBox.setVisible(!isDelivery);
+            usernameBox.setManaged(!isDelivery);
+        }
+        if (passwordBox != null) {
+            passwordBox.setVisible(!isDelivery);
+            passwordBox.setManaged(!isDelivery);
+        }
+    }
+
+    private boolean isDeliveryRole(String selectedRole) {
+        String deliveryLabel = getString("workers.role.delivery");
+        return selectedRole != null && selectedRole.equals(deliveryLabel);
+    }
+
+    private com.library.pos.model.Role getSelectedRole() {
+        if (roleCombo == null) {
+            return com.library.pos.model.Role.WORKER;
+        }
+        return isDeliveryRole(roleCombo.getSelectionModel().getSelectedItem())
+                ? com.library.pos.model.Role.DELIVERY_MEN
+                : com.library.pos.model.Role.WORKER;
+    }
+
+    private String getString(String key) {
+        try {
+            return java.util.ResourceBundle.getBundle("messages").getString(key);
+        } catch (Exception e) {
+            return key;
+        }
     }
 
     private void addActionButtonsToTable() {
@@ -183,7 +239,7 @@ public class WorkersController {
     }
 
     private void loadWorkers() {
-        workersTable.setItems(FXCollections.observableArrayList(userService.getAllWorkers()));
+        workersTable.setItems(FXCollections.observableArrayList(userService.getStaff()));
         updateDataSignature();
     }
 
@@ -215,12 +271,13 @@ public class WorkersController {
                 || (passwordField != null && passwordField.isFocused())
                 || (phoneField != null && phoneField.isFocused())
                 || (rateField != null && rateField.isFocused())
-                || (limitField != null && limitField.isFocused());
+                || (limitField != null && limitField.isFocused())
+                || (roleCombo != null && roleCombo.isFocused());
     }
 
     private boolean hasDataChanged() {
-        LocalDateTime latestUserUpdate = userService.getWorkersLatestUpdateTime();
-        long userCount = userService.getWorkersCount();
+        LocalDateTime latestUserUpdate = userService.getStaffLatestUpdateTime();
+        long userCount = userService.getStaffCount();
         Long latestAdvanceId = userService.getLatestAdvanceId();
         long advanceCount = userService.getAdvanceCount();
 
@@ -239,8 +296,8 @@ public class WorkersController {
     }
 
     private void updateDataSignature() {
-        lastUserUpdatedAt = userService.getWorkersLatestUpdateTime();
-        lastUserCount = userService.getWorkersCount();
+        lastUserUpdatedAt = userService.getStaffLatestUpdateTime();
+        lastUserCount = userService.getStaffCount();
         lastAdvanceId = userService.getLatestAdvanceId();
         lastAdvanceCount = userService.getAdvanceCount();
     }
@@ -254,8 +311,15 @@ public class WorkersController {
             String phone = phoneField.getText();
             Double rate = Double.parseDouble(rateField.getText());
             Double limit = Double.parseDouble(limitField.getText());
+            com.library.pos.model.Role selectedRole = getSelectedRole();
 
-            if (name.isEmpty() || username.isEmpty() || password.isEmpty()) {
+            if (name == null || name.isBlank()) {
+                showAlert("Error", "Please fill all required fields");
+                return;
+            }
+
+            boolean isDelivery = selectedRole == com.library.pos.model.Role.DELIVERY_MEN;
+            if (!isDelivery && (username == null || username.isBlank() || password == null || password.isBlank())) {
                 showAlert("Error", "Please fill all required fields");
                 return;
             }
@@ -263,23 +327,29 @@ public class WorkersController {
             User workerToSave;
             if (editingUserId != null) {
                 // Update existing
-                workerToSave = userService.getAllWorkers().stream()
+                workerToSave = userService.getStaff().stream()
                         .filter(u -> u.getId().equals(editingUserId))
                         .findFirst()
                         .orElse(new User());
                 workerToSave.setFullName(name);
-                workerToSave.setUsername(username);
-                workerToSave.setPassword(password); // In real app, check if changed
+                if (!isDelivery) {
+                    workerToSave.setUsername(username);
+                    workerToSave.setPassword(password); // In real app, check if changed
+                }
                 workerToSave.setPhoneNumber(phone);
                 workerToSave.setHourlyRate(rate);
                 workerToSave.setSalaryLimit(limit);
+                workerToSave.setRole(selectedRole);
             } else {
                 // Create new
-                workerToSave = new User(username, password, com.library.pos.model.Role.WORKER, name, rate, phone,
-                        limit);
+                if (isDelivery) {
+                    username = userService.generateDeliveryUsername(name, phone);
+                    password = userService.generateDeliveryPassword();
+                }
+                workerToSave = new User(username, password, selectedRole, name, rate, phone, limit);
             }
 
-            userService.saveWorker(workerToSave);
+            userService.saveStaff(workerToSave);
 
             clearForm();
             loadWorkers();
@@ -298,6 +368,10 @@ public class WorkersController {
         rateField.clear();
         limitField.clear();
         editingUserId = null;
+        if (roleCombo != null) {
+            roleCombo.getSelectionModel().selectFirst();
+            updateRoleUI(roleCombo.getSelectionModel().getSelectedItem());
+        }
         if (addWorkerBtn != null)
             addWorkerBtn.setText("إضافة موظف");
     }
@@ -322,6 +396,13 @@ public class WorkersController {
         phoneField.setText(worker.getPhoneNumber());
         rateField.setText(String.valueOf(worker.getHourlyRate()));
         limitField.setText(String.valueOf(worker.getSalaryLimit()));
+        if (roleCombo != null) {
+            String roleValue = worker.getRole() == com.library.pos.model.Role.DELIVERY_MEN
+                    ? getString("workers.role.delivery")
+                    : getString("workers.role.worker");
+            roleCombo.getSelectionModel().select(roleValue);
+            updateRoleUI(roleValue);
+        }
 
         if (addWorkerBtn != null)
             addWorkerBtn.setText("تحديث البيانات");

@@ -36,6 +36,8 @@ public class CustomersController {
     @FXML
     private TextField phoneField;
     @FXML
+    private TextField addressField;
+    @FXML
     private TextField searchField;
     @FXML
     private Button mainActionBtn;
@@ -143,6 +145,7 @@ public class CustomersController {
     public void handleSave() {
         String name = nameField.getText();
         String phone = phoneField.getText();
+        String address = addressField != null ? addressField.getText() : null;
 
         if (name == null || name.isBlank()) {
             showAlert("يرجى إدخال الاسم");
@@ -160,6 +163,7 @@ public class CustomersController {
 
         customer.setCustomerName(name);
         customer.setMobile(phone);
+        customer.setAddress(address != null ? address.trim() : "");
 
         customerService.save(customer);
         clearForm();
@@ -169,6 +173,9 @@ public class CustomersController {
     private void clearForm() {
         nameField.clear();
         phoneField.clear();
+        if (addressField != null) {
+            addressField.clear();
+        }
         editingId = null;
         mainActionBtn.setText("حفظ البيانات");
     }
@@ -193,6 +200,9 @@ public class CustomersController {
                     editingId = c.getId();
                     nameField.setText(c.getCustomerName());
                     phoneField.setText(c.getMobile());
+                    if (addressField != null) {
+                        addressField.setText(c.getAddress());
+                    }
                     mainActionBtn.setText("تحديث العميل");
                 });
 

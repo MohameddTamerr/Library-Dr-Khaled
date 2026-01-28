@@ -2,5 +2,6 @@ package com.library.pos.model;
 
 public enum Role {
     OWNER,
-    WORKER
+    WORKER,
+    DELIVERY_MEN
 }

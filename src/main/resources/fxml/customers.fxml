@@ -29,17 +29,24 @@
                  <ColumnConstraints percentWidth="20"/>
              </columnConstraints>
 
-             <VBox spacing="5" GridPane.columnIndex="0">
+             <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
                  <Label text="اسم العميل"/>
                  <TextField fx:id="nameField" promptText="الاسم بالكامل"/>
              </VBox>
 
-             <VBox spacing="5" GridPane.columnIndex="1">
+             <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
                  <Label text="رقم الهاتف"/>
                  <TextField fx:id="phoneField" promptText="01xxxxxxxxx"/>
              </VBox>
 
-             <Button fx:id="mainActionBtn" text="حفظ البيانات" onAction="#handleSave" styleClass="button-action" maxWidth="Infinity" GridPane.columnIndex="2" alignment="BOTTOM_CENTER"/>
+             <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2">
+                 <Label text="العنوان"/>
+                 <TextField fx:id="addressField" promptText="العنوان بالكامل"/>
+             </VBox>
+
+             <Button fx:id="mainActionBtn" text="حفظ البيانات" onAction="#handleSave" styleClass="button-action"
+                     maxWidth="Infinity" GridPane.columnIndex="2" GridPane.rowIndex="0" GridPane.rowSpan="2"
+                     alignment="BOTTOM_CENTER"/>
         </GridPane>
     </VBox>
 

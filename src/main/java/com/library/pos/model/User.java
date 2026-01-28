@@ -18,8 +18,8 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Convert(converter = RoleConverter.class)
     private Role role;
 
     @Column(name = "full_name", nullable = false)
