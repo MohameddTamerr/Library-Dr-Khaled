@@ -389,6 +389,11 @@ public class DashboardController {
     }
 
     @FXML
+    public void showSuppliers() {
+        loadView("/fxml/suppliers.fxml");
+    }
+
+    @FXML
     public void showOrders() {
         loadView("/fxml/orders.fxml");
     }

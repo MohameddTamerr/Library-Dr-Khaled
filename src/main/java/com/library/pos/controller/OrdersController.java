@@ -39,6 +39,10 @@ public class OrdersController {
     private TreeTableColumn<OrderViewModel, Integer> quantityCol;
     @FXML
     private TreeTableColumn<OrderViewModel, String> notesCol;
+    @FXML
+    private TreeTableColumn<OrderViewModel, String> paymentCol;
+    @FXML
+    private TreeTableColumn<OrderViewModel, String> deliveryManCol;
 
     @FXML
     private TreeTableColumn<OrderViewModel, String> dateCol;
@@ -107,6 +111,8 @@ public class OrdersController {
         amountCol.setCellValueFactory(
                 param -> new SimpleDoubleProperty(param.getValue().getValue().getAmount()).asObject());
         statusCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getStatus()));
+        paymentCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getPayment()));
+        deliveryManCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getDeliveryMan()));
         notesCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getNotes()));
 
         // Setup filter combo
@@ -368,6 +374,8 @@ public class OrdersController {
         private String worker;
         private String customer;
         private String notes;
+        private String payment;
+        private String deliveryMan;
 
         // Constructor for Single Item
         public OrderViewModel(Sale sale) {
@@ -391,7 +399,9 @@ public class OrdersController {
 
                 this.worker = "";
                 this.customer = "";
-                this.notes = sale.getNotes();
+                this.notes = "";
+                this.payment = "";
+                this.deliveryMan = "";
             }
         }
 
@@ -428,12 +438,10 @@ public class OrdersController {
                 else
                     this.customer = "عميل نقدي";
 
-                // Aggregate notes or take first?
-                this.notes = sales.stream()
-                        .map(Sale::getNotes)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .collect(Collectors.joining(", "));
+                String orderNotes = first.getNotes();
+                this.payment = extractPaymentMethod(orderNotes);
+                this.deliveryMan = extractDeliveryMan(orderNotes);
+                this.notes = stripDeliveryFromNotes(orderNotes);
             }
         }
 
@@ -475,6 +483,64 @@ public class OrdersController {
 
         public String getNotes() {
             return notes;
+        }
+
+        public String getPayment() {
+            return payment;
+        }
+
+        public String getDeliveryMan() {
+            return deliveryMan;
+        }
+
+        private static String extractPaymentMethod(String notes) {
+            if (notes == null || notes.isBlank()) {
+                return "";
+            }
+            String base = notes.split("\\|", 2)[0].trim();
+            String lower = base.toLowerCase(Locale.ROOT);
+            if (lower.contains("payment")) {
+                return base.replace("Payment", "").trim();
+            }
+            if (lower.startsWith("deferred")) {
+                return "Deferred";
+            }
+            return base;
+        }
+
+        private static String extractDeliveryMan(String notes) {
+            if (notes == null || notes.isBlank()) {
+                return "";
+            }
+            int idx = notes.toLowerCase(Locale.ROOT).indexOf("delivery:");
+            if (idx == -1) {
+                return "";
+            }
+            String after = notes.substring(idx + "delivery:".length()).trim();
+            int comma = after.indexOf(",");
+            if (comma != -1) {
+                after = after.substring(0, comma);
+            }
+            return after.trim();
+        }
+
+        private static String stripDeliveryFromNotes(String notes) {
+            if (notes == null || notes.isBlank()) {
+                return "";
+            }
+            String lower = notes.toLowerCase(Locale.ROOT);
+            int idx = lower.indexOf("delivery:");
+            if (idx == -1) {
+                return notes;
+            }
+            String before = notes.substring(0, idx).trim();
+            if (before.endsWith(",")) {
+                before = before.substring(0, before.length() - 1).trim();
+            }
+            if (before.endsWith("|")) {
+                before = before.substring(0, before.length() - 1).trim();
+            }
+            return before;
         }
     }
 }

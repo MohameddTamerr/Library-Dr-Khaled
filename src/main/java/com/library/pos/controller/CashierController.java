@@ -4,13 +4,17 @@ import com.library.pos.model.Customer;
 import com.library.pos.model.OpenOrder;
 import com.library.pos.model.OpenOrderItem;
 import com.library.pos.model.OpenOrderStatus;
+import com.library.pos.model.PaymentMethod;
 import com.library.pos.model.Product;
 import com.library.pos.model.Sale;
+import com.library.pos.model.Supplier;
+import com.library.pos.model.SupplierPayment;
 import com.library.pos.model.User;
 import com.library.pos.service.CustomerService;
 import com.library.pos.service.OpenOrderService;
 import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
+import com.library.pos.service.SupplierService;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -143,6 +147,7 @@ public class CashierController {
     private final ApplicationContext applicationContext;
     private final com.library.pos.repository.WorkSessionRepository sessionRepository;
     private final com.library.pos.service.UserService userService;
+    private final SupplierService supplierService;
 
     private User currentUser;
     private Customer selectedCustomer;
@@ -165,7 +170,7 @@ public class CashierController {
     public CashierController(ProductService productService, SaleService saleService,
             CustomerService customerService, OpenOrderService openOrderService,
             ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
-            com.library.pos.service.UserService userService) {
+            com.library.pos.service.UserService userService, SupplierService supplierService) {
         this.productService = productService;
         this.saleService = saleService;
         this.customerService = customerService;
@@ -173,6 +178,7 @@ public class CashierController {
         this.applicationContext = applicationContext;
         this.sessionRepository = sessionRepository;
         this.userService = userService;
+        this.supplierService = supplierService;
     }
 
     @FXML
@@ -1786,6 +1792,71 @@ public class CashierController {
         Alert alert = new Alert(type);
         alert.setContentText(msg);
         alert.show();
+    }
+
+    @FXML
+    private void handleSupplierPayment() {
+        showSupplierPaymentDialog();
+    }
+
+    private void showSupplierPaymentDialog() {
+        Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initStyle(StageStyle.UTILITY);
+        dialog.setTitle("دفعة للمورد");
+
+        VBox root = new VBox(12);
+        root.setPadding(new Insets(16));
+
+        ComboBox<Supplier> supplierCombo = new ComboBox<>();
+        supplierCombo.setItems(FXCollections.observableArrayList(supplierService.listAll(true)));
+        supplierCombo.setPromptText("اختر المورد");
+
+        TextField amountField = new TextField();
+        amountField.setPromptText("المبلغ المدفوع اليوم");
+
+        ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
+        methodCombo.setItems(FXCollections.observableArrayList(PaymentMethod.values()));
+        methodCombo.getSelectionModel().select(PaymentMethod.CASH);
+
+        TextArea notesField = new TextArea();
+        notesField.setPromptText("ملاحظات");
+        notesField.setPrefRowCount(2);
+
+        Button saveBtn = new Button("تسجيل");
+        saveBtn.setDefaultButton(true);
+        saveBtn.setOnAction(e -> {
+            try {
+                Supplier supplier = supplierCombo.getSelectionModel().getSelectedItem();
+                if (supplier == null) {
+                    showAlert(Alert.AlertType.WARNING, "يرجى اختيار المورد");
+                    return;
+                }
+                java.math.BigDecimal amount = java.math.BigDecimal.valueOf(parseAmount(amountField.getText()));
+                SupplierPayment payment = new SupplierPayment();
+                payment.setSupplier(supplier);
+                payment.setAmount(amount);
+                payment.setMethod(methodCombo.getSelectionModel().getSelectedItem());
+                payment.setNotes(notesField.getText());
+                supplierService.recordPayment(payment);
+                dialog.close();
+                showAlert(Alert.AlertType.INFORMATION, "تم تسجيل دفعة المورد بنجاح");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showAlert(Alert.AlertType.ERROR, "خطأ: " + ex.getMessage());
+            }
+        });
+
+        root.getChildren().addAll(
+                new Label("المورد"), supplierCombo,
+                new Label("المبلغ"), amountField,
+                new Label("طريقة الدفع"), methodCombo,
+                new Label("ملاحظات"), notesField,
+                saveBtn);
+
+        Scene scene = new Scene(root, 360, 420);
+        dialog.setScene(scene);
+        dialog.showAndWait();
     }
 
     public static class CartItem {

@@ -91,6 +91,8 @@
             <TreeTableColumn fx:id="quantityCol" text="الكمية" prefWidth="60"/>
             <TreeTableColumn fx:id="amountCol" text="الإجمالي" prefWidth="90"/>
             <TreeTableColumn fx:id="statusCol" text="الحالة" prefWidth="90"/>
+            <TreeTableColumn fx:id="paymentCol" text="الدفع" prefWidth="110"/>
+            <TreeTableColumn fx:id="deliveryManCol" text="مندوب التوصيل" prefWidth="120"/>
             <TreeTableColumn fx:id="workerCol" text="الموظف" prefWidth="120"/>
             <TreeTableColumn fx:id="customerCol" text="العميل" prefWidth="120"/>
             <TreeTableColumn fx:id="notesCol" text="ملاحظات" prefWidth="150"/>

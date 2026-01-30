@@ -41,6 +41,7 @@
             <Label fx:id="dailyCashLabel" text="0.00 ج.م" style="-fx-text-fill: -color-success; -fx-font-weight: bold; -fx-font-size: 16px;"/>
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
+            <Button text="دفعات الموردين" onAction="#handleSupplierPayment" styleClass="btn-secondary"/>
             <Button text="%cashier.logout" onAction="#handleLogout" styleClass="btn-danger"/>
         </HBox>
     </top>

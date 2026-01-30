@@ -45,6 +45,7 @@
             </StackPane>
 
             <Button text="العملاء" onAction="#showCustomers" maxWidth="Infinity" styleClass="button-sidebar"/>
+            <Button text="الموردين" onAction="#showSuppliers" maxWidth="Infinity" styleClass="button-sidebar"/>
             <Button text="الاوردرات" onAction="#showOrders" maxWidth="Infinity" styleClass="button-sidebar"/>
             
             <Region VBox.vgrow="ALWAYS"/>
