@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -141,6 +143,17 @@ public class SupplierService {
 
     public List<Purchase> listPurchases(long supplierId) {
         return purchaseRepository.findBySupplier_IdOrderByPurchaseDateDesc(supplierId);
+    }
+
+    public List<SupplierPayment> listPayments(long supplierId) {
+        return paymentRepository.findBySupplier_IdOrderByPaymentDateDesc(supplierId);
+    }
+
+    public BigDecimal getDailyPaymentsTotal() {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = LocalDate.now().atTime(LocalTime.MAX);
+        BigDecimal total = paymentRepository.calculateDailyTotal(start, end);
+        return total != null ? total : BigDecimal.ZERO;
     }
 
     private void validateSupplier(Supplier supplier) {

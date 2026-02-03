@@ -64,6 +64,8 @@ public class CashierController {
     private Button backButton;
     @FXML
     private Label dailyCashLabel;
+    @FXML
+    private Label dailySupplierPaymentsLabel;
 
     // Barcode input
     @FXML
@@ -298,11 +300,18 @@ public class CashierController {
     }
 
     private void updateDailyCash() {
-        if (dailyCashLabel != null && currentUser != null) {
-            Double total = saleService.getDailyCash(currentUser.getId());
-            dailyCashLabel.setText(String.format("%.2f ج.م", total));
-        } else if (dailyCashLabel != null) {
-            dailyCashLabel.setText("0.00 ج.م");
+        double salesTotal = 0.0;
+        if (currentUser != null) {
+            salesTotal = saleService.getDailyCash(currentUser.getId());
+        }
+        if (dailyCashLabel != null) {
+            dailyCashLabel.setText(String.format("%.2f ج.م", salesTotal));
+        }
+
+        if (dailySupplierPaymentsLabel != null) {
+            java.math.BigDecimal supplierTotal = supplierService.getDailyPaymentsTotal();
+            dailySupplierPaymentsLabel.setText(
+                    String.format("مدفوعات الموردين اليوم: %.2f ج.م", supplierTotal.doubleValue()));
         }
     }
 
@@ -1799,6 +1808,32 @@ public class CashierController {
         showSupplierPaymentDialog();
     }
 
+    @FXML
+    private void handleAddCustomer() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/delivery_popup.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+            Scene scene = new Scene(loader.load());
+
+            DeliveryPopupController controller = loader.getController();
+            controller.selectedCustomerProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    selectCustomer(newVal);
+                }
+            });
+
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.initStyle(StageStyle.UNDECORATED);
+            dialog.setTitle("عميل جديد");
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "خطأ في فتح شاشة إضافة العميل: " + ex.getMessage());
+        }
+    }
+
     private void showSupplierPaymentDialog() {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
@@ -1815,9 +1850,13 @@ public class CashierController {
         TextField amountField = new TextField();
         amountField.setPromptText("المبلغ المدفوع اليوم");
 
-        ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
-        methodCombo.setItems(FXCollections.observableArrayList(PaymentMethod.values()));
-        methodCombo.getSelectionModel().select(PaymentMethod.CASH);
+        ComboBox<String> methodCombo = new ComboBox<>();
+        methodCombo.setItems(FXCollections.observableArrayList(
+                "Cash",
+                "InstaPay",
+                "Visa",
+                "Vodafone Cash"));
+        methodCombo.getSelectionModel().selectFirst();
 
         TextArea notesField = new TextArea();
         notesField.setPromptText("ملاحظات");
@@ -1836,9 +1875,11 @@ public class CashierController {
                 SupplierPayment payment = new SupplierPayment();
                 payment.setSupplier(supplier);
                 payment.setAmount(amount);
-                payment.setMethod(methodCombo.getSelectionModel().getSelectedItem());
+                payment.setMethod(mapSupplierPaymentMethod(methodCombo.getSelectionModel().getSelectedItem()));
                 payment.setNotes(notesField.getText());
                 supplierService.recordPayment(payment);
+                updateDailyCash();
+                updateDataSignature();
                 dialog.close();
                 showAlert(Alert.AlertType.INFORMATION, "تم تسجيل دفعة المورد بنجاح");
             } catch (Exception ex) {
@@ -1857,6 +1898,17 @@ public class CashierController {
         Scene scene = new Scene(root, 360, 420);
         dialog.setScene(scene);
         dialog.showAndWait();
+    }
+
+    private PaymentMethod mapSupplierPaymentMethod(String method) {
+        if (method == null) {
+            return PaymentMethod.CASH;
+        }
+        return switch (method) {
+            case "Cash" -> PaymentMethod.CASH;
+            case "InstaPay", "Visa", "Vodafone Cash" -> PaymentMethod.BANK;
+            default -> PaymentMethod.OTHER;
+        };
     }
 
     public static class CartItem {

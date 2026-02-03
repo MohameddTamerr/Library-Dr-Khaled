@@ -39,6 +39,7 @@
 
             <Label fx:id="workerNameLabel" styleClass="worker-label"/>
             <Label fx:id="dailyCashLabel" text="0.00 ج.م" style="-fx-text-fill: -color-success; -fx-font-weight: bold; -fx-font-size: 16px;"/>
+            <Label fx:id="dailySupplierPaymentsLabel" text="مدفوعات الموردين اليوم: 0.00 ج.م" style="-fx-text-fill: -color-warning; -fx-font-weight: bold; -fx-font-size: 14px;"/>
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
             <Button text="دفعات الموردين" onAction="#handleSupplierPayment" styleClass="btn-secondary"/>
@@ -141,7 +142,10 @@
 
                     <VBox spacing="8">
                         <Label text="%cashier.customer.search" styleClass="section-label-small"/>
-                        <TextField fx:id="customerSearchField" promptText="%cashier.customer.search.prompt"/>
+                        <HBox spacing="8">
+                            <TextField fx:id="customerSearchField" promptText="%cashier.customer.search.prompt" HBox.hgrow="ALWAYS"/>
+                            <Button text="عميل جديد" onAction="#handleAddCustomer" styleClass="btn-secondary"/>
+                        </HBox>
                         <ListView fx:id="customerSearchList" styleClass="list-view" visible="false" managed="false" prefHeight="140"/>
 
                         <Label text="%cashier.customer.address" styleClass="section-label-small"/>

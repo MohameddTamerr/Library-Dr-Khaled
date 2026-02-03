@@ -106,4 +106,17 @@
         </columnResizePolicy>
     </TableView>
 
+    <Label text="دفعات المورد" styleClass="panel-title"/>
+    <TableView fx:id="paymentsTable" VBox.vgrow="ALWAYS" styleClass="table-view">
+        <columns>
+            <TableColumn fx:id="paymentAmountCol" text="المبلغ" prefWidth="120"/>
+            <TableColumn fx:id="paymentMethodCol" text="طريقة الدفع" prefWidth="140"/>
+            <TableColumn fx:id="paymentDateCol" text="التاريخ" prefWidth="160"/>
+            <TableColumn fx:id="paymentNotesCol" text="ملاحظات" prefWidth="220"/>
+        </columns>
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+        </columnResizePolicy>
+    </TableView>
+
 </VBox>

@@ -41,6 +41,16 @@ public class SuppliersController {
     private TableColumn<Supplier, String> statusCol;
     @FXML
     private TableColumn<Supplier, LocalDateTime> createdAtCol;
+    @FXML
+    private TableView<SupplierPayment> paymentsTable;
+    @FXML
+    private TableColumn<SupplierPayment, BigDecimal> paymentAmountCol;
+    @FXML
+    private TableColumn<SupplierPayment, PaymentMethod> paymentMethodCol;
+    @FXML
+    private TableColumn<SupplierPayment, LocalDateTime> paymentDateCol;
+    @FXML
+    private TableColumn<SupplierPayment, String> paymentNotesCol;
 
     @FXML
     private TextField nameField;
@@ -80,6 +90,15 @@ public class SuppliersController {
         statusCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
                 data.getValue().getStatus() != null ? data.getValue().getStatus().name() : ""));
         createdAtCol.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
+        if (paymentsTable != null) {
+            paymentAmountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
+            paymentMethodCol.setCellValueFactory(new PropertyValueFactory<>("method"));
+            paymentDateCol.setCellValueFactory(new PropertyValueFactory<>("paymentDate"));
+            paymentNotesCol.setCellValueFactory(new PropertyValueFactory<>("notes"));
+
+            formatMoneyColumn(paymentAmountCol);
+            formatDateColumn(paymentDateCol);
+        }
 
         formatMoneyColumn(totalPurchasesCol);
         formatMoneyColumn(totalPaidCol);
@@ -90,6 +109,9 @@ public class SuppliersController {
             if (selected != null) {
                 fillForm(selected);
                 editingId = selected.getId();
+                loadPaymentsForSupplier(selected);
+            } else {
+                clearPaymentsTable();
             }
         });
 
@@ -100,6 +122,7 @@ public class SuppliersController {
     public void loadData() {
         List<Supplier> suppliers = supplierService.listAll(false);
         suppliersTable.setItems(FXCollections.observableArrayList(suppliers));
+        clearPaymentsTable();
     }
 
     @FXML
@@ -261,9 +284,13 @@ public class SuppliersController {
         TextField amountField = new TextField();
         amountField.setPromptText("المبلغ");
 
-        ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
-        methodCombo.setItems(FXCollections.observableArrayList(PaymentMethod.values()));
-        methodCombo.getSelectionModel().select(PaymentMethod.CASH);
+        ComboBox<String> methodCombo = new ComboBox<>();
+        methodCombo.setItems(FXCollections.observableArrayList(
+                "Cash",
+                "InstaPay",
+                "Visa",
+                "Vodafone Cash"));
+        methodCombo.getSelectionModel().selectFirst();
 
         TextArea notesField = new TextArea();
         notesField.setPromptText("ملاحظات");
@@ -281,11 +308,12 @@ public class SuppliersController {
                 SupplierPayment payment = new SupplierPayment();
                 payment.setSupplier(supplier);
                 payment.setAmount(amount);
-                payment.setMethod(methodCombo.getSelectionModel().getSelectedItem());
+                payment.setMethod(mapSupplierPaymentMethod(methodCombo.getSelectionModel().getSelectedItem()));
                 payment.setNotes(notesField.getText());
                 supplierService.recordPayment(payment);
                 dialog.close();
                 loadData();
+                loadPaymentsForSupplier(supplier);
             } catch (Exception ex) {
                 showAlert(ex.getMessage());
             }
@@ -301,6 +329,17 @@ public class SuppliersController {
         Scene scene = new Scene(root, 360, 420);
         dialog.setScene(scene);
         dialog.showAndWait();
+    }
+
+    private PaymentMethod mapSupplierPaymentMethod(String method) {
+        if (method == null) {
+            return PaymentMethod.CASH;
+        }
+        return switch (method) {
+            case "Cash" -> PaymentMethod.CASH;
+            case "InstaPay", "Visa", "Vodafone Cash" -> PaymentMethod.BANK;
+            default -> PaymentMethod.OTHER;
+        };
     }
 
     private void showPurchasesDialog(Supplier supplier) {
@@ -365,6 +404,24 @@ public class SuppliersController {
         Scene scene = new Scene(root, 700, 420);
         dialog.setScene(scene);
         dialog.showAndWait();
+    }
+
+    private void loadPaymentsForSupplier(Supplier supplier) {
+        if (paymentsTable == null) {
+            return;
+        }
+        if (supplier == null || supplier.getId() == null) {
+            clearPaymentsTable();
+            return;
+        }
+        paymentsTable.setItems(FXCollections.observableArrayList(
+                supplierService.listPayments(supplier.getId())));
+    }
+
+    private void clearPaymentsTable() {
+        if (paymentsTable != null) {
+            paymentsTable.getItems().clear();
+        }
     }
 
     private <S> void formatMoneyColumn(TableColumn<S, BigDecimal> column) {
