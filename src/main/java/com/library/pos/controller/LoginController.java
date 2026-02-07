@@ -5,6 +5,7 @@ import com.library.pos.service.AuthService;
 import com.library.pos.util.StageUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
@@ -68,38 +69,42 @@ public class LoginController {
     private void navigateToDashboard(User user) {
         try {
             Stage stage = (Stage) loginButton.getScene().getWindow();
+            FXMLLoader loader;
+            String title;
+            Parent root;
 
             if (user.getRole() == com.library.pos.model.Role.WORKER) {
                 // Navigate to Cashier System
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/cashier.fxml"));
+                loader = new FXMLLoader(getClass().getResource("/fxml/cashier.fxml"));
                 loader.setControllerFactory(applicationContext::getBean);
                 loader.setResources(ResourceBundle.getBundle("messages"));
-                Scene scene = new Scene(loader.load());
-                scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+                root = loader.load();
 
                 CashierController cashierController = loader.getController();
                 cashierController.setUser(user);
 
-                stage.setTitle(ResourceBundle.getBundle("messages").getString("cashier.title"));
-                stage.setScene(scene);
+                title = ResourceBundle.getBundle("messages").getString("cashier.title");
             } else {
                 // Navigate to Owner Dashboard
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+                loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
                 loader.setControllerFactory(applicationContext::getBean);
-                loader.setResources(ResourceBundle.getBundle("messages")); // Using same messages bundle
-
-                Scene scene = new Scene(loader.load());
-                scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+                loader.setResources(ResourceBundle.getBundle("messages"));
+                root = loader.load();
 
                 // Pass user info to dashboard
                 DashboardController dashboardController = loader.getController();
                 dashboardController.setUser(user);
 
-                stage.setTitle(ResourceBundle.getBundle("messages").getString("app.title") + " - Dashboard");
-                stage.setScene(scene);
+                title = ResourceBundle.getBundle("messages").getString("app.title") + " - Dashboard";
             }
 
-            StageUtil.applyWindowedFullScreenIfMaximized(stage);
+            // Seamless transition: switch root of current scene
+            loginButton.getScene().setRoot(root);
+            stage.setTitle(title);
+
+            if (!stage.isFullScreen()) {
+                stage.setFullScreen(true);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -126,9 +131,15 @@ public class LoginController {
             fxmlLoader.setResources(bundle);
 
             Scene scene = new Scene(fxmlLoader.load());
-            stage.setScene(scene);
+            // Maintain the same scene to keep full screen state
+            Scene currentScene = loginButton.getScene();
+            currentScene.setRoot(scene.getRoot());
+
             stage.setTitle(bundle.getString("app.title"));
-            StageUtil.applyWindowedFullScreenIfMaximized(stage);
+
+            if (!stage.isFullScreen()) {
+                stage.setFullScreen(true);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

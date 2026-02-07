@@ -135,6 +135,42 @@
                         <PieChart fx:id="topProductsChart" legendVisible="false" labelsVisible="true"/>
                     </VBox>
                 </GridPane>
+
+                <!-- 3.5 Returns Analysis -->
+                <VBox styleClass="panel-card">
+                    <Label text="تحليل المرتجعات" styleClass="panel-title"/>
+                    <GridPane hgap="20" vgap="20">
+                         <columnConstraints>
+                             <ColumnConstraints percentWidth="30"/>
+                             <ColumnConstraints percentWidth="70"/>
+                         </columnConstraints>
+                         <rowConstraints>
+                             <RowConstraints vgrow="ALWAYS"/>
+                         </rowConstraints>
+                         
+                         <!-- Returns KPIs -->
+                         <VBox spacing="15" GridPane.columnIndex="0">
+                              <VBox styleClass="summary-card" style="-fx-background-color: rgba(239, 68, 68, 0.1); -fx-border-color: #ef4444;">
+                                  <Label text="إجمالي قيمة المرتجعات" styleClass="card-title" style="-fx-text-fill: #ef4444;"/>
+                                  <Label fx:id="returnAmountLabel" text="0.00 ج.م" styleClass="card-value-danger"/>
+                              </VBox>
+                              <VBox styleClass="summary-card" style="-fx-background-color: rgba(239, 68, 68, 0.1); -fx-border-color: #ef4444;">
+                                  <Label text="عدد المرتجعات" styleClass="card-title" style="-fx-text-fill: #ef4444;"/>
+                                  <Label fx:id="returnCountLabel" text="0" styleClass="card-value-danger"/>
+                              </VBox>
+                         </VBox>
+                         
+                         <!-- Most Returned Products Chart -->
+                         <BarChart fx:id="topReturnsChart" legendVisible="false" title="أكثر المنتجات إرجاعاً" GridPane.columnIndex="1">
+                             <xAxis>
+                                 <CategoryAxis label="المنتج"/>
+                             </xAxis>
+                             <yAxis>
+                                 <NumberAxis label="الكمية المرتجعة"/>
+                             </yAxis>
+                         </BarChart>
+                    </GridPane>
+                </VBox>
                 
                 <!-- 4. Stock Table (Collapsible or Bottom) -->
                 <VBox styleClass="panel-card" prefHeight="200">

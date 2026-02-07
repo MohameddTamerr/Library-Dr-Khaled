@@ -25,4 +25,18 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
         @org.springframework.data.jpa.repository.Query("SELECT MAX(s.timestamp) FROM Sale s")
         LocalDateTime findLatestTimestamp();
+
+        @org.springframework.data.jpa.repository.Query("SELECT SUM(ABS(s.totalAmount)) FROM Sale s WHERE s.status = 'RETURNED' AND s.timestamp BETWEEN :start AND :end")
+        Double sumReturnsAmount(@org.springframework.data.repository.query.Param("start") LocalDateTime start,
+                        @org.springframework.data.repository.query.Param("end") LocalDateTime end);
+
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(s) FROM Sale s WHERE s.status = 'RETURNED' AND s.timestamp BETWEEN :start AND :end")
+        Long countReturns(@org.springframework.data.repository.query.Param("start") LocalDateTime start,
+                        @org.springframework.data.repository.query.Param("end") LocalDateTime end);
+
+        @org.springframework.data.jpa.repository.Query("SELECT s.itemName, SUM(ABS(s.quantity)) as totalQty FROM Sale s WHERE s.status = 'RETURNED' AND s.timestamp BETWEEN :start AND :end GROUP BY s.itemName ORDER BY totalQty DESC")
+        List<Object[]> findTopReturnedProducts(
+                        @org.springframework.data.repository.query.Param("start") LocalDateTime start,
+                        @org.springframework.data.repository.query.Param("end") LocalDateTime end,
+                        org.springframework.data.domain.Pageable pageable);
 }

@@ -42,6 +42,7 @@
             <Label fx:id="dailySupplierPaymentsLabel" text="مدفوعات الموردين اليوم: 0.00 ج.م" style="-fx-text-fill: -color-warning; -fx-font-weight: bold; -fx-font-size: 14px;"/>
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
+            <Button text="المرتجعات" onAction="#handleReturns" styleClass="btn-returns"/>
             <Button text="دفعات الموردين" onAction="#handleSupplierPayment" styleClass="btn-secondary"/>
             <Button text="%cashier.logout" onAction="#handleLogout" styleClass="btn-danger"/>
         </HBox>

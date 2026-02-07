@@ -38,6 +38,9 @@ public class SupplierService {
     public Supplier saveSupplier(Supplier supplier) {
         validateSupplier(supplier);
         if (supplier.getId() == null) {
+            if (supplierRepository.existsByNameAndPhone(supplier.getName(), supplier.getPhone())) {
+                throw new IllegalArgumentException("Supplier with this name and phone already exists.");
+            }
             applySupplierDefaults(supplier);
             applyBalancesForCreate(supplier);
             return supplierRepository.save(supplier);
@@ -252,5 +255,61 @@ public class SupplierService {
 
     private BigDecimal valueOrZero(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    @Transactional
+    public void mergeDuplicates() {
+        List<Supplier> allSuppliers = supplierRepository.findAll();
+        // Group by Name + Phone (normalized)
+        java.util.Map<String, List<Supplier>> groups = allSuppliers.stream()
+                .collect(java.util.stream.Collectors
+                        .groupingBy(s -> (s.getName() != null ? s.getName().trim().toLowerCase() : "") + "|" +
+                                (s.getPhone() != null ? s.getPhone().trim() : "")));
+
+        for (List<Supplier> group : groups.values()) {
+            if (group.size() > 1) {
+                // Keep the one with the most activity or the oldest
+                // Sort by ID (oldest first)
+                group.sort(java.util.Comparator.comparing(Supplier::getId));
+
+                Supplier primary = group.get(0);
+                List<Supplier> duplicates = group.subList(1, group.size());
+
+                for (Supplier duplicate : duplicates) {
+                    // Move Purchases
+                    List<Purchase> purchases = purchaseRepository
+                            .findBySupplier_IdOrderByPurchaseDateDesc(duplicate.getId());
+                    for (Purchase p : purchases) {
+                        p.setSupplier(primary);
+                        purchaseRepository.save(p);
+                    }
+
+                    // Move Payments
+                    List<SupplierPayment> payments = paymentRepository
+                            .findBySupplier_IdOrderByPaymentDateDesc(duplicate.getId());
+                    for (SupplierPayment sp : payments) {
+                        sp.setSupplier(primary);
+                        paymentRepository.save(sp);
+                    }
+
+                    // Merge Totals
+                    primary.setTotalPurchases(
+                            valueOrZero(primary.getTotalPurchases()).add(valueOrZero(duplicate.getTotalPurchases())));
+                    primary.setTotalPaid(
+                            valueOrZero(primary.getTotalPaid()).add(valueOrZero(duplicate.getTotalPaid())));
+                    primary.setBalanceDue(
+                            valueOrZero(primary.getBalanceDue()).add(valueOrZero(duplicate.getBalanceDue())));
+
+                    // Update Status if duplicate was active
+                    if (duplicate.getStatus() == SupplierStatus.ACTIVE) {
+                        primary.setStatus(SupplierStatus.ACTIVE);
+                    }
+
+                    // Delete duplicate
+                    supplierRepository.delete(duplicate);
+                }
+                supplierRepository.save(primary);
+            }
+        }
     }
 }

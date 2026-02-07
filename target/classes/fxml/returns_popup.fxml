@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.library.pos.controller.ReturnsPopupController"
+      styleClass="returns-popup"
+      spacing="8"
+      prefWidth="420">
+    
+    <padding>
+        <Insets top="12" right="12" bottom="12" left="12"/>
+    </padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label text="معالجة المرتجعات" styleClass="returns-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="✕" onAction="#handleClose" 
+                style="-fx-background-color: transparent; -fx-text-fill: #94a3b8; -fx-font-size: 18px; -fx-cursor: hand;"/>
+    </HBox>
+
+    <Separator/>
+
+    <!-- Product Search Section -->
+    <VBox spacing="6">
+        <Label text="بحث عن منتج" style="-fx-font-size: 12px; -fx-font-weight: bold;"/>
+        <HBox spacing="6">
+            <TextField fx:id="productSearchField" 
+                       promptText="اسم المنتج أو الباركود..."
+                       styleClass="barcode-input"
+                       HBox.hgrow="ALWAYS"
+                       onKeyReleased="#handleProductSearch"/>
+            <Button text="بحث" onAction="#handleProductSearch" styleClass="btn-primary"/>
+        </HBox>
+        
+        <!-- Product Checkboxes Container -->
+        <ScrollPane fx:id="productScrollPane" prefHeight="80" maxHeight="80" fitToWidth="true" visible="false" managed="false"
+                    style="-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-radius: 4;">
+            <VBox fx:id="productCheckboxContainer" spacing="2" style="-fx-padding: 4;">
+            </VBox>
+        </ScrollPane>
+    </VBox>
+
+    <!-- Selected Product Details - Compact -->
+    <HBox spacing="8" fx:id="productDetailsBox" visible="false" managed="false" alignment="CENTER_LEFT"
+          style="-fx-background-color: #f1f5f9; -fx-padding: 8; -fx-background-radius: 4;">
+        <VBox spacing="2" HBox.hgrow="ALWAYS">
+            <Label fx:id="selectedProductName" style="-fx-font-size: 13px; -fx-font-weight: bold;"/>
+            <Label fx:id="selectedProductBarcode" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
+        </VBox>
+        <Label fx:id="selectedProductPrice" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #3b82f6;"/>
+    </HBox>
+
+    <!-- Quantity and Condition in One Row -->
+    <HBox spacing="15" fx:id="quantitySection" visible="false" managed="false" alignment="CENTER_LEFT">
+        <!-- Quantity -->
+        <VBox spacing="4">
+            <Label text="الكمية" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
+            <HBox spacing="4" alignment="CENTER_LEFT">
+                <Button text="-" onAction="#handleQuantityMinus" prefWidth="28" prefHeight="28" style="-fx-font-size: 14px;"/>
+                <Spinner fx:id="quantitySpinner" editable="true" prefWidth="80" prefHeight="28"/>
+                <Button text="+" onAction="#handleQuantityPlus" prefWidth="28" prefHeight="28" style="-fx-font-size: 14px;"/>
+            </HBox>
+        </VBox>
+        
+        <!-- Condition -->
+        <VBox spacing="4" fx:id="conditionSection">
+            <Label text="حالة المنتج" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
+            <HBox spacing="10">
+                <RadioButton fx:id="goodConditionRadio" text="جيد" selected="true" style="-fx-text-fill: #16a34a;">
+                    <toggleGroup><ToggleGroup fx:id="conditionGroup"/></toggleGroup>
+                </RadioButton>
+                <RadioButton fx:id="badConditionRadio" text="سئ" toggleGroup="$conditionGroup" style="-fx-text-fill: #dc2626;"/>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- Total Section - Compact -->
+    <HBox alignment="CENTER_LEFT" spacing="8" fx:id="totalSection" visible="false" managed="false"
+          style="-fx-background-color: #fef3c7; -fx-padding: 8; -fx-background-radius: 4;">
+        <Label text="المبلغ المرتجع:" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #92400e;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="totalLabel" text="0.00 ج.م" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #f97316;"/>
+    </HBox>
+
+    <!-- Message Label -->
+    <Label fx:id="messageLabel" visible="false" managed="false" wrapText="true" style="-fx-padding: 6; -fx-background-radius: 4;"/>
+
+    <!-- Action Buttons -->
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="إلغاء" onAction="#handleClose" styleClass="btn-secondary" prefHeight="32"/>
+        <Button text="تأكيد الإرجاع" fx:id="confirmButton" onAction="#handleConfirmReturn" 
+                styleClass="btn-confirm-return" prefHeight="32" disable="true"/>
+    </HBox>
+
+</VBox>

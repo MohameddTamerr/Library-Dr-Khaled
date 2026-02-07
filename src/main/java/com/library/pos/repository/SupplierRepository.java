@@ -19,4 +19,6 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Supplier s where s.id = :id")
     Supplier findByIdForUpdate(@Param("id") Long id);
+
+    boolean existsByNameAndPhone(String name, String phone);
 }

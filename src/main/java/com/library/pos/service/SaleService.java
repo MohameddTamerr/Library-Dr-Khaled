@@ -65,9 +65,112 @@ public class SaleService {
         return saleRepository.count();
     }
 
+    public Double getReturnsAmount(LocalDateTime start, LocalDateTime end) {
+        Double val = saleRepository.sumReturnsAmount(start, end);
+        return val != null ? val : 0.0;
+    }
+
+    public Long getReturnsCount(LocalDateTime start, LocalDateTime end) {
+        Long val = saleRepository.countReturns(start, end);
+        return val != null ? val : 0L;
+    }
+
+    public List<Object[]> getTopReturnedProducts(LocalDateTime start, LocalDateTime end) {
+        return saleRepository.findTopReturnedProducts(start, end, org.springframework.data.domain.PageRequest.of(0, 5));
+    }
+
     public void saveSales(List<Sale> sales) {
         for (Sale sale : sales) {
             save(sale);
         }
+    }
+
+    /**
+     * Process a product return
+     * 
+     * @param originalSale     The original sale to return from
+     * @param quantityToReturn The quantity being returned (positive number)
+     * @param condition        "GOOD" or "BAD" - determines if inventory is restored
+     * @param returnWorker     The worker processing the return
+     * @return The created return Sale record
+     */
+    public Sale processReturn(Sale originalSale, int quantityToReturn, String condition,
+            com.library.pos.model.User returnWorker) {
+        if (originalSale == null || quantityToReturn <= 0) {
+            throw new IllegalArgumentException("Invalid return parameters");
+        }
+
+        // Calculate return amount based on original price
+        double unitPrice = originalSale.getTotalAmount() / originalSale.getQuantity();
+        double returnAmount = unitPrice * quantityToReturn;
+
+        // Create a new Sale record for the return
+        Sale returnSale = new Sale();
+        returnSale.setTimestamp(LocalDateTime.now());
+        returnSale.setItemName(originalSale.getItemName());
+        returnSale.setQuantity(-quantityToReturn); // Negative quantity
+        returnSale.setTotalAmount(-returnAmount); // Negative amount (refund)
+        returnSale.setStatus(SaleStatus.RETURNED);
+        returnSale.setWorker(returnWorker);
+        returnSale.setCustomer(originalSale.getCustomer());
+        returnSale.setProduct(originalSale.getProduct());
+        returnSale.setReturnCondition(condition);
+        returnSale.setNotes("Return from Order #" + originalSale.getId());
+
+        // Save the return record
+        Sale savedReturn = saleRepository.save(returnSale);
+
+        // Restore inventory only if condition is GOOD
+        if ("GOOD".equalsIgnoreCase(condition)) {
+            Product product = originalSale.getProduct();
+            if (product != null) {
+                product.setQuantity(product.getQuantity() + quantityToReturn);
+                productRepository.save(product);
+            }
+        }
+
+        return savedReturn;
+    }
+
+    /**
+     * Process a product return (simplified - no original sale required)
+     * 
+     * @param product          The product being returned
+     * @param quantityToReturn The quantity being returned (positive number)
+     * @param condition        "GOOD" or "BAD" - determines if inventory is restored
+     * @param returnWorker     The worker processing the return
+     * @return The created return Sale record
+     */
+    public Sale processProductReturn(Product product, int quantityToReturn, String condition,
+            com.library.pos.model.User returnWorker) {
+        if (product == null || quantityToReturn <= 0) {
+            throw new IllegalArgumentException("Invalid return parameters");
+        }
+
+        // Calculate return amount based on product sell price
+        double returnAmount = product.getSellPrice() * quantityToReturn;
+
+        // Create a new Sale record for the return
+        Sale returnSale = new Sale();
+        returnSale.setTimestamp(LocalDateTime.now());
+        returnSale.setItemName(product.getName());
+        returnSale.setQuantity(-quantityToReturn); // Negative quantity
+        returnSale.setTotalAmount(-returnAmount); // Negative amount (refund)
+        returnSale.setStatus(SaleStatus.RETURNED);
+        returnSale.setWorker(returnWorker);
+        returnSale.setProduct(product);
+        returnSale.setReturnCondition(condition);
+        returnSale.setNotes("Product Return - " + condition + " condition");
+
+        // Save the return record
+        Sale savedReturn = saleRepository.save(returnSale);
+
+        // Restore inventory only if condition is GOOD
+        if ("GOOD".equalsIgnoreCase(condition)) {
+            product.setQuantity(product.getQuantity() + quantityToReturn);
+            productRepository.save(product);
+        }
+
+        return savedReturn;
     }
 }

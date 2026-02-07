@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.context.ApplicationContext;
 import com.library.pos.util.AutoRefreshUtil;
 import com.library.pos.util.StageUtil;
+import com.library.pos.util.DialogUtil;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -953,19 +954,11 @@ public class CashierController {
     }
 
     private void showQuantityEditDialog(CartItem item) {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initStyle(StageStyle.UNDECORATED);
-        dialog.setTitle("تعديل الكمية");
+        // DialogUtil creates the stage
 
         VBox root = new VBox(20);
         root.setPadding(new Insets(24));
         root.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
-
-        // Header
-        Label header = new Label(item.getProduct().getName());
-        header.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
-        header.setWrapText(true);
 
         // Current quantity info
         HBox infoBox = new HBox(10);
@@ -985,6 +978,9 @@ public class CashierController {
                 "-fx-padding: 12; -fx-alignment: center;");
         qtyField.selectAll();
         qtyBox.getChildren().addAll(qtyLabel, qtyField);
+
+        Stage dialog = DialogUtil.createDialog("تعديل الكمية - " + item.getProduct().getName(), root,
+                workerNameLabel.getScene().getWindow());
 
         // Buttons
         HBox buttons = new HBox(12);
@@ -1021,10 +1017,12 @@ public class CashierController {
         // Enter key to confirm
         qtyField.setOnAction(e -> confirmBtn.fire());
 
-        root.getChildren().addAll(header, infoBox, qtyBox, buttons);
+        // Remove explicit header, use title
+        root.getChildren().addAll(infoBox, qtyBox, buttons);
 
-        Scene scene = new Scene(root, 400, 350);
-        dialog.setScene(scene);
+        // Ensure size is good
+        root.setPrefWidth(400);
+
         javafx.application.Platform.runLater(() -> qtyField.requestFocus());
         dialog.showAndWait();
     }
@@ -1370,7 +1368,6 @@ public class CashierController {
         updateOrderButtons();
     }
 
-
     @FXML
     private void handlePayment() {
         if (cartItems.isEmpty()) {
@@ -1409,22 +1406,13 @@ public class CashierController {
     private void showPaymentDialog(String paymentMethod) {
         double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
 
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initStyle(StageStyle.UNDECORATED);
-        dialog.setTitle("تأكيد الدفع - " + paymentMethod);
-
         VBox root = new VBox(20);
         root.setPadding(new Insets(24));
         root.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
 
-        // Header with payment method
-        VBox headerBox = new VBox(4);
-        Label header = new Label("تأكيد الدفع");
-        header.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+        // Header content (Method label only, Title in Dialog)
         Label methodLabel = new Label("طريقة الدفع: " + paymentMethod);
         methodLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981;");
-        headerBox.getChildren().addAll(header, methodLabel);
 
         // Total
         HBox totalBox = new HBox(10);
@@ -1462,7 +1450,7 @@ public class CashierController {
         HBox.setHgrow(spacer2, Priority.ALWAYS);
         changeBox.getChildren().addAll(changeLabel, spacer2, changeValue);
 
-        // Update change on input
+        // Update change on input (Listeners)
         cashField.textProperty().addListener((obs, old, newVal) -> {
             try {
                 double received = parseAmount(newVal);
@@ -1477,6 +1465,9 @@ public class CashierController {
         // Default cash received to total amount
         cashField.setText(String.format("%.2f", total));
         cashField.selectAll();
+
+        // Dialog creation
+        Stage dialog = DialogUtil.createDialog("تأكيد الدفع", root, workerNameLabel.getScene().getWindow());
 
         // Buttons
         HBox buttons = new HBox(12);
@@ -1508,10 +1499,9 @@ public class CashierController {
         });
         buttons.getChildren().addAll(cancelBtn, confirmBtn);
 
-        root.getChildren().addAll(headerBox, totalBox, cashBox, changeBox, buttons);
+        root.getChildren().addAll(methodLabel, totalBox, cashBox, changeBox, buttons);
+        root.setPrefWidth(450);
 
-        Scene scene = new Scene(root, 450, 550);
-        dialog.setScene(scene);
         dialog.setOnShown(e -> cashField.requestFocus());
         dialog.showAndWait();
     }
@@ -1519,18 +1509,11 @@ public class CashierController {
     private void showDeferredPaymentDialog() {
         double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
 
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initStyle(StageStyle.UNDECORATED);
-        dialog.setTitle(bundle.getString("cashier.deferred"));
-
         VBox root = new VBox(20);
         root.setPadding(new Insets(24));
         root.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
 
-        // Header
-        Label header = new Label(bundle.getString("cashier.deferred"));
-        header.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+        // Header Title in DialogUtil
 
         // Total
         HBox totalBox = new HBox(10);
@@ -1567,6 +1550,9 @@ public class CashierController {
                 "-fx-padding: 12;");
         phoneBox.getChildren().addAll(phoneLabel, phoneField);
 
+        Stage dialog = DialogUtil.createDialog(bundle.getString("cashier.deferred"), root,
+                workerNameLabel.getScene().getWindow());
+
         // Buttons
         HBox buttons = new HBox(12);
         buttons.setAlignment(Pos.CENTER_RIGHT);
@@ -1589,10 +1575,9 @@ public class CashierController {
         });
         buttons.getChildren().addAll(cancelBtn, confirmBtn);
 
-        root.getChildren().addAll(header, totalBox, customerBox, phoneBox, buttons);
+        root.getChildren().addAll(totalBox, customerBox, phoneBox, buttons);
+        root.setPrefWidth(450);
 
-        Scene scene = new Scene(root, 450, 550);
-        dialog.setScene(scene);
         dialog.showAndWait();
     }
 
@@ -1754,18 +1739,14 @@ public class CashierController {
             DashboardController controller = loader.getController();
             controller.setUser(currentUser);
 
-            Scene scene = new Scene(root);
-            // scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
-            // Assuming stylesheet is set in FXML or globally?
-            // But DashboardController doesn't set it in showDashboard?
-            // Better to set it here just in case.
-            java.net.URL css = getClass().getResource("/css/style.css");
-            if (css != null)
-                scene.getStylesheets().add(css.toExternalForm());
+            // Seamless transition
+            Scene currentScene = workerNameLabel.getScene();
+            currentScene.setRoot(root);
 
             stage.setTitle(bundle.getString("app.title"));
-            stage.setScene(scene);
-            StageUtil.applyWindowedFullScreenIfMaximized(stage);
+            if (!stage.isFullScreen()) {
+                stage.setFullScreen(true);
+            }
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
@@ -1787,11 +1768,15 @@ public class CashierController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
             loader.setControllerFactory(applicationContext::getBean);
             loader.setResources(bundle);
-            Scene scene = new Scene(loader.load());
-            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+
+            // Seamless transition
+            Scene currentScene = barcodeField.getScene();
+            currentScene.setRoot(loader.load());
+
             stage.setTitle(bundle.getString("app.title"));
-            stage.setScene(scene);
-            StageUtil.applyWindowedFullScreenIfMaximized(stage);
+            if (!stage.isFullScreen()) {
+                stage.setFullScreen(true);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1809,6 +1794,51 @@ public class CashierController {
     }
 
     @FXML
+    private void handleReturns() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/returns_popup.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+            Scene scene = new Scene(loader.load());
+
+            // Add CSS styling
+            java.net.URL css = getClass().getResource("/css/style.css");
+            if (css != null) {
+                scene.getStylesheets().add(css.toExternalForm());
+            }
+
+            ReturnsPopupController controller = loader.getController();
+            controller.setCurrentWorker(currentUser);
+            controller.setOnReturnProcessed(() -> {
+                // Refresh data after return is processed
+                updateDailyCash();
+                updateDataSignature();
+            });
+
+            Stage dialog = new Stage();
+
+            // Fix: Set owner to keep full screen
+            if (workerNameLabel != null && workerNameLabel.getScene() != null) {
+                dialog.initOwner(workerNameLabel.getScene().getWindow());
+            }
+
+            dialog.initModality(Modality.WINDOW_MODAL);
+            dialog.initStyle(StageStyle.UNDECORATED);
+            dialog.setTitle("معالجة المرتجعات");
+            dialog.setMinWidth(500);
+            dialog.setMinHeight(500);
+            dialog.setScene(scene);
+
+            // Center on screen
+            dialog.centerOnScreen();
+
+            dialog.showAndWait();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "خطأ في فتح شاشة المرتجعات: " + ex.getMessage());
+        }
+    }
+
+    @FXML
     private void handleAddCustomer() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/delivery_popup.fxml"));
@@ -1823,10 +1853,19 @@ public class CashierController {
             });
 
             Stage dialog = new Stage();
-            dialog.initModality(Modality.APPLICATION_MODAL);
+
+            // Fix: Set owner
+            if (BarcodeField() != null && BarcodeField().getScene() != null) {
+                dialog.initOwner(BarcodeField().getScene().getWindow());
+            } else if (workerNameLabel != null && workerNameLabel.getScene() != null) {
+                dialog.initOwner(workerNameLabel.getScene().getWindow());
+            }
+
+            dialog.initModality(Modality.WINDOW_MODAL);
             dialog.initStyle(StageStyle.UNDECORATED);
             dialog.setTitle("عميل جديد");
             dialog.setScene(scene);
+            dialog.centerOnScreen();
             dialog.showAndWait();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -1834,18 +1873,30 @@ public class CashierController {
         }
     }
 
-    private void showSupplierPaymentDialog() {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initStyle(StageStyle.UTILITY);
-        dialog.setTitle("دفعة للمورد");
+    // Helper to get barcode field safely or use other node
+    private javafx.scene.Node BarcodeField() {
+        return barcodeField;
+    }
 
+    private void showSupplierPaymentDialog() {
         VBox root = new VBox(12);
         root.setPadding(new Insets(16));
+        // Add border/background for undecorated window
+        root.setStyle(
+                "-fx-background-color: white; -fx-border-color: #ccc; -fx-border-width: 1; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 0);");
 
         ComboBox<Supplier> supplierCombo = new ComboBox<>();
-        supplierCombo.setItems(FXCollections.observableArrayList(supplierService.listAll(true)));
+        // Filter duplicates by toString (Name + Phone) representation
+        List<Supplier> allSuppliers = supplierService.listAll(true);
+        List<Supplier> uniqueSuppliers = allSuppliers.stream()
+                .collect(java.util.stream.Collectors.collectingAndThen(
+                        java.util.stream.Collectors.toCollection(
+                                () -> new java.util.TreeSet<>(java.util.Comparator.comparing(Supplier::toString))),
+                        java.util.ArrayList::new));
+
+        supplierCombo.setItems(FXCollections.observableArrayList(uniqueSuppliers));
         supplierCombo.setPromptText("اختر المورد");
+        supplierCombo.setMaxWidth(Double.MAX_VALUE);
 
         TextField amountField = new TextField();
         amountField.setPromptText("المبلغ المدفوع اليوم");
@@ -1857,10 +1908,19 @@ public class CashierController {
                 "Visa",
                 "Vodafone Cash"));
         methodCombo.getSelectionModel().selectFirst();
+        methodCombo.setMaxWidth(Double.MAX_VALUE);
 
         TextArea notesField = new TextArea();
         notesField.setPromptText("ملاحظات");
         notesField.setPrefRowCount(2);
+
+        Stage dialog = DialogUtil.createDialog("دفعة للمورد", root, workerNameLabel.getScene().getWindow());
+
+        HBox btnBox = new HBox(10);
+        btnBox.setAlignment(Pos.CENTER_RIGHT);
+
+        Button cancelBtn = new Button("إلغاء");
+        cancelBtn.setOnAction(e -> dialog.close());
 
         Button saveBtn = new Button("تسجيل");
         saveBtn.setDefaultButton(true);
@@ -1871,7 +1931,12 @@ public class CashierController {
                     showAlert(Alert.AlertType.WARNING, "يرجى اختيار المورد");
                     return;
                 }
-                java.math.BigDecimal amount = java.math.BigDecimal.valueOf(parseAmount(amountField.getText()));
+                String amtStr = amountField.getText();
+                if (amtStr == null || amtStr.isBlank()) {
+                    showAlert(Alert.AlertType.WARNING, "يرجى إدخال المبلغ");
+                    return;
+                }
+                java.math.BigDecimal amount = java.math.BigDecimal.valueOf(parseAmount(amtStr));
                 SupplierPayment payment = new SupplierPayment();
                 payment.setSupplier(supplier);
                 payment.setAmount(amount);
@@ -1888,15 +1953,18 @@ public class CashierController {
             }
         });
 
+        btnBox.getChildren().addAll(cancelBtn, saveBtn);
+
         root.getChildren().addAll(
                 new Label("المورد"), supplierCombo,
                 new Label("المبلغ"), amountField,
                 new Label("طريقة الدفع"), methodCombo,
                 new Label("ملاحظات"), notesField,
-                saveBtn);
+                btnBox);
 
-        Scene scene = new Scene(root, 360, 420);
-        dialog.setScene(scene);
+        root.setPrefWidth(360);
+
+        dialog.centerOnScreen();
         dialog.showAndWait();
     }
 

@@ -6,7 +6,7 @@ import com.library.pos.model.User;
 import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
 import com.library.pos.util.AutoRefreshUtil;
-import com.library.pos.util.StageUtil;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -18,6 +18,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.BarChart;
+
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -193,6 +195,14 @@ public class DashboardController {
         categoryFilter.getSelectionModel().selectFirst();
     }
 
+    // Returns KPI
+    @FXML
+    private Label returnAmountLabel;
+    @FXML
+    private Label returnCountLabel;
+    @FXML
+    private BarChart<String, Number> topReturnsChart;
+
     @FXML
     public void refreshAnalytics() {
         LocalDate from = fromDatePicker.getValue();
@@ -210,9 +220,39 @@ public class DashboardController {
         List<Product> products = productService.getAll();
 
         updateKPICards(sales, products);
+        updateReturnsAnalytics(start, end);
         updateCharts(sales);
         updateStockTable(products);
         updateDataSignature();
+    }
+
+    private void updateReturnsAnalytics(LocalDateTime start, LocalDateTime end) {
+        // 1. Returns Amount
+        Double totalReturns = saleService.getReturnsAmount(start, end);
+        if (returnAmountLabel != null) {
+            returnAmountLabel.setText(String.format("%.2f ج.م", totalReturns));
+        }
+
+        // 2. Returns Count
+        Long countReturns = saleService.getReturnsCount(start, end);
+        if (returnCountLabel != null) {
+            returnCountLabel.setText(String.valueOf(countReturns));
+        }
+
+        // 3. Top Returned Products Chart
+        if (topReturnsChart != null) {
+            topReturnsChart.getData().clear();
+            List<Object[]> topReturns = saleService.getTopReturnedProducts(start, end);
+            XYChart.Series<String, Number> series = new XYChart.Series<>();
+            series.setName("المرتجعات");
+
+            for (Object[] row : topReturns) {
+                String product = (String) row[0];
+                Number qty = (Number) row[1];
+                series.getData().add(new XYChart.Data<>(product, qty));
+            }
+            topReturnsChart.getData().add(series);
+        }
     }
 
     @FXML
@@ -221,7 +261,11 @@ public class DashboardController {
     private Label productsBadge;
 
     private void updateKPICards(List<Sale> sales, List<Product> products) {
-        // Total Sales (Filtered Range)
+        // Total Sales (Filtered Range) - Exclude Returns from Revenue Calculation if
+        // needed?
+        // Usually Net Sales = Gross Sales - Returns.
+        // The sales list contains both positive sales and negative returns.
+        // So summing them up gives Net Sales automatically.
         double totalRevenue = sales.stream()
                 .mapToDouble(s -> s.getTotalAmount() != null ? s.getTotalAmount() : 0)
                 .sum();
@@ -231,7 +275,8 @@ public class DashboardController {
         double estimatedProfit = totalRevenue * 0.25;
         netProfitLabel.setText(String.format("%.2f ج.م", estimatedProfit));
 
-        // Invoice Count
+        // Invoice Count (Only SOLD, exclude RETURNED for specific count?)
+        // Or count all transactions? Let's count all for now.
         invoiceCountLabel.setText(String.valueOf(sales.size()));
 
         // Low Stock
@@ -244,7 +289,6 @@ public class DashboardController {
             productsBadge.setVisible(lowStockCount > 0);
         }
 
-        // Sales Trend (Current Month vs Last Month)
         // Sales Trend (Current Month vs Last Month)
         calculateSalesTrend();
     }
@@ -310,9 +354,10 @@ public class DashboardController {
         // --- 2. Pie Chart: Top Products by Sales Quantity ---
         topProductsChart.getData().clear();
 
-        // Group by product name and sum quantities
+        // Group by product name and sum quantities (Filter out returns for this chart)
         Map<String, Integer> productSales = sales.stream()
                 .filter(s -> s.getItemName() != null && !s.getItemName().isEmpty())
+                .filter(s -> s.getQuantity() > 0) // Only positive sales
                 .collect(Collectors.groupingBy(
                         Sale::getItemName,
                         Collectors.summingInt(s -> s.getQuantity() != null ? s.getQuantity() : 0)));
@@ -409,11 +454,15 @@ public class DashboardController {
             CashierController controller = loader.getController();
             if (currentUser != null)
                 controller.setUser(currentUser);
-            Scene scene = new Scene(root);
-            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
-            stage.setScene(scene);
+
+            // Seamless transition
+            Scene currentScene = contentArea.getScene();
+            currentScene.setRoot(root);
+
             stage.setTitle(bundle.getString("cashier.title"));
-            StageUtil.applyWindowedFullScreenIfMaximized(stage);
+            if (!stage.isFullScreen()) {
+                stage.setFullScreen(true);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -426,11 +475,14 @@ public class DashboardController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
             loader.setControllerFactory(applicationContext::getBean);
             loader.setResources(bundle);
-            Scene scene = new Scene(loader.load());
-            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+            // Seamless transition
+            Scene currentScene = contentArea.getScene();
+            currentScene.setRoot(loader.load());
+
             stage.setTitle(bundle.getString("app.title"));
-            stage.setScene(scene);
-            StageUtil.applyWindowedFullScreenIfMaximized(stage);
+            if (!stage.isFullScreen()) {
+                stage.setFullScreen(true);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

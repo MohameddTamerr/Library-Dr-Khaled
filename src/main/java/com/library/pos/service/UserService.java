@@ -30,27 +30,34 @@ public class UserService {
                 .filter(user -> user.getRole() == Role.WORKER)
                 .collect(Collectors.toList());
 
-        // Populate current withdrawals
-        java.time.LocalDate now = java.time.LocalDate.now();
-        java.time.LocalDate start = now.withDayOfMonth(1);
-        java.time.LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
-
-        workers.forEach(w -> {
-            Double drawn = advanceRepository.findByWorkerAndAdvanceDateBetween(w, start, end).stream()
-                    .mapToDouble(com.library.pos.model.SalaryAdvance::getAmount)
-                    .sum();
-            w.setCurrentWithdrawal(drawn);
-        });
+        populateWithdrawals(workers);
 
         return workers;
     }
 
     public List<User> getDeliveryMen() {
-        return userRepository.findByRoleOrderByFullNameAsc(Role.DELIVERY_MEN);
+        List<User> users = userRepository.findByRoleOrderByFullNameAsc(Role.DELIVERY_MEN);
+        populateWithdrawals(users);
+        return users;
     }
 
     public List<User> getStaff() {
-        return userRepository.findByRoleInOrderByFullNameAsc(List.of(Role.WORKER, Role.DELIVERY_MEN));
+        List<User> staff = userRepository.findByRoleInOrderByFullNameAsc(List.of(Role.WORKER, Role.DELIVERY_MEN));
+        populateWithdrawals(staff);
+        return staff;
+    }
+
+    private void populateWithdrawals(List<User> users) {
+        java.time.LocalDate now = java.time.LocalDate.now();
+        java.time.LocalDate start = now.withDayOfMonth(1);
+        java.time.LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
+
+        users.forEach(w -> {
+            Double drawn = advanceRepository.findByWorkerAndAdvanceDateBetween(w, start, end).stream()
+                    .mapToDouble(com.library.pos.model.SalaryAdvance::getAmount)
+                    .sum();
+            w.setCurrentWithdrawal(drawn);
+        });
     }
 
     public long getWorkMinutes(User worker, java.time.LocalDate start, java.time.LocalDate end) {

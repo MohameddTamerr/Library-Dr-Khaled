@@ -15,15 +15,10 @@ public final class StageUtil {
         if (stage == null) {
             return;
         }
-        stage.setResizable(true);
 
         Runnable apply = () -> {
-            Rectangle2D bounds = getVisualBounds(stage);
-            stage.setX(bounds.getMinX());
-            stage.setY(bounds.getMinY());
-            stage.setWidth(bounds.getWidth());
-            stage.setHeight(bounds.getHeight());
-            stage.setMaximized(true);
+            stage.setFullScreen(true);
+            stage.setFullScreenExitHint("");
         };
 
         if (Platform.isFxApplicationThread()) {
@@ -42,11 +37,4 @@ public final class StageUtil {
         }
     }
 
-    private static Rectangle2D getVisualBounds(Stage stage) {
-        double width = Math.max(stage.getWidth(), 1);
-        double height = Math.max(stage.getHeight(), 1);
-        List<Screen> screens = Screen.getScreensForRectangle(stage.getX(), stage.getY(), width, height);
-        Screen screen = screens.isEmpty() ? Screen.getPrimary() : screens.get(0);
-        return screen.getVisualBounds();
-    }
 }

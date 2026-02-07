@@ -209,33 +209,100 @@ public class WorkersController {
     }
 
     private void handleWithdraw(User worker) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("سحب مبلغ");
-        dialog.setHeaderText("سحب مبلغ للموظف: " + worker.getFullName());
-        dialog.setContentText("المبلغ:");
+        javafx.stage.Stage dialog = new javafx.stage.Stage();
+        if (workersTable != null && workersTable.getScene() != null) {
+            dialog.initOwner(workersTable.getScene().getWindow());
+        }
 
-        dialog.showAndWait().ifPresent(amountStr -> {
+        dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
+        dialog.initStyle(javafx.stage.StageStyle.UNDECORATED);
+        dialog.setTitle("سحب مبلغ");
+
+        javafx.scene.layout.VBox root = new javafx.scene.layout.VBox(16);
+        root.setPadding(new javafx.geometry.Insets(24));
+        root.setStyle(
+                "-fx-background-color: white; -fx-border-color: #ccc; -fx-border-width: 1; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 0);");
+
+        Label header = new Label("سحب مبلغ للموظف: " + worker.getFullName());
+        header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        double current = worker.getCurrentWithdrawal() != null ? worker.getCurrentWithdrawal() : 0.0;
+        double limit = worker.getSalaryLimit() != null ? worker.getSalaryLimit() : 0.0;
+
+        Label infoLabel = new Label(String.format("المسحوبات الحالية: %.2f / الحد الأقصى: %.2f", current, limit));
+        infoLabel.setStyle("-fx-text-fill: #666;");
+
+        TextField amountField = new TextField();
+        amountField.setPromptText("أدخل المبلغ");
+
+        TextArea reasonField = new TextArea();
+        reasonField.setPromptText("سبب السلفة (اختياري)");
+        reasonField.setPrefRowCount(2);
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.setVisible(false);
+
+        javafx.scene.layout.HBox btnBox = new javafx.scene.layout.HBox(10);
+        btnBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+
+        Button cancelBtn = new Button("إلغاء");
+        cancelBtn.setOnAction(e -> dialog.close());
+
+        Button confirmBtn = new Button("تسجيل");
+        confirmBtn.setDefaultButton(true);
+        confirmBtn.setOnAction(e -> {
             try {
-                double amount = Double.parseDouble(amountStr);
-                double limit = worker.getSalaryLimit() != null ? worker.getSalaryLimit() : 0;
-                double current = worker.getCurrentWithdrawal() != null ? worker.getCurrentWithdrawal() : 0;
+                String text = amountField.getText();
+                if (text == null || text.isBlank()) {
+                    errorLabel.setText("الرجاء إدخال المبلغ");
+                    errorLabel.setVisible(true);
+                    return;
+                }
+
+                double amount = Double.parseDouble(text);
+                if (amount <= 0) {
+                    errorLabel.setText("يجب أن يكون المبلغ أكبر من صفر");
+                    errorLabel.setVisible(true);
+                    return;
+                }
 
                 if (current + amount > limit) {
                     Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    alert.initOwner(dialog); // Ensure alert is owned by dialog
                     alert.setTitle("تحذير");
                     alert.setHeaderText("تجاوز الحد المسموح!");
-                    alert.setContentText("الموظف سحب " + current + " والحد هو " + limit + ".\nهل تريد المتابعة؟");
-                    if (alert.showAndWait().get() != ButtonType.OK) {
+                    alert.setContentText("الموظف سحب " + current + " والحد هو " + limit + ".\nسيصبح الإجمالي: "
+                            + (current + amount) + "\nهل تريد المتابعة؟");
+                    if (alert.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
                         return;
                     }
                 }
 
-                userService.addAdvance(worker, amount, "manual withdraw");
+                String reason = reasonField.getText();
+                if (reason == null || reason.isBlank()) {
+                    reason = "manual withdraw";
+                }
+
+                userService.addAdvance(worker, amount, reason);
                 loadWorkers();
-            } catch (NumberFormatException e) {
-                showAlert("خطأ", "الرقم غير صحيح");
+                dialog.close();
+            } catch (NumberFormatException ex) {
+                errorLabel.setText("الرقم غير صحيح");
+                errorLabel.setVisible(true);
+            } catch (Exception ex) {
+                errorLabel.setText("خطأ: " + ex.getMessage());
+                errorLabel.setVisible(true);
             }
         });
+
+        btnBox.getChildren().addAll(cancelBtn, confirmBtn);
+        root.getChildren().addAll(header, infoLabel, amountField, reasonField, errorLabel, btnBox);
+
+        javafx.scene.Scene scene = new javafx.scene.Scene(root, 400, 350);
+        dialog.setScene(scene);
+        dialog.centerOnScreen();
+        dialog.showAndWait();
     }
 
     private void loadWorkers() {

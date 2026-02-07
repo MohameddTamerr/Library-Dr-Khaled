@@ -1,5 +1,6 @@
 package com.library.pos.controller;
 
+import com.library.pos.util.DialogUtil;
 import com.library.pos.model.PaymentMethod;
 import com.library.pos.model.Purchase;
 import com.library.pos.model.Supplier;
@@ -8,12 +9,12 @@ import com.library.pos.model.SupplierStatus;
 import com.library.pos.service.SupplierService;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.Scene;
+
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
+
 import javafx.stage.Stage;
 import org.springframework.stereotype.Component;
 
@@ -205,6 +206,26 @@ public class SuppliersController {
         loadData();
     }
 
+    @FXML
+    public void handleMergeDuplicates() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("تأكيد دمج المكرر");
+        alert.setHeaderText("هل أنت متأكد من دمج الموردين المكررين؟");
+        alert.setContentText(
+                "سيتم دمج الموردين الذين لديهم نفس الاسم ورقم الهاتف في سجل واحد، مع نقل جميع المشتريات والمدفوعات إليهم.");
+
+        if (alert.showAndWait().get() == ButtonType.OK) {
+            try {
+                supplierService.mergeDuplicates();
+                loadData();
+                showAlert("تم دمج المكرر بنجاح");
+            } catch (Exception ex) {
+                showAlert("خطأ أثناء الدمج: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+    }
+
     private Supplier buildSupplierFromForm() {
         Supplier supplier = new Supplier();
         supplier.setName(nameField.getText());
@@ -265,10 +286,6 @@ public class SuppliersController {
     }
 
     private void showPaymentDialog() {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("تسجيل دفعة للمورد");
-
         VBox root = new VBox(12);
         root.setStyle("-fx-padding: 16; -fx-background-color: #0f172a;");
 
@@ -296,7 +313,19 @@ public class SuppliersController {
         notesField.setPromptText("ملاحظات");
         notesField.setPrefRowCount(2);
 
+        // We need a reference to the stage to close it, but it's created later.
+        // We will set the onAction after stage creation or use a wrapper.
         Button saveBtn = new Button("تسجيل");
+
+        root.getChildren().addAll(
+                new Label("المورد"), supplierCombo,
+                new Label("المبلغ"), amountField,
+                new Label("طريقة الدفع"), methodCombo,
+                new Label("ملاحظات"), notesField,
+                saveBtn);
+
+        Stage dialog = DialogUtil.createDialog("تسجيل دفعة للمورد", root, suppliersTable.getScene().getWindow());
+
         saveBtn.setOnAction(e -> {
             try {
                 Supplier supplier = supplierCombo.getSelectionModel().getSelectedItem();
@@ -319,15 +348,6 @@ public class SuppliersController {
             }
         });
 
-        root.getChildren().addAll(
-                new Label("المورد"), supplierCombo,
-                new Label("المبلغ"), amountField,
-                new Label("طريقة الدفع"), methodCombo,
-                new Label("ملاحظات"), notesField,
-                saveBtn);
-
-        Scene scene = new Scene(root, 360, 420);
-        dialog.setScene(scene);
         dialog.showAndWait();
     }
 
@@ -343,10 +363,6 @@ public class SuppliersController {
     }
 
     private void showPurchasesDialog(Supplier supplier) {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("مشتريات المورد: " + supplier.getName());
-
         TableView<Purchase> table = new TableView<>();
         TableColumn<Purchase, BigDecimal> totalCol = new TableColumn<>("الإجمالي");
         TableColumn<Purchase, BigDecimal> paidCol = new TableColumn<>("المدفوع");
@@ -400,9 +416,12 @@ public class SuppliersController {
 
         VBox root = new VBox(12, table, form);
         root.setStyle("-fx-padding: 16; -fx-background-color: #0f172a;");
+        // Ensure size
+        root.setPrefWidth(700);
+        root.setPrefHeight(420);
 
-        Scene scene = new Scene(root, 700, 420);
-        dialog.setScene(scene);
+        Stage dialog = DialogUtil.createDialog("مشتريات المورد: " + supplier.getName(), root,
+                suppliersTable.getScene().getWindow());
         dialog.showAndWait();
     }
 

@@ -24,6 +24,7 @@
         <Button text="تفعيل / تعطيل" onAction="#handleToggleStatus" styleClass="button-sidebar"/>
         <Button text="عرض المشتريات" onAction="#handleViewPurchases" styleClass="button-sidebar"/>
         <Button text="تسجيل دفعة" onAction="#handleRecordPayment" styleClass="button-action"/>
+        <Button text="دمج المكرر" onAction="#handleMergeDuplicates" styleClass="button-danger"/>
         <Button text="تحديث" onAction="#handleRefresh" styleClass="button-sidebar"/>
     </HBox>
 

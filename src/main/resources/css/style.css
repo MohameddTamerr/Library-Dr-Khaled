@@ -782,3 +782,72 @@
     -fx-background-radius: 10;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 4, 0, 0, 1);
 }
+
+/* ============================================
+   Returns Feature Styles
+   ============================================ */
+
+/* Returns Button - Distinct Orange/Amber Color */
+.btn-returns {
+    -fx-background-color: #f97316;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 18;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.3), 8, 0, 0, 2);
+}
+
+.btn-returns:hover {
+    -fx-background-color: #ea580c;
+}
+
+/* Returns Popup Container */
+.returns-popup {
+    -fx-background-color: -bg-panel;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 15, 0, 0, 5);
+}
+
+/* Returns Title */
+.returns-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f97316;
+}
+
+/* Returns Confirm Button */
+.btn-confirm-return {
+    -fx-background-color: #f97316;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 12 24;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(249, 115, 22, 0.3), 10, 0, 0, 3);
+}
+
+.btn-confirm-return:hover {
+    -fx-background-color: #ea580c;
+}
+
+/* Condition Radio Buttons */
+.condition-radio-good {
+    -fx-text-fill: -color-success;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.condition-radio-bad {
+    -fx-text-fill: -color-danger;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.condition-radio-good .radio {
+    -fx-text-fill: -color-success;
+}
+
+.condition-radio-bad .radio {
+    -fx-text-fill: -color-danger;
+}

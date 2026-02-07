@@ -43,6 +43,9 @@ public class Sale {
     @Column(name = "notes")
     private String notes;
 
+    @Column(name = "return_condition")
+    private String returnCondition;
+
     public Sale() {
     }
 
@@ -137,5 +140,13 @@ public class Sale {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getReturnCondition() {
+        return returnCondition;
+    }
+
+    public void setReturnCondition(String returnCondition) {
+        this.returnCondition = returnCondition;
     }
 }

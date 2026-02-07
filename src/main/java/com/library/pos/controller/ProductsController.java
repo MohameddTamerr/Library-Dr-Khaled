@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.Optional;
+
 import java.util.ResourceBundle;
 
 @Component
@@ -110,15 +110,7 @@ public class ProductsController {
 
     @FXML
     private void handleAddNew() {
-        Optional<Product> result = showProductDialog(null);
-        result.ifPresent(product -> {
-            if (productService.findByBarcode(product.getBarcode()).isPresent()) {
-                showAlert(t("products.alert.barcode.exists"));
-                return;
-            }
-            productService.save(product);
-            refreshTable();
-        });
+        openProductDialog(null);
     }
 
     @FXML
@@ -202,23 +194,7 @@ public class ProductsController {
 
                 editBtn.setOnAction(e -> {
                     Product product = getTableView().getItems().get(getIndex());
-                    Optional<Product> updated = showProductDialog(product);
-                    updated.ifPresent(p -> {
-                        if (!product.getBarcode().equals(p.getBarcode())
-                                && productService.findByBarcode(p.getBarcode()).isPresent()) {
-                            showAlert(t("products.alert.barcode.exists"));
-                            return;
-                        }
-                        product.setName(p.getName());
-                        product.setBarcode(p.getBarcode());
-                        product.setCategory(p.getCategory());
-                        product.setCost(p.getCost());
-                        product.setSellPrice(p.getSellPrice());
-                        product.setQuantity(p.getQuantity());
-                        product.setMinStock(p.getMinStock());
-                        productService.save(product);
-                        refreshTable();
-                    });
+                    openProductDialog(product);
                 });
 
                 delBtn.setOnAction(e -> {
@@ -248,17 +224,11 @@ public class ProductsController {
 
     // ...
 
-    private Optional<Product> showProductDialog(Product existing) {
-        Dialog<Product> dialog = new Dialog<>();
-        dialog.setTitle(existing == null ? t("products.dialog.add.title") : t("products.dialog.edit.title"));
-
-        ButtonType saveButton = new ButtonType(t("products.dialog.save"), ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType(t("products.dialog.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveButton, cancelButton);
-
+    private void openProductDialog(Product existing) {
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
+        grid.setPadding(new javafx.geometry.Insets(20));
 
         TextField name = new TextField();
         TextField barcode = new TextField();
@@ -293,35 +263,59 @@ public class ProductsController {
         grid.addRow(6, new Label(t("products.field.qty")), qty);
         grid.addRow(7, new Label(t("products.field.minStock")), minStock);
 
-        dialog.getDialogPane().setContent(grid);
+        Button saveBtn = new Button(t("products.dialog.save"));
+        saveBtn.getStyleClass().add("button-primary");
+        Button cancelBtn = new Button(t("products.dialog.cancel"));
+        cancelBtn.getStyleClass().add("button-secondary");
 
-        // Validation needed to prevent nulls
+        javafx.scene.layout.HBox buttons = new javafx.scene.layout.HBox(10, saveBtn, cancelBtn);
+        buttons.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        grid.add(buttons, 1, 8);
 
-        dialog.setResultConverter(button -> {
-            if (button == saveButton) {
-                try {
-                    String catVal = category.getValue();
-                    if (catVal == null)
-                        catVal = category.getEditor().getText();
+        javafx.stage.Stage dialog = com.library.pos.util.DialogUtil.createDialog(
+                existing == null ? t("products.dialog.add.title") : t("products.dialog.edit.title"),
+                grid,
+                productsTable.getScene().getWindow());
 
-                    return new Product(
-                            name.getText().trim(),
-                            barcode.getText().trim(),
-                            catVal != null ? catVal : "",
-                            Double.parseDouble(cost.getText().trim()),
-                            Double.parseDouble(sellPrice.getText().trim()),
-                            Integer.parseInt(qty.getText().trim()),
-                            Integer.parseInt(minStock.getText().trim()),
-                            supplier.getText().trim());
-                } catch (Exception e) {
-                    showAlert(t("products.alert.invalid"));
-                    return null;
+        cancelBtn.setOnAction(e -> dialog.close());
+
+        saveBtn.setOnAction(e -> {
+            try {
+                String catVal = category.getValue();
+                if (catVal == null)
+                    catVal = category.getEditor().getText();
+
+                Product p = new Product(
+                        name.getText().trim(),
+                        barcode.getText().trim(),
+                        catVal != null ? catVal : "",
+                        Double.parseDouble(cost.getText().trim()),
+                        Double.parseDouble(sellPrice.getText().trim()),
+                        Integer.parseInt(qty.getText().trim()),
+                        Integer.parseInt(minStock.getText().trim()),
+                        supplier.getText().trim());
+
+                if (existing != null) {
+                    p.setId(existing.getId());
                 }
+
+                // Check duplicate barcode
+                if (existing == null || !existing.getBarcode().equals(p.getBarcode())) {
+                    if (productService.findByBarcode(p.getBarcode()).isPresent()) {
+                        showAlert(t("products.alert.barcode.exists"));
+                        return;
+                    }
+                }
+
+                productService.save(p);
+                refreshTable();
+                dialog.close();
+            } catch (Exception ex) {
+                showAlert(t("products.alert.invalid") + ": " + ex.getMessage());
             }
-            return null;
         });
 
-        return dialog.showAndWait();
+        dialog.showAndWait();
     }
 
     private void showAlert(String message) {
