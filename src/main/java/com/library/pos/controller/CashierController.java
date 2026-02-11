@@ -27,6 +27,8 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Priority;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -55,6 +57,10 @@ import javafx.event.ActionEvent;
 
 @Component
 public class CashierController {
+
+    // Root overlay container
+    @FXML
+    private StackPane cashierRootStack;
 
     // Header
     @FXML
@@ -305,8 +311,12 @@ public class CashierController {
         if (currentUser != null) {
             salesTotal = saleService.getDailyCash(currentUser.getId());
         }
+
+        java.math.BigDecimal supplierCashTotal = supplierService.getDailyCashPaymentsTotal();
+        double netCash = salesTotal - supplierCashTotal.doubleValue();
+
         if (dailyCashLabel != null) {
-            dailyCashLabel.setText(String.format("%.2f ج.م", salesTotal));
+            dailyCashLabel.setText(String.format("%.2f ج.م", netCash));
         }
 
         if (dailySupplierPaymentsLabel != null) {
@@ -821,8 +831,31 @@ public class CashierController {
         activeOrder = saved;
         loadOpenOrders();
         selectOpenOrder(saved);
-        showAlert(Alert.AlertType.INFORMATION, bundle.getString("cashier.order.alert.saved"));
+
+        showSuccessWindow(bundle.getString("cashier.order.alert.saved"), "رقم الطلب: " + saved.getId());
         resetOrderState();
+    }
+
+    private void showSuccessWindow(String message, String details) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/fxml/success_popup.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+
+            javafx.scene.Parent root = loader.load();
+            SuccessPopupController controller = loader.getController();
+            controller.setMessage(message);
+            controller.setDetails(details);
+
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            stage.setTitle("نجاح");
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.INFORMATION, message);
+        }
     }
 
     @FXML
@@ -1879,21 +1912,20 @@ public class CashierController {
     }
 
     private void showSupplierPaymentDialog() {
-        VBox root = new VBox(12);
-        root.setPadding(new Insets(16));
-        // Add border/background for undecorated window
-        root.setStyle(
-                "-fx-background-color: white; -fx-border-color: #ccc; -fx-border-width: 1; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 0);");
+        // Build payment form
+        VBox formCard = new VBox(12);
+        formCard.setStyle(
+                "-fx-background-color: #0f172a; -fx-padding: 30; -fx-border-color: #3b82f6; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12;");
+        formCard.setMaxWidth(450);
+        formCard.setMaxHeight(520);
 
         ComboBox<Supplier> supplierCombo = new ComboBox<>();
-        // Filter duplicates by toString (Name + Phone) representation
         List<Supplier> allSuppliers = supplierService.listAll(true);
         List<Supplier> uniqueSuppliers = allSuppliers.stream()
                 .collect(java.util.stream.Collectors.collectingAndThen(
                         java.util.stream.Collectors.toCollection(
                                 () -> new java.util.TreeSet<>(java.util.Comparator.comparing(Supplier::toString))),
                         java.util.ArrayList::new));
-
         supplierCombo.setItems(FXCollections.observableArrayList(uniqueSuppliers));
         supplierCombo.setPromptText("اختر المورد");
         supplierCombo.setMaxWidth(Double.MAX_VALUE);
@@ -1902,11 +1934,7 @@ public class CashierController {
         amountField.setPromptText("المبلغ المدفوع اليوم");
 
         ComboBox<String> methodCombo = new ComboBox<>();
-        methodCombo.setItems(FXCollections.observableArrayList(
-                "Cash",
-                "InstaPay",
-                "Visa",
-                "Vodafone Cash"));
+        methodCombo.setItems(FXCollections.observableArrayList("Cash", "InstaPay", "Visa", "Vodafone Cash"));
         methodCombo.getSelectionModel().selectFirst();
         methodCombo.setMaxWidth(Double.MAX_VALUE);
 
@@ -1914,26 +1942,43 @@ public class CashierController {
         notesField.setPromptText("ملاحظات");
         notesField.setPrefRowCount(2);
 
-        Stage dialog = DialogUtil.createDialog("دفعة للمورد", root, workerNameLabel.getScene().getWindow());
+        // Build the overlay (dark background + card)
+        VBox overlay = new VBox();
+        overlay.setAlignment(javafx.geometry.Pos.CENTER);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.5);");
 
+        // Title row
+        HBox titleRow = new HBox();
+        titleRow.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        Label titleLabel = new Label("دفعة للمورد");
+        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+        Button closeBtn = new Button("✕");
+        closeBtn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #94a3b8; -fx-font-size: 18px; -fx-cursor: hand;");
+        closeBtn.setOnAction(e -> cashierRootStack.getChildren().remove(overlay));
+        titleRow.getChildren().addAll(titleLabel, closeBtn);
+
+        // Buttons
         HBox btnBox = new HBox(10);
-        btnBox.setAlignment(Pos.CENTER_RIGHT);
-
+        btnBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         Button cancelBtn = new Button("إلغاء");
-        cancelBtn.setOnAction(e -> dialog.close());
-
+        cancelBtn.setStyle("-fx-background-color: #475569; -fx-text-fill: white; -fx-padding: 8 20; -fx-cursor: hand;");
+        cancelBtn.setOnAction(e -> cashierRootStack.getChildren().remove(overlay));
         Button saveBtn = new Button("تسجيل");
+        saveBtn.setStyle(
+                "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-padding: 8 20; -fx-cursor: hand; -fx-font-weight: bold;");
         saveBtn.setDefaultButton(true);
         saveBtn.setOnAction(e -> {
             try {
                 Supplier supplier = supplierCombo.getSelectionModel().getSelectedItem();
                 if (supplier == null) {
-                    showAlert(Alert.AlertType.WARNING, "يرجى اختيار المورد");
+                    showInAppMessage("يرجى اختيار المورد", "#ef4444");
                     return;
                 }
                 String amtStr = amountField.getText();
                 if (amtStr == null || amtStr.isBlank()) {
-                    showAlert(Alert.AlertType.WARNING, "يرجى إدخال المبلغ");
+                    showInAppMessage("يرجى إدخال المبلغ", "#ef4444");
                     return;
                 }
                 java.math.BigDecimal amount = java.math.BigDecimal.valueOf(parseAmount(amtStr));
@@ -1945,27 +1990,64 @@ public class CashierController {
                 supplierService.recordPayment(payment);
                 updateDailyCash();
                 updateDataSignature();
-                dialog.close();
-                showAlert(Alert.AlertType.INFORMATION, "تم تسجيل دفعة المورد بنجاح");
+                cashierRootStack.getChildren().remove(overlay);
+                showInAppMessage("تم تسجيل دفعة المورد بنجاح", "#10b981");
             } catch (Exception ex) {
                 ex.printStackTrace();
-                showAlert(Alert.AlertType.ERROR, "خطأ: " + ex.getMessage());
+                showInAppMessage("خطأ: " + ex.getMessage(), "#ef4444");
             }
         });
-
         btnBox.getChildren().addAll(cancelBtn, saveBtn);
 
-        root.getChildren().addAll(
-                new Label("المورد"), supplierCombo,
-                new Label("المبلغ"), amountField,
-                new Label("طريقة الدفع"), methodCombo,
-                new Label("ملاحظات"), notesField,
+        // Labels
+        Label l1 = new Label("المورد");
+        l1.setStyle("-fx-text-fill: #cbd5e1;");
+        Label l2 = new Label("المبلغ");
+        l2.setStyle("-fx-text-fill: #cbd5e1;");
+        Label l3 = new Label("طريقة الدفع");
+        l3.setStyle("-fx-text-fill: #cbd5e1;");
+        Label l4 = new Label("ملاحظات");
+        l4.setStyle("-fx-text-fill: #cbd5e1;");
+
+        formCard.getChildren().addAll(titleRow, l1, supplierCombo, l2, amountField, l3, methodCombo, l4, notesField,
                 btnBox);
+        overlay.getChildren().add(formCard);
 
-        root.setPrefWidth(360);
+        // Add overlay to the root StackPane
+        cashierRootStack.getChildren().add(overlay);
+    }
 
-        dialog.centerOnScreen();
-        dialog.showAndWait();
+    /**
+     * Show a brief in-app message overlay (success or error).
+     */
+    private void showInAppMessage(String message, String borderColor) {
+        VBox overlay = new VBox();
+        overlay.setAlignment(javafx.geometry.Pos.CENTER);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.5);");
+
+        String icon = borderColor.contains("10b981") ? "✓" : "⚠";
+        Label iconLabel = new Label(icon);
+        iconLabel.setStyle("-fx-font-size: 36px; -fx-text-fill: " + borderColor + ";");
+
+        Label msgLabel = new Label(message);
+        msgLabel.setStyle(
+                "-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white; -fx-wrap-text: true; -fx-text-alignment: center;");
+        msgLabel.setMaxWidth(350);
+
+        Button okBtn = new Button("موافق");
+        okBtn.setStyle("-fx-background-color: " + borderColor
+                + "; -fx-text-fill: white; -fx-padding: 10 30; -fx-cursor: hand; -fx-font-weight: bold;");
+        okBtn.setOnAction(e -> cashierRootStack.getChildren().remove(overlay));
+
+        VBox card = new VBox(16, iconLabel, msgLabel, okBtn);
+        card.setAlignment(javafx.geometry.Pos.CENTER);
+        card.setStyle("-fx-background-color: #0f172a; -fx-padding: 40; -fx-border-color: " + borderColor
+                + "; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12;");
+        card.setMaxWidth(400);
+        card.setMaxHeight(200);
+
+        overlay.getChildren().add(card);
+        cashierRootStack.getChildren().add(overlay);
     }
 
     private PaymentMethod mapSupplierPaymentMethod(String method) {

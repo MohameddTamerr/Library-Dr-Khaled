@@ -14,6 +14,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT p.category FROM Product p WHERE p.category IS NOT NULL")
     List<String> findDistinctCategories();
 
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT p.supplier FROM Product p WHERE p.supplier IS NOT NULL")
+    List<String> findDistinctSuppliers();
+
     @org.springframework.data.jpa.repository.Query("SELECT MAX(p.updatedAt) FROM Product p")
     java.time.LocalDateTime findLatestUpdate();
 }

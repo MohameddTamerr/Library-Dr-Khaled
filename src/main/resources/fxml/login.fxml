@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.shape.SVGPath?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
 <HBox xmlns:fx="http://javafx.com/fxml/1" 
       xmlns="http://javafx.com/javafx/21" 
@@ -20,8 +21,13 @@
 
     <!-- LEFT SIDE: Branding -->
     <VBox HBox.hgrow="ALWAYS" styleClass="branding-panel" alignment="CENTER" spacing="10">
-        <!-- Placeholder for Logo/Icon -->
-        <Region prefHeight="20"/> 
+        <!-- Logo/Icon -->
+        <ImageView fitHeight="120.0" fitWidth="120.0" pickOnBounds="true" preserveRatio="true">
+            <image>
+                <Image url="@../images/app_icon.png" />
+            </image>
+        </ImageView>
+        <Region prefHeight="10"/> 
         <Label text="%app.title" styleClass="branding-text"/>
         <Label text="Dr. Khaled Library System" styleClass="branding-subtext"/>
     </VBox>

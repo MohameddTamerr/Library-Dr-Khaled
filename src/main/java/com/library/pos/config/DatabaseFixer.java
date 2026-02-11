@@ -16,8 +16,16 @@ public class DatabaseFixer implements CommandLineRunner {
         try {
             System.out.println("Running Database Schema Fixes...");
             // Fix status column length/type for 'DELIVERY' support
-            jdbcTemplate.execute("ALTER TABLE orders MODIFY COLUMN status VARCHAR(50)");
-            System.out.println("Schema fix executed: ALTER TABLE orders MODIFY COLUMN status VARCHAR(50)");
+            try {
+                jdbcTemplate.execute("ALTER TABLE orders MODIFY COLUMN status VARCHAR(50)");
+                System.out.println("Schema fix executed: ALTER TABLE orders MODIFY COLUMN status VARCHAR(50)");
+            } catch (Exception e) {
+                // Ignore if SQLite (feature not supported/syntax different) or already applied
+                // SQLite doesn't support MODIFY COLUMN directly
+                if (!e.getMessage().contains("SQLITE_ERROR")) {
+                    System.out.println("Schema fix warning (orders status): " + e.getMessage());
+                }
+            }
 
             try {
                 jdbcTemplate.execute("ALTER TABLE customers ADD COLUMN customer_code VARCHAR(5)");

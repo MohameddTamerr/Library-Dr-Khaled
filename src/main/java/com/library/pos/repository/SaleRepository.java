@@ -18,7 +18,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
                         @org.springframework.data.repository.query.Param("workerId") Long workerId,
                         @org.springframework.data.repository.query.Param("productName") String productName);
 
-        @org.springframework.data.jpa.repository.Query("SELECT SUM(s.totalAmount) FROM Sale s WHERE s.worker.id = :workerId AND s.timestamp BETWEEN :start AND :end AND s.status = 'SOLD'")
+        @org.springframework.data.jpa.repository.Query("SELECT SUM(s.totalAmount) FROM Sale s WHERE s.worker.id = :workerId AND s.timestamp BETWEEN :start AND :end AND (s.status = 'SOLD' OR s.status = 'RETURNED')")
         Double calculateDailyCash(@org.springframework.data.repository.query.Param("workerId") Long workerId,
                         @org.springframework.data.repository.query.Param("start") LocalDateTime start,
                         @org.springframework.data.repository.query.Param("end") LocalDateTime end);

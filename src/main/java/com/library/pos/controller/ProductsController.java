@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import java.util.ResourceBundle;
 
@@ -235,9 +237,85 @@ public class ProductsController {
 
         ComboBox<String> category = new ComboBox<>();
         category.setEditable(true);
-        category.setItems(FXCollections.observableArrayList(productService.getAllCategories()));
+        List<String> allCategories = new java.util.ArrayList<>(productService.getAllCategories());
+        category.setItems(FXCollections.observableArrayList(allCategories));
 
-        TextField supplier = new TextField();
+        // Category autocomplete/filter
+        category.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null)
+                return;
+            if (category.getSelectionModel().getSelectedItem() != null &&
+                    category.getSelectionModel().getSelectedItem().equals(newVal)) {
+                return;
+            }
+            String lower = newVal.toLowerCase();
+            List<String> filtered = allCategories.stream()
+                    .filter(s -> s != null && s.toLowerCase().contains(lower))
+                    .distinct()
+                    .toList();
+            if (!filtered.isEmpty()) {
+                category.setItems(FXCollections.observableArrayList(filtered));
+                if (!newVal.isEmpty())
+                    category.show();
+            } else {
+                category.setItems(FXCollections.observableArrayList());
+                category.hide();
+            }
+        });
+
+        // "+" button to create a new category on the fly
+        Button addCatBtn = new Button("+");
+        addCatBtn.getStyleClass().add("button-primary");
+        addCatBtn.setStyle("-fx-min-width: 32; -fx-min-height: 32; -fx-font-size: 14px; -fx-font-weight: bold;");
+        addCatBtn.setOnAction(ev -> {
+            String val = category.getEditor().getText();
+            if (val != null && !val.isBlank()) {
+                productService.saveCategory(val.trim());
+                allCategories.clear();
+                allCategories.addAll(productService.getAllCategories());
+                category.setItems(FXCollections.observableArrayList(allCategories));
+                category.setValue(val.trim());
+            }
+        });
+        javafx.scene.layout.HBox categoryBox = new javafx.scene.layout.HBox(6, category, addCatBtn);
+        categoryBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        category.setMaxWidth(Double.MAX_VALUE);
+        javafx.scene.layout.HBox.setHgrow(category, javafx.scene.layout.Priority.ALWAYS);
+
+        ComboBox<String> supplier = new ComboBox<>();
+        supplier.setEditable(true);
+        List<String> allSuppliers = productService.getAllSuppliers();
+        supplier.setItems(FXCollections.observableArrayList(allSuppliers));
+
+        // Autocomplete/Filter Logic
+        supplier.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null)
+                return;
+
+            // If user selected an item, newText equals that item. Don't filter.
+            if (supplier.getSelectionModel().getSelectedItem() != null &&
+                    supplier.getSelectionModel().getSelectedItem().equals(newVal)) {
+                return;
+            }
+
+            String lower = newVal.toLowerCase();
+            List<String> filtered = allSuppliers.stream()
+                    .filter(s -> s != null && s.toLowerCase().contains(lower))
+                    .distinct()
+                    .toList();
+
+            if (!filtered.isEmpty()) {
+                supplier.setItems(FXCollections.observableArrayList(filtered));
+                if (!newVal.isEmpty()) {
+                    supplier.show();
+                }
+            } else {
+                // Keep empty list to show no matches, but allow typing new name
+                supplier.setItems(FXCollections.observableArrayList());
+                supplier.hide();
+            }
+        });
+
         TextField cost = new TextField();
         TextField sellPrice = new TextField();
         TextField qty = new TextField();
@@ -247,21 +325,21 @@ public class ProductsController {
             name.setText(existing.getName());
             barcode.setText(existing.getBarcode());
             category.setValue(existing.getCategory());
-            supplier.setText(existing.getSupplier());
+            supplier.setValue(existing.getSupplier());
             cost.setText(String.valueOf(existing.getCost()));
             sellPrice.setText(String.valueOf(existing.getSellPrice()));
             qty.setText(String.valueOf(existing.getQuantity()));
             minStock.setText(String.valueOf(existing.getMinStock()));
         }
 
-        grid.addRow(0, new Label(t("products.field.name")), name);
-        grid.addRow(1, new Label(t("products.field.barcode")), barcode);
-        grid.addRow(2, new Label(t("products.field.category")), category);
-        grid.addRow(3, new Label(t("products.field.supplier")), supplier);
-        grid.addRow(4, new Label(t("products.field.cost")), cost);
-        grid.addRow(5, new Label(t("products.field.sellPrice")), sellPrice);
-        grid.addRow(6, new Label(t("products.field.qty")), qty);
-        grid.addRow(7, new Label(t("products.field.minStock")), minStock);
+        grid.addRow(0, createStyledLabel(t("products.field.name")), name);
+        grid.addRow(1, createStyledLabel(t("products.field.barcode")), barcode);
+        grid.addRow(2, createStyledLabel(t("products.field.category")), categoryBox);
+        grid.addRow(3, createStyledLabel(t("products.field.supplier")), supplier);
+        grid.addRow(4, createStyledLabel(t("products.field.cost")), cost);
+        grid.addRow(5, createStyledLabel(t("products.field.sellPrice")), sellPrice);
+        grid.addRow(6, createStyledLabel(t("products.field.qty")), qty);
+        grid.addRow(7, createStyledLabel(t("products.field.minStock")), minStock);
 
         Button saveBtn = new Button(t("products.dialog.save"));
         saveBtn.getStyleClass().add("button-primary");
@@ -285,6 +363,10 @@ public class ProductsController {
                 if (catVal == null)
                     catVal = category.getEditor().getText();
 
+                String supVal = supplier.getValue();
+                if (supVal == null)
+                    supVal = supplier.getEditor().getText();
+
                 Product p = new Product(
                         name.getText().trim(),
                         barcode.getText().trim(),
@@ -293,7 +375,7 @@ public class ProductsController {
                         Double.parseDouble(sellPrice.getText().trim()),
                         Integer.parseInt(qty.getText().trim()),
                         Integer.parseInt(minStock.getText().trim()),
-                        supplier.getText().trim());
+                        supVal != null ? supVal : "");
 
                 if (existing != null) {
                     p.setId(existing.getId());
@@ -329,6 +411,12 @@ public class ProductsController {
     private String t(String key) {
         ResourceBundle bundle = resources != null ? resources : ResourceBundle.getBundle("messages");
         return bundle.getString(key);
+    }
+
+    private Label createStyledLabel(String text) {
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+        return label;
     }
 
     private static class HBoxWrapper extends javafx.scene.layout.HBox {

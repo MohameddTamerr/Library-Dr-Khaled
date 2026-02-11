@@ -13,5 +13,8 @@ public interface SupplierPaymentRepository extends JpaRepository<SupplierPayment
     @Query("SELECT SUM(p.amount) FROM SupplierPayment p WHERE p.paymentDate BETWEEN :start AND :end")
     BigDecimal calculateDailyTotal(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    @Query("SELECT SUM(p.amount) FROM SupplierPayment p WHERE p.paymentDate BETWEEN :start AND :end AND p.method = 'CASH'")
+    BigDecimal calculateDailyCashTotal(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
     List<SupplierPayment> findBySupplier_IdOrderByPaymentDateDesc(Long supplierId);
 }

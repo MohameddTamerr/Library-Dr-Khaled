@@ -133,9 +133,9 @@ public class SupplierService {
         BigDecimal newTotalPaid = valueOrZero(locked.getTotalPaid())
                 .add(valueOrZero(payment.getAmount()));
         BigDecimal newBalance = valueOrZero(locked.getTotalPurchases()).subtract(newTotalPaid);
-        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Payment exceeds supplier balance due.");
-        }
+        // if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+        // throw new IllegalArgumentException("Payment exceeds supplier balance due.");
+        // }
         locked.setTotalPaid(newTotalPaid);
         locked.setBalanceDue(newBalance);
 
@@ -156,6 +156,13 @@ public class SupplierService {
         LocalDateTime start = LocalDate.now().atStartOfDay();
         LocalDateTime end = LocalDate.now().atTime(LocalTime.MAX);
         BigDecimal total = paymentRepository.calculateDailyTotal(start, end);
+        return total != null ? total : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getDailyCashPaymentsTotal() {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = LocalDate.now().atTime(LocalTime.MAX);
+        BigDecimal total = paymentRepository.calculateDailyCashTotal(start, end);
         return total != null ? total : BigDecimal.ZERO;
     }
 
@@ -203,10 +210,10 @@ public class SupplierService {
         }
         Supplier existing = supplierRepository.findById(supplier.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Supplier not found."));
-        BigDecimal balance = valueOrZero(existing.getBalanceDue());
-        if (amount.compareTo(balance) > 0) {
-            throw new IllegalArgumentException("Payment exceeds supplier balance due.");
-        }
+        // BigDecimal balance = valueOrZero(existing.getBalanceDue());
+        // if (amount.compareTo(balance) > 0) {
+        // throw new IllegalArgumentException("Payment exceeds supplier balance due.");
+        // }
     }
 
     private Supplier resolveSupplierForPurchase(Purchase purchase) {
