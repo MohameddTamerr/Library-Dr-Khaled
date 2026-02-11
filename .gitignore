@@ -1,0 +1,23 @@
+# Build artifacts
+dist/
+dist/*
+target/
+target/*
+*.jar
+*.exe
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+
+# Database (optional if using SQLite locally)
+# library.db
