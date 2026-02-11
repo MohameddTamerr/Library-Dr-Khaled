@@ -39,6 +39,9 @@ public class SupplierPayment {
     @Column(name = "method", nullable = false, length = 6)
     private PaymentMethod method = PaymentMethod.CASH;
 
+    @Column(name = "method_display", length = 32)
+    private String methodDisplay;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
@@ -46,12 +49,13 @@ public class SupplierPayment {
     }
 
     public SupplierPayment(Long id, Supplier supplier, BigDecimal amount, LocalDateTime paymentDate,
-            PaymentMethod method, String notes) {
+            PaymentMethod method, String methodDisplay, String notes) {
         this.id = id;
         this.supplier = supplier;
         this.amount = amount;
         this.paymentDate = paymentDate;
         this.method = method;
+        this.methodDisplay = methodDisplay;
         this.notes = notes;
     }
 
@@ -99,6 +103,14 @@ public class SupplierPayment {
         return notes;
     }
 
+    public String getMethodDisplay() {
+        return methodDisplay;
+    }
+
+    public void setMethodDisplay(String methodDisplay) {
+        this.methodDisplay = methodDisplay;
+    }
+
     public void setNotes(String notes) {
         this.notes = notes;
     }
@@ -110,6 +122,13 @@ public class SupplierPayment {
         }
         if (method == null) {
             method = PaymentMethod.CASH;
+        }
+        if (methodDisplay == null || methodDisplay.isBlank()) {
+            methodDisplay = switch (method) {
+                case CASH -> "Cash";
+                case BANK -> "Bank";
+                default -> "Other";
+            };
         }
     }
 }

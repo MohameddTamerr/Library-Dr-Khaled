@@ -6,6 +6,7 @@ import javafx.scene.Node;
 
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -62,5 +63,32 @@ public class DialogUtil {
 
         stage.setScene(scene);
         return stage;
+    }
+
+    public static void initOwner(Dialog<?> dialog, Window preferredOwner) {
+        if (dialog == null) {
+            return;
+        }
+        Window owner = resolveOwner(preferredOwner);
+        if (owner != null) {
+            dialog.initOwner(owner);
+        }
+    }
+
+    private static Window resolveOwner(Window preferredOwner) {
+        if (preferredOwner != null && preferredOwner.isShowing()) {
+            return preferredOwner;
+        }
+        for (Window window : Window.getWindows()) {
+            if (window.isShowing() && window.isFocused()) {
+                return window;
+            }
+        }
+        for (Window window : Window.getWindows()) {
+            if (window.isShowing()) {
+                return window;
+            }
+        }
+        return null;
     }
 }

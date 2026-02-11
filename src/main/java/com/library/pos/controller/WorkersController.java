@@ -3,6 +3,7 @@ package com.library.pos.controller;
 import com.library.pos.model.User;
 import com.library.pos.service.UserService;
 import com.library.pos.util.AutoRefreshUtil;
+import com.library.pos.util.DialogUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
@@ -372,10 +373,10 @@ public class WorkersController {
     @FXML
     private void handleAddWorker() {
         try {
-            String name = nameField.getText();
-            String username = usernameField.getText();
-            String password = passwordField.getText();
-            String phone = phoneField.getText();
+            String name = nameField.getText() != null ? nameField.getText().trim() : "";
+            String username = usernameField.getText() != null ? usernameField.getText().trim() : "";
+            String password = passwordField.getText() != null ? passwordField.getText().trim() : "";
+            String phone = phoneField.getText() != null ? phoneField.getText().trim() : "";
             Double rate = Double.parseDouble(rateField.getText());
             Double limit = Double.parseDouble(limitField.getText());
             com.library.pos.model.Role selectedRole = getSelectedRole();
@@ -445,6 +446,7 @@ public class WorkersController {
 
     private void handleDeleteWorker(User worker) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        DialogUtil.initOwner(alert, workersTable.getScene() != null ? workersTable.getScene().getWindow() : null);
         alert.setTitle("تأكيد الحذف");
         alert.setHeaderText("حذف الموظف: " + worker.getFullName());
         alert.setContentText("هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.");
@@ -485,6 +487,7 @@ public class WorkersController {
         long mins = minutes % 60;
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        DialogUtil.initOwner(alert, workersTable.getScene() != null ? workersTable.getScene().getWindow() : null);
         alert.setTitle("تقرير العمل");
         alert.setHeaderText("تقرير شهر " + now.getMonth().toString());
         alert.setContentText("الموظف: " + worker.getFullName() + "\n" +
@@ -495,6 +498,7 @@ public class WorkersController {
 
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        DialogUtil.initOwner(alert, workersTable.getScene() != null ? workersTable.getScene().getWindow() : null);
         alert.setTitle(title);
         alert.setContentText(content);
         alert.show();

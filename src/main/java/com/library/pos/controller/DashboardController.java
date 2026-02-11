@@ -6,6 +6,7 @@ import com.library.pos.model.User;
 import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
 import com.library.pos.util.AutoRefreshUtil;
+import com.library.pos.util.DialogUtil;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -497,6 +498,7 @@ public class DashboardController {
         } catch (Exception e) {
             e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogUtil.initOwner(alert, contentArea != null && contentArea.getScene() != null ? contentArea.getScene().getWindow() : null);
             alert.setTitle("خطأ");
             alert.setHeaderText("فشل تحميل الصفحة");
             alert.setContentText(e.getMessage());
