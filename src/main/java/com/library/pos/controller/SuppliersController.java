@@ -1,6 +1,5 @@
 package com.library.pos.controller;
 
-import com.library.pos.util.DialogUtil;
 import com.library.pos.model.PaymentMethod;
 import com.library.pos.model.Purchase;
 import com.library.pos.model.Supplier;
@@ -13,9 +12,9 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
+
 import javafx.scene.layout.VBox;
 
-import javafx.stage.Stage;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -73,12 +72,35 @@ public class SuppliersController {
     private Label totalPaidLabel;
     @FXML
     private Label balanceDueLabel;
+    @FXML
+    private VBox successOverlay;
+    @FXML
+    private Label successMessageLabel;
+    @FXML
+    private Label successDetailsLabel;
+    @FXML
+    private VBox paymentOverlay;
+    @FXML
+    private ComboBox<Supplier> paymentSupplierCombo;
+    @FXML
+    private TextField paymentAmountField;
+    @FXML
+    private ComboBox<String> paymentMethodCombo;
+    @FXML
+    private TextArea paymentNotesField;
+    @FXML
+    private VBox errorOverlay;
+    @FXML
+    private Label errorMessageLabel;
 
     private final SupplierService supplierService;
+    private final org.springframework.context.ApplicationContext applicationContext;
     private Long editingId;
 
-    public SuppliersController(SupplierService supplierService) {
+    public SuppliersController(SupplierService supplierService,
+            org.springframework.context.ApplicationContext applicationContext) {
         this.supplierService = supplierService;
+        this.applicationContext = applicationContext;
     }
 
     @FXML
@@ -142,11 +164,31 @@ public class SuppliersController {
         try {
             Supplier supplier = buildSupplierFromForm();
             supplier.setId(null);
-            supplierService.saveSupplier(supplier);
+            Supplier saved = supplierService.saveSupplier(supplier);
             clearForm();
             loadData();
+            showSuccessWindow("تم تسجيل المورد بنجاح", "المورد: " + saved.getName());
         } catch (Exception ex) {
             showAlert(ex.getMessage());
+        }
+    }
+
+    private void showSuccessWindow(String message, String details) {
+        if (successOverlay != null && successMessageLabel != null) {
+            successMessageLabel.setText(message);
+            if (successDetailsLabel != null) {
+                successDetailsLabel.setText(details != null ? details : "");
+            }
+            successOverlay.setVisible(true);
+            successOverlay.setManaged(true);
+        }
+    }
+
+    @FXML
+    public void handleCloseSuccess() {
+        if (successOverlay != null) {
+            successOverlay.setVisible(false);
+            successOverlay.setManaged(false);
         }
     }
 
@@ -198,7 +240,52 @@ public class SuppliersController {
 
     @FXML
     public void handleRecordPayment() {
-        showPaymentDialog();
+        // Populate the payment overlay
+        if (paymentSupplierCombo != null) {
+            paymentSupplierCombo.setItems(FXCollections.observableArrayList(supplierService.listAll(true)));
+            Supplier selected = suppliersTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                paymentSupplierCombo.getSelectionModel().select(selected);
+            }
+        }
+        if (paymentMethodCombo != null && paymentMethodCombo.getItems().isEmpty()) {
+            paymentMethodCombo.setItems(FXCollections.observableArrayList("Cash", "InstaPay", "Visa", "Vodafone Cash"));
+            paymentMethodCombo.getSelectionModel().selectFirst();
+        }
+        if (paymentAmountField != null)
+            paymentAmountField.clear();
+        if (paymentNotesField != null)
+            paymentNotesField.clear();
+        showOverlay(paymentOverlay);
+    }
+
+    @FXML
+    public void handleSavePayment() {
+        try {
+            Supplier supplier = paymentSupplierCombo.getSelectionModel().getSelectedItem();
+            if (supplier == null) {
+                showAlert("يرجى اختيار المورد");
+                return;
+            }
+            BigDecimal amount = parseAmount(paymentAmountField.getText());
+            SupplierPayment payment = new SupplierPayment();
+            payment.setSupplier(supplier);
+            payment.setAmount(amount);
+            payment.setMethod(mapSupplierPaymentMethod(paymentMethodCombo.getSelectionModel().getSelectedItem()));
+            payment.setNotes(paymentNotesField.getText());
+            supplierService.recordPayment(payment);
+            hideOverlay(paymentOverlay);
+            loadData();
+            loadPaymentsForSupplier(supplier);
+            showSuccessWindow("تم تسجيل دفعة المورد بنجاح", "المبلغ: " + amount);
+        } catch (Exception ex) {
+            showAlert(ex.getMessage());
+        }
+    }
+
+    @FXML
+    public void handleClosePayment() {
+        hideOverlay(paymentOverlay);
     }
 
     @FXML
@@ -208,21 +295,13 @@ public class SuppliersController {
 
     @FXML
     public void handleMergeDuplicates() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("تأكيد دمج المكرر");
-        alert.setHeaderText("هل أنت متأكد من دمج الموردين المكررين؟");
-        alert.setContentText(
-                "سيتم دمج الموردين الذين لديهم نفس الاسم ورقم الهاتف في سجل واحد، مع نقل جميع المشتريات والمدفوعات إليهم.");
-
-        if (alert.showAndWait().get() == ButtonType.OK) {
-            try {
-                supplierService.mergeDuplicates();
-                loadData();
-                showAlert("تم دمج المكرر بنجاح");
-            } catch (Exception ex) {
-                showAlert("خطأ أثناء الدمج: " + ex.getMessage());
-                ex.printStackTrace();
-            }
+        try {
+            supplierService.mergeDuplicates();
+            loadData();
+            showSuccessWindow("تم دمج المكرر بنجاح", "");
+        } catch (Exception ex) {
+            showAlert("خطأ أثناء الدمج: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
@@ -285,70 +364,18 @@ public class SuppliersController {
         return String.format("%.2f", value);
     }
 
-    private void showPaymentDialog() {
-        VBox root = new VBox(12);
-        root.setStyle("-fx-padding: 16; -fx-background-color: #0f172a;");
-
-        ComboBox<Supplier> supplierCombo = new ComboBox<>();
-        supplierCombo.setItems(FXCollections.observableArrayList(supplierService.listAll(true)));
-        supplierCombo.setPromptText("اختر المورد");
-
-        Supplier selected = suppliersTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            supplierCombo.getSelectionModel().select(selected);
+    private void showOverlay(VBox overlay) {
+        if (overlay != null) {
+            overlay.setVisible(true);
+            overlay.setManaged(true);
         }
+    }
 
-        TextField amountField = new TextField();
-        amountField.setPromptText("المبلغ");
-
-        ComboBox<String> methodCombo = new ComboBox<>();
-        methodCombo.setItems(FXCollections.observableArrayList(
-                "Cash",
-                "InstaPay",
-                "Visa",
-                "Vodafone Cash"));
-        methodCombo.getSelectionModel().selectFirst();
-
-        TextArea notesField = new TextArea();
-        notesField.setPromptText("ملاحظات");
-        notesField.setPrefRowCount(2);
-
-        // We need a reference to the stage to close it, but it's created later.
-        // We will set the onAction after stage creation or use a wrapper.
-        Button saveBtn = new Button("تسجيل");
-
-        root.getChildren().addAll(
-                new Label("المورد"), supplierCombo,
-                new Label("المبلغ"), amountField,
-                new Label("طريقة الدفع"), methodCombo,
-                new Label("ملاحظات"), notesField,
-                saveBtn);
-
-        Stage dialog = DialogUtil.createDialog("تسجيل دفعة للمورد", root, suppliersTable.getScene().getWindow());
-
-        saveBtn.setOnAction(e -> {
-            try {
-                Supplier supplier = supplierCombo.getSelectionModel().getSelectedItem();
-                if (supplier == null) {
-                    showAlert("يرجى اختيار المورد");
-                    return;
-                }
-                BigDecimal amount = parseAmount(amountField.getText());
-                SupplierPayment payment = new SupplierPayment();
-                payment.setSupplier(supplier);
-                payment.setAmount(amount);
-                payment.setMethod(mapSupplierPaymentMethod(methodCombo.getSelectionModel().getSelectedItem()));
-                payment.setNotes(notesField.getText());
-                supplierService.recordPayment(payment);
-                dialog.close();
-                loadData();
-                loadPaymentsForSupplier(supplier);
-            } catch (Exception ex) {
-                showAlert(ex.getMessage());
-            }
-        });
-
-        dialog.showAndWait();
+    private void hideOverlay(VBox overlay) {
+        if (overlay != null) {
+            overlay.setVisible(false);
+            overlay.setManaged(false);
+        }
     }
 
     private PaymentMethod mapSupplierPaymentMethod(String method) {
@@ -414,15 +441,47 @@ public class SuppliersController {
 
         HBox form = new HBox(8, totalField, paidField, notesField, addBtn);
 
-        VBox root = new VBox(12, table, form);
-        root.setStyle("-fx-padding: 16; -fx-background-color: #0f172a;");
-        // Ensure size
-        root.setPrefWidth(700);
-        root.setPrefHeight(420);
+        VBox content = new VBox(12, table, form);
+        content.setStyle(
+                "-fx-background-color: #0f172a; -fx-padding: 20; -fx-border-color: #3b82f6; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12;");
+        content.setMaxWidth(720);
+        content.setMaxHeight(480);
 
-        Stage dialog = DialogUtil.createDialog("مشتريات المورد: " + supplier.getName(), root,
-                suppliersTable.getScene().getWindow());
-        dialog.showAndWait();
+        // Title row with close button
+        HBox titleRow = new HBox();
+        titleRow.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        Label titleLabel = new Label("مشتريات المورد: " + supplier.getName());
+        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
+        javafx.scene.layout.HBox.setHgrow(titleLabel, javafx.scene.layout.Priority.ALWAYS);
+        Button closeBtn = new Button("✕");
+        closeBtn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #94a3b8; -fx-font-size: 16px; -fx-cursor: hand;");
+
+        VBox cardWithTitle = new VBox(10, titleRow, content);
+        cardWithTitle.setStyle(
+                "-fx-background-color: #0f172a; -fx-padding: 20; -fx-border-color: #3b82f6; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12;");
+        cardWithTitle.setMaxWidth(720);
+        cardWithTitle.setMaxHeight(520);
+
+        VBox overlay = new VBox();
+        overlay.setAlignment(javafx.geometry.Pos.CENTER);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.5);");
+
+        titleRow.getChildren().addAll(titleLabel, closeBtn);
+        closeBtn.setOnAction(e -> {
+            if (nameField.getScene() != null
+                    && nameField.getScene().getRoot() instanceof javafx.scene.layout.StackPane sp) {
+                sp.getChildren().remove(overlay);
+            }
+        });
+
+        overlay.getChildren().add(cardWithTitle);
+
+        // Add to root StackPane
+        if (nameField.getScene() != null
+                && nameField.getScene().getRoot() instanceof javafx.scene.layout.StackPane sp) {
+            sp.getChildren().add(overlay);
+        }
     }
 
     private void loadPaymentsForSupplier(Supplier supplier) {
@@ -481,7 +540,14 @@ public class SuppliersController {
     }
 
     private void showAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
-        alert.showAndWait();
+        if (errorOverlay != null && errorMessageLabel != null) {
+            errorMessageLabel.setText(message);
+            showOverlay(errorOverlay);
+        }
+    }
+
+    @FXML
+    public void handleCloseError() {
+        hideOverlay(errorOverlay);
     }
 }

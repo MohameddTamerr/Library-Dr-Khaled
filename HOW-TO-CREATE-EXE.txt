@@ -1,0 +1,69 @@
+HOW TO CREATE LibraryPOS.exe - STEP BY STEP GUIDE
+==================================================
+
+Launch4j is NOT installed on your system. Follow these steps to create the .exe:
+
+STEP 1: DOWNLOAD LAUNCH4J
+--------------------------
+1. Open your browser and go to:
+   https://sourceforge.net/projects/launch4j/files/launch4j-3/
+
+2. Download the latest version (e.g., launch4j-3.x.x-win32.zip)
+
+3. Extract the ZIP file to any location (e.g., C:\Launch4j\)
+
+
+STEP 2: OPEN LAUNCH4J
+----------------------
+1. Navigate to the extracted folder
+2. Double-click "launch4j.exe" to open the application
+
+
+STEP 3: LOAD THE CONFIGURATION
+-------------------------------
+1. In Launch4j, click "File" → "Load"
+2. Navigate to: C:\Users\user\Library-Dr-Khaled\
+3. Select: launch4j.xml
+4. Click "Open"
+
+
+STEP 4: BUILD THE .EXE
+-----------------------
+1. Click the "Build wrapper" button (gear/cog icon at the top)
+2. Wait a few seconds for the build to complete
+3. You'll see a success message: "Successfully created..."
+
+
+STEP 5: VERIFY THE .EXE WAS CREATED
+------------------------------------
+1. Look in: C:\Users\user\Library-Dr-Khaled\
+2. You should now see: LibraryPOS.exe (new file!)
+
+
+STEP 6: COPY TO CUSTOMER PACKAGE
+---------------------------------
+1. Copy the new LibraryPOS.exe to:
+   C:\Users\user\Downloads\LibraryPOS-v1.0\
+
+2. Delete LibraryPOS.bat from that folder (no longer needed)
+
+
+FINAL CUSTOMER PACKAGE:
+------------------------
+C:\Users\user\Downloads\LibraryPOS-v1.0\
+├─ LibraryPOS.exe                 ← Just created!
+├─ pos-system-0.0.1-SNAPSHOT.jar  ← Already there
+└─ README-CUSTOMER.txt            ← Already there
+
+
+NOTES:
+------
+- The .exe and .jar MUST be in the same folder
+- The .exe is just a wrapper that launches the .jar
+- You only need to do this once
+- Give customers the 3 files above
+
+If you get an error during build, make sure:
+✓ The JAR file exists in the target\ folder
+✓ The launch4j.xml file is correct
+✓ You're using Launch4j version 3.x or later

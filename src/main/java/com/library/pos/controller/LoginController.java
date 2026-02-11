@@ -59,10 +59,44 @@ public class LoginController {
                 errorLabel.setText(ResourceBundle.getBundle("messages").getString("login.error.delivery"));
                 return;
             }
+
+            // Check for default admin credentials
+            if (user.getUsername().equals("admin") && password.equals("admin")) {
+                showChangePasswordDialog(user);
+                return;
+            }
+
             navigateToDashboard(user);
         } else {
             errorLabel.setVisible(true);
             errorLabel.setText(ResourceBundle.getBundle("messages").getString("login.error.invalid"));
+        }
+    }
+
+    private void showChangePasswordDialog(User user) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/change_password.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+            Parent root = loader.load();
+
+            ChangePasswordController controller = loader.getController();
+            controller.setUser(user);
+            controller.setOnSuccess(() -> {
+                // After password changed, navigate to dashboard
+                navigateToDashboard(user);
+            });
+
+            Stage dialog = new Stage();
+            dialog.setTitle("تغيير كلمة المرور");
+            dialog.initOwner(loginButton.getScene().getWindow());
+            dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            dialog.setScene(new Scene(root));
+            dialog.showAndWait();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            errorLabel.setText("Error opening change password dialog");
+            errorLabel.setVisible(true);
         }
     }
 

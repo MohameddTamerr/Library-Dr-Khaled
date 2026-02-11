@@ -25,25 +25,78 @@ public class LibraryPosApplication extends Application {
     public void start(Stage stage) throws Exception {
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
 
+        // Set App Icon
+        try {
+            javafx.scene.image.Image icon = new javafx.scene.image.Image(
+                    getClass().getResourceAsStream("/images/app_icon.png"));
+            stage.getIcons().add(icon);
+        } catch (Exception e) {
+            System.err.println("Failed to load app icon: " + e.getMessage());
+        }
+
         // Default to Arabic
         Locale.setDefault(Locale.forLanguageTag("ar"));
 
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
-        fxmlLoader.setControllerFactory(applicationContext::getBean);
-        fxmlLoader.setResources(ResourceBundle.getBundle("messages")); // Will look for messages_ar.properties
+        // Check License
+        if (!isLicenseValid()) {
+            showActivationScreen(stage);
+        } else {
+            showLoginScreen(stage);
+        }
+    }
 
-        // Don't set fixed scene size - let it use full screen dimensions
-        Scene scene = new Scene(fxmlLoader.load());
-        scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+    private boolean isLicenseValid() {
+        try {
+            java.nio.file.Path path = java.nio.file.Paths.get("license.dat");
+            if (!java.nio.file.Files.exists(path)) {
+                return false;
+            }
+            String key = java.nio.file.Files.readString(path).trim();
+            return com.library.pos.util.SecurityUtil.validateKey(key);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
-        stage.setMinWidth(900);
-        stage.setMinHeight(600);
-        stage.setTitle(fxmlLoader.getResources().getString("app.title"));
-        stage.setScene(scene);
+    private void showActivationScreen(Stage stage) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/activation.fxml"));
+            Scene scene = new Scene(fxmlLoader.load());
 
-        stage.setFullScreen(true);
-        stage.setFullScreenExitHint("");
-        stage.show();
+            com.library.pos.controller.ActivationController controller = fxmlLoader.getController();
+            controller.setStage(stage);
+            controller.setOnActivationSuccess(() -> showLoginScreen(stage));
+
+            stage.setTitle("Product Activation");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showLoginScreen(Stage stage) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
+            fxmlLoader.setControllerFactory(applicationContext::getBean);
+            fxmlLoader.setResources(ResourceBundle.getBundle("messages")); // Will look for messages_ar.properties
+
+            // Don't set fixed scene size - let it use full screen dimensions
+            Scene scene = new Scene(fxmlLoader.load());
+            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+
+            stage.setMinWidth(900);
+            stage.setMinHeight(600);
+            stage.setTitle(fxmlLoader.getResources().getString("app.title"));
+            stage.setScene(scene);
+
+            stage.setFullScreen(true);
+            stage.setFullScreenExitHint("");
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

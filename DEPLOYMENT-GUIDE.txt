@@ -1,0 +1,96 @@
+DEPLOYMENT PACKAGE CREATION GUIDE
+==================================
+
+This guide explains how to create the customer deployment package with .exe launcher.
+
+FILES CREATED:
+--------------
+✓ launch4j.xml - Configuration for main application .exe
+✓ launch4j-license-gen.xml - Configuration for license generator .exe
+✓ README-CUSTOMER.txt - Customer installation guide
+✓ README-LICENSE-GENERATOR.txt - Admin guide for license generation
+
+STEP 1: BUILD THE JAR FILE
+---------------------------
+The JAR file should already be built. If not, run:
+```
+.\mvnw.cmd package -DskipTests
+```
+
+This creates: target\pos-system-0.0.1-SNAPSHOT.jar
+
+STEP 2: DOWNLOAD LAUNCH4J
+--------------------------
+1. Download Launch4j from: https://launch4j.sourceforge.net/
+2. Install Launch4j on your Windows PC
+3. Launch the Launch4j application
+
+STEP 3: CREATE LibraryPOS.exe
+------------------------------
+1. In Launch4j, go to: File → Load
+2. Select: launch4j.xml
+3. Click the "Build wrapper" button (gear icon)
+4. This creates: LibraryPOS.exe
+
+STEP 4: CREATE LicenseGenerator.exe (Optional)
+-----------------------------------------------
+1. First, create a standalone JAR for LicenseGenerator
+2. In Launch4j, go to: File → Load
+3. Select: launch4j-license-gen.xml
+4. Click the "Build wrapper" button
+5. This creates: LicenseGenerator.exe
+
+STEP 5: PACKAGE FOR CUSTOMER
+-----------------------------
+Create a folder structure:
+
+LibraryPOS-v1.0/
+├── LibraryPOS.exe           (Created in Step 3)
+├── pos-system-0.0.1-SNAPSHOT.jar (From target/)
+└── README-CUSTOMER.txt      (Installation guide)
+
+STEP 6: PACKAGE FOR ADMIN (YOU)
+--------------------------------
+AdminTools/
+├── LicenseGenerator.exe     (Created in Step 4, OR use the Java class directly)
+└── README-LICENSE-GENERATOR.txt
+
+ALTERNATIVE: Without Launch4j
+------------------------------
+If you don't want to use Launch4j, you can distribute:
+
+For Customer:
+- pos-system-0.0.1-SNAPSHOT.jar
+- run.bat file containing: java -jar pos-system-0.0.1-SNAPSHOT.jar
+- README-CUSTOMER.txt
+
+For Admin:
+- Run LicenseGenerator directly: 
+  Right-click LicenseGenerator.java → Run
+
+WHAT TO GIVE CUSTOMERS:
+-----------------------
+1. **For Client Installation:**
+   - LibraryPOS.exe (or JAR + run.bat)
+   - pos-system-0.0.1-SNAPSHOT.jar
+   - README-CUSTOMER.txt
+
+2. **Customer Workflow:**
+   - Extract files
+   - Run LibraryPOS.exe
+   - Copy Machine ID from activation screen
+   - Send Machine ID to you
+   - Receive License Key from you
+   - Activate and login
+
+3. **For You (Administrator):**
+   - Keep LicenseGenerator for generating keys
+   - When customer sends Machine ID, run generator
+   - Send generated License Key back to customer
+
+NOTES:
+------
+- The JAR must be in the same folder as the .exe
+- Customer needs Java 17+ installed
+- Database (library.db) is created automatically on first run
+- License file (license.dat) is created after activation

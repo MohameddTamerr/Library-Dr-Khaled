@@ -20,10 +20,11 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.BorderPane?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" 
+<StackPane fx:id="cashierRootStack" xmlns:fx="http://javafx.com/fxml/1" 
       xmlns="http://javafx.com/javafx/21" 
-      fx:controller="com.library.pos.controller.CashierController"
-      styleClass="cashier-root">
+      fx:controller="com.library.pos.controller.CashierController">
+
+<BorderPane styleClass="cashier-root">
 
     <!-- TOP: Header Bar -->
     <top>
@@ -38,7 +39,7 @@
             <Region prefWidth="20"/>
 
             <Label fx:id="workerNameLabel" styleClass="worker-label"/>
-            <Label fx:id="dailyCashLabel" text="0.00 ج.م" style="-fx-text-fill: -color-success; -fx-font-weight: bold; -fx-font-size: 16px;"/>
+            <Label fx:id="dailyCashLabel" text="0.00 ج.م" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;"/>
             <Label fx:id="dailySupplierPaymentsLabel" text="مدفوعات الموردين اليوم: 0.00 ج.م" style="-fx-text-fill: -color-warning; -fx-font-weight: bold; -fx-font-size: 14px;"/>
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
@@ -177,3 +178,5 @@
     </center>
 
 </BorderPane>
+
+</StackPane>
