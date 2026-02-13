@@ -15,7 +15,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.VBox;
-import javafx.scene.transform.Scale;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -112,7 +111,16 @@ public final class ReceiptPrinter {
         debug("printSalesReceipt start, sales=" + sales.size());
 
         ReceiptModels.Order order = toOrder(sales);
-        VBox receiptNode = ReceiptNodeFactory.createReceiptNode(order, true);
+
+        // Resolve target width based on preferred printer
+        double targetWidth = 290;
+        Printer printer = resolvePreferredPrinter();
+        if (printer != null) {
+            targetWidth = printer.getDefaultPageLayout().getPrintableWidth();
+            debug("Detected printer printable width: " + targetWidth);
+        }
+
+        VBox receiptNode = ReceiptNodeFactory.createReceiptNode(order, true, targetWidth);
         receiptNode.getStylesheets().add(ReceiptPrinter.class.getResource("/css/receipt.css").toExternalForm());
 
         // We need to layout the node to take a snapshot
@@ -145,6 +153,11 @@ public final class ReceiptPrinter {
 
         if (mode == PrintMode.AWT) {
             debug("Trying AWT print path.");
+            // Explicitly set width again to be sure
+            receiptNode.setPrefWidth(targetWidth);
+            receiptNode.setMaxWidth(targetWidth);
+            receiptNode.layout();
+
             WritableImage snapshot = receiptNode.snapshot(null, null);
             if (printViaAwt(snapshot)) {
                 debug("AWT print success.");
@@ -172,7 +185,7 @@ public final class ReceiptPrinter {
         return false;
     }
 
-    private static boolean printViaJavaFx(VBox node) {
+    private static boolean printViaJavaFx(VBox nodeStub) {
         Printer printer = resolvePreferredPrinter();
         if (printer == null) {
             return false;
@@ -191,32 +204,36 @@ public final class ReceiptPrinter {
         job.getJobSettings().setPageLayout(pageLayout);
 
         double printableWidth = pageLayout.getPrintableWidth();
-        double nodeWidth = node.getBoundsInParent().getWidth();
-        double scaleFactor = 1.0;
+        debug("JavaFX Printable Width: " + printableWidth);
 
-        if (printableWidth > 0 && nodeWidth > 0) {
-            // Scale content to fit printer width if needed, or scale up?
-            // Usually receipts are small. If printableWidth is ~200px (58mm) vs ~280px
-            // (80mm)
-            scaleFactor = printableWidth / nodeWidth;
+        // Re-create the node with the actual printable width for "flexible" layout
+        // We need the order object again.
+        // Note: This method is called with a node already created, but we want a fresh
+        // layout.
+        // For robustness, let's assume we might need to recreate it if scale is not
+        // used.
+
+        // However, if we already have the node, we can try to resize it if it's a VBox
+        // with prefWidth.
+        if (printableWidth > 0) {
+            nodeStub.setPrefWidth(printableWidth);
+            nodeStub.setMaxWidth(printableWidth);
         }
 
-        Scale scale = null;
-        if (Math.abs(scaleFactor - 1.0) > 0.01) {
-            scale = new Scale(scaleFactor, scaleFactor);
-            node.getTransforms().add(scale);
-        }
+        // Layout again
+        Scene dummy = new Scene(nodeStub);
+        nodeStub.applyCss();
+        nodeStub.layout();
 
         try {
-            boolean printed = job.printPage(pageLayout, node);
+            boolean printed = job.printPage(pageLayout, nodeStub);
             if (printed) {
                 job.endJob();
             }
             return printed;
-        } finally {
-            if (scale != null) {
-                node.getTransforms().remove(scale);
-            }
+        } catch (Exception ex) {
+            debug("JavaFX print error: " + ex.getMessage());
+            return false;
         }
     }
 
@@ -238,7 +255,8 @@ public final class ReceiptPrinter {
                 return false;
             }
 
-            // Flatten alpha to white to avoid printers rendering transparency as black dots.
+            // Flatten alpha to white to avoid printers rendering transparency as black
+            // dots.
             BufferedImage printable = new BufferedImage(
                     bImage.getWidth(),
                     bImage.getHeight(),
@@ -538,11 +556,11 @@ public final class ReceiptPrinter {
         final double awtOffsetYmm;
 
         private PrintConfig(PrintMode mode, String printerName, Integer paperWidthChars, Charset charset,
-                            Integer codeTable, Boolean enableCut, Boolean enableDrawerKick,
-                            Integer feedLinesBeforeCut, Boolean arabicPreferred, Integer awtPaperWidthMm,
-                            Integer awtPaperHeightMm, double awtMarginLeftMm, double awtMarginRightMm,
-                            double awtMarginTopMm, double awtMarginBottomMm, Double awtScaleMultiplier,
-                            double awtOffsetXmm, double awtOffsetYmm) {
+                Integer codeTable, Boolean enableCut, Boolean enableDrawerKick,
+                Integer feedLinesBeforeCut, Boolean arabicPreferred, Integer awtPaperWidthMm,
+                Integer awtPaperHeightMm, double awtMarginLeftMm, double awtMarginRightMm,
+                double awtMarginTopMm, double awtMarginBottomMm, Double awtScaleMultiplier,
+                double awtOffsetXmm, double awtOffsetYmm) {
             this.mode = mode == null ? PrintMode.AUTO : mode;
             this.printerName = printerName;
             this.paperWidthChars = paperWidthChars;

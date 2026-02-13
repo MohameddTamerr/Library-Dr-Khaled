@@ -22,10 +22,14 @@ public class ReceiptNodeFactory {
     private static final double RECEIPT_WIDTH = 290;
 
     public static VBox createReceiptNode(ReceiptModels.Order order, boolean arabic) {
+        return createReceiptNode(order, arabic, RECEIPT_WIDTH);
+    }
+
+    public static VBox createReceiptNode(ReceiptModels.Order order, boolean arabic, double width) {
         VBox root = new VBox(5);
         root.getStyleClass().add("receipt-root");
-        root.setPrefWidth(RECEIPT_WIDTH);
-        root.setMaxWidth(RECEIPT_WIDTH);
+        root.setPrefWidth(width);
+        root.setMaxWidth(width);
         root.setAlignment(Pos.TOP_CENTER);
 
         if (arabic) {
@@ -69,7 +73,7 @@ public class ReceiptNodeFactory {
         root.getChildren().add(new Separator());
 
         // 3. Items Header
-        GridPane itemHeader = createItemGrid(true, labels.item, labels.qty, labels.unitPrice, labels.lineTotal);
+        GridPane itemHeader = createItemGrid(width, true, labels.item, labels.qty, labels.unitPrice, labels.lineTotal);
         itemHeader.getStyleClass().add("item-header");
         root.getChildren().add(itemHeader);
 
@@ -77,7 +81,7 @@ public class ReceiptNodeFactory {
 
         // 4. Items List
         for (ReceiptModels.OrderItem item : order.getItems()) {
-            GridPane itemRow = createItemGrid(false,
+            GridPane itemRow = createItemGrid(width, false,
                     item.getName(),
                     formatQty(item.getQty()),
                     formatMoney(item.getUnitPrice()),
@@ -137,9 +141,11 @@ public class ReceiptNodeFactory {
         root.getChildren().add(row);
     }
 
-    private static GridPane createItemGrid(boolean isHeader, String name, String qty, String price, String total) {
+    private static GridPane createItemGrid(double width, boolean isHeader, String name, String qty, String price,
+            String total) {
         GridPane grid = new GridPane();
-        grid.setPrefWidth(RECEIPT_WIDTH);
+        grid.setPrefWidth(width);
+        grid.setMaxWidth(width);
 
         // Columns setup: Name (Flex), Qty (Fixed), Price (Fixed), Total (Fixed)
         ColumnConstraints colName = new ColumnConstraints();
@@ -147,15 +153,15 @@ public class ReceiptNodeFactory {
         colName.setHalignment(javafx.geometry.HPos.LEFT); // Will correspond to RIGHT in RTL
 
         ColumnConstraints colQty = new ColumnConstraints();
-        colQty.setPrefWidth(30);
+        colQty.setPrefWidth(35);
         colQty.setHalignment(javafx.geometry.HPos.CENTER);
 
         ColumnConstraints colPrice = new ColumnConstraints();
-        colPrice.setPrefWidth(50);
+        colPrice.setPrefWidth(60);
         colPrice.setHalignment(javafx.geometry.HPos.CENTER);
 
         ColumnConstraints colTotal = new ColumnConstraints();
-        colTotal.setPrefWidth(50);
+        colTotal.setPrefWidth(60);
         colTotal.setHalignment(javafx.geometry.HPos.CENTER);
 
         grid.getColumnConstraints().addAll(colName, colQty, colPrice, colTotal);
