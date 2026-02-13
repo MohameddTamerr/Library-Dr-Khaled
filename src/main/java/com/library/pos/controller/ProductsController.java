@@ -3,6 +3,7 @@ package com.library.pos.controller;
 import com.library.pos.model.Product;
 import com.library.pos.service.ProductService;
 import com.library.pos.util.AutoRefreshUtil;
+import com.library.pos.util.DialogUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
@@ -402,6 +403,7 @@ public class ProductsController {
 
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        DialogUtil.initOwner(alert, productsTable.getScene() != null ? productsTable.getScene().getWindow() : null);
         alert.setTitle(t("products.alert.info.title"));
         alert.setHeaderText(null);
         alert.setContentText(message);

@@ -128,6 +128,9 @@ public class SupplierService {
         if (payment.getMethod() == null) {
             payment.setMethod(PaymentMethod.CASH);
         }
+        if (payment.getMethodDisplay() == null || payment.getMethodDisplay().isBlank()) {
+            payment.setMethodDisplay(mapMethodDisplay(payment.getMethod()));
+        }
 
         Supplier locked = supplierRepository.findByIdForUpdate(supplier.getId());
         BigDecimal newTotalPaid = valueOrZero(locked.getTotalPaid())
@@ -262,6 +265,17 @@ public class SupplierService {
 
     private BigDecimal valueOrZero(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private String mapMethodDisplay(PaymentMethod method) {
+        if (method == null) {
+            return "Cash";
+        }
+        return switch (method) {
+            case CASH -> "Cash";
+            case BANK -> "Bank";
+            default -> "Other";
+        };
     }
 
     @Transactional

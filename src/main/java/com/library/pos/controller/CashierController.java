@@ -933,6 +933,7 @@ public class CashierController {
             return;
         }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        DialogUtil.initOwner(confirm, workerNameLabel.getScene() != null ? workerNameLabel.getScene().getWindow() : null);
         confirm.setTitle(bundle.getString("cashier.confirm"));
         confirm.setHeaderText(bundle.getString("cashier.order.confirm.delete"));
         confirm.setContentText(bundle.getString("cashier.order.confirm.delete.message"));
@@ -1450,6 +1451,7 @@ public class CashierController {
             return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        DialogUtil.initOwner(confirm, workerNameLabel.getScene() != null ? workerNameLabel.getScene().getWindow() : null);
         confirm.setTitle(bundle.getString("cashier.confirm"));
         confirm.setHeaderText(bundle.getString("cashier.clear.confirm"));
         confirm.setContentText(bundle.getString("cashier.clear.message"));
@@ -1895,6 +1897,7 @@ public class CashierController {
 
     private void showAlert(Alert.AlertType type, String msg) {
         Alert alert = new Alert(type);
+        DialogUtil.initOwner(alert, barcodeField.getScene() != null ? barcodeField.getScene().getWindow() : null);
         alert.setContentText(msg);
         alert.show();
     }
@@ -2123,9 +2126,11 @@ public class CashierController {
                 }
                 java.math.BigDecimal amount = java.math.BigDecimal.valueOf(parseAmount(amtStr));
                 SupplierPayment payment = new SupplierPayment();
+                String selectedMethod = methodCombo.getSelectionModel().getSelectedItem();
                 payment.setSupplier(supplier);
                 payment.setAmount(amount);
-                payment.setMethod(mapSupplierPaymentMethod(methodCombo.getSelectionModel().getSelectedItem()));
+                payment.setMethod(mapSupplierPaymentMethod(selectedMethod));
+                payment.setMethodDisplay(selectedMethod);
                 payment.setNotes(notesField.getText());
                 supplierService.recordPayment(payment);
                 updateDailyCash();

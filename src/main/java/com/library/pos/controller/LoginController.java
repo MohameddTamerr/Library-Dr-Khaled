@@ -46,8 +46,14 @@ public class LoginController {
 
     @FXML
     private void handleLogin() {
-        String username = usernameField.getText();
-        String password = passwordField.getText();
+        String username = usernameField.getText() != null ? usernameField.getText().trim() : "";
+        String password = passwordField.getText() != null ? passwordField.getText().trim() : "";
+
+        if (username.isEmpty() || password.isEmpty()) {
+            errorLabel.setVisible(true);
+            errorLabel.setText(ResourceBundle.getBundle("messages").getString("login.error.invalid"));
+            return;
+        }
 
         User user = authService.authenticate(username, password);
 
@@ -61,7 +67,7 @@ public class LoginController {
             }
 
             // Check for default admin credentials
-            if (user.getUsername().equals("admin") && password.equals("admin")) {
+            if ("admin".equalsIgnoreCase(user.getUsername()) && "admin".equals(password)) {
                 showChangePasswordDialog(user);
                 return;
             }

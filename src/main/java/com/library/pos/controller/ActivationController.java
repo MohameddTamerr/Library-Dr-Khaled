@@ -1,6 +1,7 @@
 package com.library.pos.controller;
 
 import com.library.pos.util.SecurityUtil;
+import com.library.pos.util.DialogUtil;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -88,6 +89,7 @@ public class ActivationController {
 
     private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        DialogUtil.initOwner(alert, stage);
         alert.setTitle("Activation");
         alert.setHeaderText(null);
         alert.setContentText(msg);

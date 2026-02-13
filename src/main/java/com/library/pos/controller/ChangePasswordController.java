@@ -36,8 +36,8 @@ public class ChangePasswordController {
 
     @FXML
     private void handleSave() {
-        String newPass = newPasswordField.getText();
-        String confirmPass = confirmPasswordField.getText();
+        String newPass = newPasswordField.getText() != null ? newPasswordField.getText().trim() : "";
+        String confirmPass = confirmPasswordField.getText() != null ? confirmPasswordField.getText().trim() : "";
 
         if (newPass.isEmpty() || confirmPass.isEmpty()) {
             showError("يرجى ملء جميع الحقول");

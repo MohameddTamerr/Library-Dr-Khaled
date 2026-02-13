@@ -3,6 +3,7 @@ package com.library.pos.controller;
 import com.library.pos.model.Customer;
 import com.library.pos.service.CustomerService;
 import com.library.pos.util.AutoRefreshUtil;
+import com.library.pos.util.DialogUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
@@ -210,6 +211,7 @@ public class CustomersController {
                     Customer c = getTableView().getItems().get(getIndex());
                     Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "حذف العميل " + c.getCustomerName() + "؟",
                             ButtonType.YES, ButtonType.NO);
+                    DialogUtil.initOwner(alert, customersTable.getScene() != null ? customersTable.getScene().getWindow() : null);
                     if (alert.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
                         try {
                             customerService.deleteById(c.getId());
@@ -231,6 +233,8 @@ public class CustomersController {
     }
 
     private void showAlert(String msg) {
-        new Alert(Alert.AlertType.INFORMATION, msg).show();
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, msg);
+        DialogUtil.initOwner(alert, customersTable.getScene() != null ? customersTable.getScene().getWindow() : null);
+        alert.show();
     }
 }

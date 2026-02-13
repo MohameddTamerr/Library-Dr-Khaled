@@ -33,8 +33,25 @@ public class AuthService {
     }
 
     public User authenticate(String username, String password) {
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user.isPresent() && user.get().getPassword().equals(password)) {
+        if (username == null || password == null) {
+            return null;
+        }
+
+        String normalizedUsername = username.trim();
+        String normalizedPassword = password.trim();
+        if (normalizedUsername.isEmpty() || normalizedPassword.isEmpty()) {
+            return null;
+        }
+
+        Optional<User> user = userRepository.findByUsername(normalizedUsername);
+        if (user.isEmpty()) {
+            user = userRepository.findAll().stream()
+                    .filter(u -> u.getUsername() != null && u.getUsername().equalsIgnoreCase(normalizedUsername))
+                    .findFirst();
+        }
+
+        if (user.isPresent() && user.get().getPassword() != null
+                && user.get().getPassword().trim().equals(normalizedPassword)) {
             return user.get();
         }
         return null;

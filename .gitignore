@@ -21,3 +21,4 @@ logs/
 
 # Database (optional if using SQLite locally)
 # library.db
+target/

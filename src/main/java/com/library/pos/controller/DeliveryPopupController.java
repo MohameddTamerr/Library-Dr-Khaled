@@ -2,6 +2,7 @@ package com.library.pos.controller;
 
 import com.library.pos.model.Customer;
 import com.library.pos.service.CustomerService;
+import com.library.pos.util.DialogUtil;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -197,6 +198,7 @@ public class DeliveryPopupController {
 
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        DialogUtil.initOwner(alert, searchField.getScene() != null ? searchField.getScene().getWindow() : null);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);

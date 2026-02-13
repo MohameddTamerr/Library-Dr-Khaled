@@ -46,7 +46,7 @@ public class SuppliersController {
     @FXML
     private TableColumn<SupplierPayment, BigDecimal> paymentAmountCol;
     @FXML
-    private TableColumn<SupplierPayment, PaymentMethod> paymentMethodCol;
+    private TableColumn<SupplierPayment, String> paymentMethodCol;
     @FXML
     private TableColumn<SupplierPayment, LocalDateTime> paymentDateCol;
     @FXML
@@ -115,7 +115,8 @@ public class SuppliersController {
         createdAtCol.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         if (paymentsTable != null) {
             paymentAmountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
-            paymentMethodCol.setCellValueFactory(new PropertyValueFactory<>("method"));
+            paymentMethodCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
+                    resolvePaymentMethodDisplay(data.getValue())));
             paymentDateCol.setCellValueFactory(new PropertyValueFactory<>("paymentDate"));
             paymentNotesCol.setCellValueFactory(new PropertyValueFactory<>("notes"));
 
@@ -269,9 +270,11 @@ public class SuppliersController {
             }
             BigDecimal amount = parseAmount(paymentAmountField.getText());
             SupplierPayment payment = new SupplierPayment();
+            String selectedMethod = paymentMethodCombo.getSelectionModel().getSelectedItem();
             payment.setSupplier(supplier);
             payment.setAmount(amount);
-            payment.setMethod(mapSupplierPaymentMethod(paymentMethodCombo.getSelectionModel().getSelectedItem()));
+            payment.setMethod(mapSupplierPaymentMethod(selectedMethod));
+            payment.setMethodDisplay(selectedMethod);
             payment.setNotes(paymentNotesField.getText());
             supplierService.recordPayment(payment);
             hideOverlay(paymentOverlay);
@@ -388,6 +391,25 @@ public class SuppliersController {
             case "Visa" -> PaymentMethod.VISA;
             case "Vodafone Cash" -> PaymentMethod.VODAFONE_CASH;
             default -> PaymentMethod.CASH;
+        };
+    }
+
+    private String resolvePaymentMethodDisplay(SupplierPayment payment) {
+        if (payment == null) {
+            return "";
+        }
+        String display = payment.getMethodDisplay();
+        if (display != null && !display.isBlank()) {
+            return display;
+        }
+        PaymentMethod method = payment.getMethod();
+        if (method == null) {
+            return "";
+        }
+        return switch (method) {
+            case CASH -> "Cash";
+            case BANK -> "Bank";
+            default -> "Other";
         };
     }
 
