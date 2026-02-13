@@ -36,9 +36,6 @@ public class ReceiptNodeFactory {
             root.setNodeOrientation(javafx.geometry.NodeOrientation.RIGHT_TO_LEFT);
         }
 
-        // Ensure we load the stylesheet
-        // root.getStylesheets().add(ReceiptNodeFactory.class.getResource("/css/receipt.css").toExternalForm());
-
         Labels labels = Labels.of(arabic);
 
         // 1. Header
@@ -47,14 +44,7 @@ public class ReceiptNodeFactory {
                 styledLabel(labels.phone, "shop-phone"),
                 new Separator());
 
-        // 2. Meta Data (GridPane for alignment)
-        GridPane metaGrid = new GridPane();
-        metaGrid.setHgap(5);
-        metaGrid.setVgap(2);
-        metaGrid.setAlignment(Pos.CENTER);
-
-        // In Arabic, we might want to align differently, but centered kv-pairs work
-        // well
+        // 2. Meta Data
         addMetaRow(root, labels.invoiceNo, order.getInvoiceNo());
         if (order.getDateTime() != null) {
             addMetaRow(root, labels.dateTime, DATE_TIME.format(order.getDateTime()));
@@ -72,34 +62,34 @@ public class ReceiptNodeFactory {
 
         root.getChildren().add(new Separator());
 
-        // 3. Items Header
+        // 3. Items Table
+        VBox tableBox = new VBox();
+        tableBox.getStyleClass().add("item-table");
+
+        // Header Row
         GridPane itemHeader = createItemGrid(width, true, labels.item, labels.qty, labels.unitPrice, labels.lineTotal);
-        itemHeader.getStyleClass().add("item-header");
-        root.getChildren().add(itemHeader);
+        itemHeader.getStyleClass().add("item-header-cell");
+        tableBox.getChildren().add(itemHeader);
 
-        root.getChildren().add(new Separator());
-
-        // 4. Items List
+        // Item Rows
         for (ReceiptModels.OrderItem item : order.getItems()) {
             GridPane itemRow = createItemGrid(width, false,
                     item.getName(),
                     formatQty(item.getQty()),
                     formatMoney(item.getUnitPrice()),
                     formatMoney(item.lineTotal()));
-            itemRow.getStyleClass().add("item-row");
-            root.getChildren().add(itemRow);
+            tableBox.getChildren().add(itemRow);
         }
+        root.getChildren().add(tableBox);
 
-        root.getChildren().add(new Separator());
-
-        // 5. Totals
+        // 4. Totals & Boxed "Required Amount"
         VBox totalsBox = new VBox(2);
         totalsBox.getStyleClass().add("total-section");
-        // Align totals based on orientation (Right for LTR, Left for RTL visually? No,
-        // usually start aligned)
-        totalsBox.setAlignment(Pos.CENTER_LEFT);
+        totalsBox.setAlignment(Pos.CENTER);
 
-        totalsBox.getChildren().add(createTotalRow(labels.subtotal, formatMoney(order.getSubtotal())));
+        if (isNonZero(order.getSubtotal()) && order.getSubtotal().compareTo(order.getTotal()) != 0) {
+            totalsBox.getChildren().add(createTotalRow(labels.subtotal, formatMoney(order.getSubtotal())));
+        }
 
         if (isNonZero(order.getDiscount())) {
             totalsBox.getChildren().add(createTotalRow(labels.discount, formatMoney(order.getDiscount())));
@@ -108,10 +98,15 @@ public class ReceiptNodeFactory {
             totalsBox.getChildren().add(createTotalRow(labels.tax, formatMoney(order.getTax())));
         }
 
-        // Grand Total (Bold)
-        HBox totalRow = createTotalRow(labels.total, formatMoney(order.getTotal()));
-        totalRow.getStyleClass().add("total-row");
-        totalsBox.getChildren().add(totalRow);
+        // Boxed Total Due ("المطلوب")
+        VBox totalDueBox = new VBox(5);
+        totalDueBox.getStyleClass().add("total-due-box");
+        Label requiredLabel = new Label("المطلوب");
+        requiredLabel.getStyleClass().add("total-due-label");
+        Label amountLabel = new Label(formatMoney(order.getTotal()));
+        amountLabel.getStyleClass().add("total-due-amount");
+        totalDueBox.getChildren().addAll(requiredLabel, amountLabel);
+        totalsBox.getChildren().add(totalDueBox);
 
         if (order.getPaid() != null) {
             totalsBox.getChildren().add(createTotalRow(labels.paid, formatMoney(order.getPaid())));
@@ -148,45 +143,54 @@ public class ReceiptNodeFactory {
         grid.setPrefWidth(width);
         grid.setMaxWidth(width);
 
-        // Columns setup: Name (Flex), Qty (Fixed), Price (Fixed), Total (Fixed)
+        // Columns setup (RTL Perspective from right to left):
+        // Col 0: Name (Flex)
+        // Col 1: Price (Fixed)
+        // Col 2: Qty (Fixed)
+        // Col 3: Total (Fixed)
+
         ColumnConstraints colName = new ColumnConstraints();
         colName.setHgrow(Priority.ALWAYS);
-        colName.setHalignment(javafx.geometry.HPos.RIGHT); // Name on Right in RTL
+        colName.setHalignment(javafx.geometry.HPos.RIGHT);
+
+        ColumnConstraints colPrice = new ColumnConstraints();
+        colPrice.setPrefWidth(55);
+        colPrice.setHalignment(javafx.geometry.HPos.CENTER);
 
         ColumnConstraints colQty = new ColumnConstraints();
         colQty.setPrefWidth(35);
         colQty.setHalignment(javafx.geometry.HPos.CENTER);
 
-        ColumnConstraints colPrice = new ColumnConstraints();
-        colPrice.setPrefWidth(60);
-        colPrice.setHalignment(javafx.geometry.HPos.CENTER);
-
         ColumnConstraints colTotal = new ColumnConstraints();
         colTotal.setPrefWidth(60);
-        colTotal.setHalignment(javafx.geometry.HPos.LEFT); // Total on Left in RTL
+        colTotal.setHalignment(javafx.geometry.HPos.LEFT);
 
-        grid.getColumnConstraints().addAll(colName, colQty, colPrice, colTotal);
+        grid.getColumnConstraints().addAll(colName, colPrice, colQty, colTotal);
 
         Label nameLbl = new Label(name);
         nameLbl.setWrapText(true);
         nameLbl.setMaxWidth(Double.MAX_VALUE);
         nameLbl.setAlignment(Pos.CENTER_RIGHT);
-
-        Label qtyLbl = new Label(qty);
-        qtyLbl.setMaxWidth(Double.MAX_VALUE);
-        qtyLbl.setAlignment(Pos.CENTER);
+        nameLbl.getStyleClass().add("cell-label");
 
         Label priceLbl = new Label(price);
         priceLbl.setMaxWidth(Double.MAX_VALUE);
         priceLbl.setAlignment(Pos.CENTER);
+        priceLbl.getStyleClass().add("cell-label");
+
+        Label qtyLbl = new Label(qty);
+        qtyLbl.setMaxWidth(Double.MAX_VALUE);
+        qtyLbl.setAlignment(Pos.CENTER);
+        qtyLbl.getStyleClass().add("cell-label");
 
         Label totalLbl = new Label(total);
         totalLbl.setMaxWidth(Double.MAX_VALUE);
         totalLbl.setAlignment(Pos.CENTER_LEFT);
+        totalLbl.getStyleClass().add("cell-label");
 
         grid.add(nameLbl, 0, 0);
-        grid.add(qtyLbl, 1, 0);
-        grid.add(priceLbl, 2, 0);
+        grid.add(priceLbl, 1, 0);
+        grid.add(qtyLbl, 2, 0);
         grid.add(totalLbl, 3, 0);
 
         return grid;
@@ -294,7 +298,7 @@ public class ReceiptNodeFactory {
         static Labels of(boolean arabic) {
             if (arabic) {
                 return new Labels(
-                        "مخبوزات المدينة المميزة والالبان", // From image "City Bakery & Dairy"? roughly
+                        "مكتبة سمسم 2",
                         "فاتورة ضريبية مبسطة",
                         "رقم الفاتورة:",
                         "", // Date handled inside? Image shows just date string
