@@ -134,6 +134,7 @@ public class ReceiptNodeFactory {
             return;
         HBox row = new HBox(5);
         row.setAlignment(Pos.CENTER);
+        row.setMaxWidth(Double.MAX_VALUE);
         Label lbl = new Label(label);
         lbl.getStyleClass().add("header-label");
         Label val = new Label(value);
@@ -150,7 +151,7 @@ public class ReceiptNodeFactory {
         // Columns setup: Name (Flex), Qty (Fixed), Price (Fixed), Total (Fixed)
         ColumnConstraints colName = new ColumnConstraints();
         colName.setHgrow(Priority.ALWAYS);
-        colName.setHalignment(javafx.geometry.HPos.LEFT); // Will correspond to RIGHT in RTL
+        colName.setHalignment(javafx.geometry.HPos.RIGHT); // Name on Right in RTL
 
         ColumnConstraints colQty = new ColumnConstraints();
         colQty.setPrefWidth(35);
@@ -162,19 +163,31 @@ public class ReceiptNodeFactory {
 
         ColumnConstraints colTotal = new ColumnConstraints();
         colTotal.setPrefWidth(60);
-        colTotal.setHalignment(javafx.geometry.HPos.CENTER);
+        colTotal.setHalignment(javafx.geometry.HPos.LEFT); // Total on Left in RTL
 
         grid.getColumnConstraints().addAll(colName, colQty, colPrice, colTotal);
 
         Label nameLbl = new Label(name);
         nameLbl.setWrapText(true);
-        // Remove explicit text alignment to respect orientation
-        // nameLbl.setTextAlignment(TextAlignment.LEFT);
+        nameLbl.setMaxWidth(Double.MAX_VALUE);
+        nameLbl.setAlignment(Pos.CENTER_RIGHT);
+
+        Label qtyLbl = new Label(qty);
+        qtyLbl.setMaxWidth(Double.MAX_VALUE);
+        qtyLbl.setAlignment(Pos.CENTER);
+
+        Label priceLbl = new Label(price);
+        priceLbl.setMaxWidth(Double.MAX_VALUE);
+        priceLbl.setAlignment(Pos.CENTER);
+
+        Label totalLbl = new Label(total);
+        totalLbl.setMaxWidth(Double.MAX_VALUE);
+        totalLbl.setAlignment(Pos.CENTER_LEFT);
 
         grid.add(nameLbl, 0, 0);
-        grid.add(new Label(qty), 1, 0);
-        grid.add(new Label(price), 2, 0);
-        grid.add(new Label(total), 3, 0);
+        grid.add(qtyLbl, 1, 0);
+        grid.add(priceLbl, 2, 0);
+        grid.add(totalLbl, 3, 0);
 
         return grid;
     }
@@ -197,6 +210,8 @@ public class ReceiptNodeFactory {
             lbl.getStyleClass().add(styleClass);
         lbl.setWrapText(true);
         lbl.setTextAlignment(TextAlignment.CENTER);
+        lbl.setAlignment(Pos.CENTER);
+        lbl.setMaxWidth(Double.MAX_VALUE);
         return lbl;
     }
 

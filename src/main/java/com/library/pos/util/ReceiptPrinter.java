@@ -113,11 +113,16 @@ public final class ReceiptPrinter {
         ReceiptModels.Order order = toOrder(sales);
 
         // Resolve target width based on preferred printer
-        double targetWidth = 290;
-        Printer printer = resolvePreferredPrinter();
-        if (printer != null) {
-            targetWidth = printer.getDefaultPageLayout().getPrintableWidth();
-            debug("Detected printer printable width: " + targetWidth);
+        double targetWidth = 300;
+        if (PRINT_CONFIG.receiptWidth != null && PRINT_CONFIG.receiptWidth > 0) {
+            targetWidth = PRINT_CONFIG.receiptWidth;
+            debug("Using manual receipt width override: " + targetWidth);
+        } else {
+            Printer printer = resolvePreferredPrinter();
+            if (printer != null) {
+                targetWidth = printer.getDefaultPageLayout().getPrintableWidth();
+                debug("Detected printer printable width: " + targetWidth);
+            }
         }
 
         VBox receiptNode = ReceiptNodeFactory.createReceiptNode(order, true, targetWidth);
@@ -554,13 +559,14 @@ public final class ReceiptPrinter {
         final Double awtScaleMultiplier;
         final double awtOffsetXmm;
         final double awtOffsetYmm;
+        final Double receiptWidth;
 
         private PrintConfig(PrintMode mode, String printerName, Integer paperWidthChars, Charset charset,
                 Integer codeTable, Boolean enableCut, Boolean enableDrawerKick,
                 Integer feedLinesBeforeCut, Boolean arabicPreferred, Integer awtPaperWidthMm,
                 Integer awtPaperHeightMm, double awtMarginLeftMm, double awtMarginRightMm,
                 double awtMarginTopMm, double awtMarginBottomMm, Double awtScaleMultiplier,
-                double awtOffsetXmm, double awtOffsetYmm) {
+                double awtOffsetXmm, double awtOffsetYmm, Double receiptWidth) {
             this.mode = mode == null ? PrintMode.AUTO : mode;
             this.printerName = printerName;
             this.paperWidthChars = paperWidthChars;
@@ -579,6 +585,7 @@ public final class ReceiptPrinter {
             this.awtScaleMultiplier = awtScaleMultiplier;
             this.awtOffsetXmm = awtOffsetXmm;
             this.awtOffsetYmm = awtOffsetYmm;
+            this.receiptWidth = receiptWidth;
         }
 
         static PrintConfig load() {
@@ -608,11 +615,12 @@ public final class ReceiptPrinter {
             Double scaleMultiplier = parseOptionalDouble(props.getProperty("receipt.awt.scale_multiplier"));
             double offsetX = parseDouble(props.getProperty("receipt.awt.offset_x_mm"), 0.0d);
             double offsetY = parseDouble(props.getProperty("receipt.awt.offset_y_mm"), 0.0d);
+            Double receiptWidth = parseOptionalDouble(props.getProperty("receipt.width"));
 
             return new PrintConfig(mode, printerName, paperWidthChars, charset, codeTable,
                     enableCut, enableDrawerKick, feedLinesBeforeCut, arabicPreferred, awtPaperWidthMm,
                     awtPaperHeightMm, marginLeft, marginRight, marginTop, marginBottom, scaleMultiplier,
-                    offsetX, offsetY);
+                    offsetX, offsetY, receiptWidth);
         }
 
         private static PrintMode parseMode(String value) {

@@ -1,7 +1,7 @@
 .receipt-root {
     -fx-background-color: white;
     -fx-font-family: "Segoe UI", "Arial", sans-serif;
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
     -fx-padding: 0;
     -fx-text-fill: black;
 }
@@ -13,13 +13,13 @@
 }
 
 .shop-name {
-    -fx-font-size: 16px;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-alignment: center;
 }
 
 .shop-phone {
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-alignment: center;
 }
 
@@ -50,5 +50,5 @@
 
 .total-row {
     -fx-font-weight: bold;
-    -fx-font-size: 13px;
+    -fx-font-size: 11px;
 }
