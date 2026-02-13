@@ -44,6 +44,7 @@
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
             <Button text="المرتجعات" onAction="#handleReturns" styleClass="btn-returns"/>
+            <Button text="تحصيل آجل" onAction="#handleDeferredCollection" styleClass="btn-secondary"/>
             <Button text="دفعات الموردين" onAction="#handleSupplierPayment" styleClass="btn-secondary"/>
             <Button text="%cashier.logout" onAction="#handleLogout" styleClass="btn-danger"/>
         </HBox>

@@ -3,14 +3,18 @@ package com.library.pos.controller;
 import com.library.pos.model.Sale;
 import com.library.pos.service.SaleService;
 import com.library.pos.util.AutoRefreshUtil;
+import com.library.pos.util.ReceiptPrinter;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
@@ -31,6 +35,8 @@ public class OrdersController {
     private TreeTableView<OrderViewModel> ordersTable;
     @FXML
     private TreeTableColumn<OrderViewModel, String> idCol;
+    @FXML
+    private TreeTableColumn<OrderViewModel, Void> printCol;
     @FXML
     private TreeTableColumn<OrderViewModel, String> timeCol;
     @FXML
@@ -101,6 +107,42 @@ public class OrdersController {
     public void initialize() {
         // ID Column
         idCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getId()));
+        if (printCol != null) {
+            printCol.setCellValueFactory(param -> new SimpleObjectProperty<>(null));
+            printCol.setCellFactory(col -> new TreeTableCell<>() {
+                private final Button printBtn = new Button("طباعة");
+
+                {
+                    printBtn.getStyleClass().add("button-primary");
+                    printBtn.setOnAction(event -> {
+                        TreeItem<OrderViewModel> rowItem = getTreeTableRow() != null ? getTreeTableRow().getTreeItem() : null;
+                        if (rowItem == null || rowItem.getValue() == null || !rowItem.getValue().isOrderHeader()) {
+                            return;
+                        }
+                        List<Sale> orderSales = rowItem.getValue().getOrderSales();
+                        if (orderSales == null || orderSales.isEmpty()) {
+                            return;
+                        }
+                        ReceiptPrinter.printSalesReceipt(
+                                ordersTable != null && ordersTable.getScene() != null ? ordersTable.getScene().getWindow() : null,
+                                orderSales,
+                                "فاتورة طلب سابق");
+                    });
+                }
+
+                @Override
+                protected void updateItem(Void item, boolean empty) {
+                    super.updateItem(item, empty);
+                    TreeItem<OrderViewModel> rowItem = getTreeTableRow() != null ? getTreeTableRow().getTreeItem() : null;
+                    boolean show = !empty
+                            && rowItem != null
+                            && rowItem.getValue() != null
+                            && rowItem.getValue().isOrderHeader();
+                    setGraphic(show ? printBtn : null);
+                    setText(null);
+                }
+            });
+        }
         dateCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getDate()));
         timeCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getTime()));
         itemCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getItem()));
@@ -376,6 +418,8 @@ public class OrdersController {
         private String notes;
         private String payment;
         private String deliveryMan;
+        private boolean orderHeader;
+        private List<Sale> orderSales;
 
         // Constructor for Single Item
         public OrderViewModel(Sale sale) {
@@ -402,6 +446,8 @@ public class OrdersController {
                 this.notes = "";
                 this.payment = "";
                 this.deliveryMan = "";
+                this.orderHeader = false;
+                this.orderSales = java.util.Collections.emptyList();
             }
         }
 
@@ -442,6 +488,8 @@ public class OrdersController {
                 this.payment = extractPaymentMethod(orderNotes);
                 this.deliveryMan = extractDeliveryMan(orderNotes);
                 this.notes = stripDeliveryFromNotes(orderNotes);
+                this.orderHeader = true;
+                this.orderSales = new java.util.ArrayList<>(sales);
             }
         }
 
@@ -491,6 +539,14 @@ public class OrdersController {
 
         public String getDeliveryMan() {
             return deliveryMan;
+        }
+
+        public boolean isOrderHeader() {
+            return orderHeader;
+        }
+
+        public List<Sale> getOrderSales() {
+            return orderSales;
         }
 
         private static String extractPaymentMethod(String notes) {

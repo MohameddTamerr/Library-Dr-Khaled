@@ -102,7 +102,7 @@
 
     <!-- Action Buttons -->
     <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button text="إلغاء" onAction="#handleClose" styleClass="btn-secondary" prefHeight="32"/>
+        <Button fx:id="cancelButton" text="إلغاء" onAction="#handleClose" styleClass="btn-secondary" prefHeight="32"/>
         <Button text="تأكيد الإرجاع" fx:id="confirmButton" onAction="#handleConfirmReturn" 
                 styleClass="btn-confirm-return" prefHeight="32" disable="true"/>
     </HBox>

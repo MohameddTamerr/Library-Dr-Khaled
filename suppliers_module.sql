@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
     supplier_id INT NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
     payment_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    method ENUM('CASH','BANK','OTHER') NOT NULL DEFAULT 'CASH',
+    method ENUM('CASH','INSTAPAY','VISA','VODAFONE_CASH') NOT NULL DEFAULT 'CASH',
     notes TEXT NULL,
     PRIMARY KEY (payment_id),
     INDEX idx_supplier_payments_supplier_id (supplier_id),
@@ -64,5 +64,5 @@ VALUES
 INSERT INTO supplier_payments (supplier_id, amount, payment_date, method, notes)
 VALUES
 (3, 100.00, NOW(), 'CASH', 'Partial payment'),
-(4, 600.00, NOW(), 'BANK', 'Bank transfer'),
-(5, 50.00, NOW(), 'OTHER', 'Settlement');
+(4, 600.00, NOW(), 'VISA', 'Card transfer'),
+(5, 50.00, NOW(), 'INSTAPAY', 'Settlement');

@@ -5,14 +5,18 @@ import com.library.pos.model.User;
 import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
 import javafx.application.Platform;
+import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +74,8 @@ public class ReturnsPopupController {
 
     @FXML
     private Button confirmButton;
+    @FXML
+    private Button cancelButton;
 
     private final ProductService productService;
     private final SaleService saleService;
@@ -78,6 +84,7 @@ public class ReturnsPopupController {
     private User currentWorker;
     private Runnable onReturnProcessedCallback;
     private Map<CheckBox, Product> checkboxProductMap = new HashMap<>();
+    private final List<CheckBox> productCheckBoxes = new ArrayList<>();
 
     public ReturnsPopupController(ProductService productService, SaleService saleService) {
         this.productService = productService;
@@ -92,6 +99,25 @@ public class ReturnsPopupController {
 
         // Add listener to quantity changes
         quantitySpinner.valueProperty().addListener((obs, oldVal, newVal) -> updateTotal());
+
+        if (confirmButton != null) {
+            confirmButton.setDefaultButton(true);
+        }
+        if (cancelButton != null) {
+            cancelButton.setCancelButton(true);
+        }
+
+        productSearchField.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.DOWN && !productCheckBoxes.isEmpty()) {
+                productCheckBoxes.get(0).requestFocus();
+                event.consume();
+            } else if (event.getCode() == KeyCode.ENTER && productCheckBoxes.size() == 1) {
+                CheckBox only = productCheckBoxes.get(0);
+                only.setSelected(true);
+                selectProduct(checkboxProductMap.get(only));
+                event.consume();
+            }
+        });
 
         // Focus on search field
         Platform.runLater(() -> productSearchField.requestFocus());
@@ -123,9 +149,11 @@ public class ReturnsPopupController {
             // Clear previous checkboxes
             productCheckboxContainer.getChildren().clear();
             checkboxProductMap.clear();
+            productCheckBoxes.clear();
 
             // Create checkboxes for each matching product
-            for (Product product : matchingProducts) {
+            for (int i = 0; i < matchingProducts.size(); i++) {
+                Product product = matchingProducts.get(i);
                 CheckBox checkBox = new CheckBox();
                 checkBox.setText(String.format("%s  |  باركود: %s  |  %.2f ج.م",
                         product.getName(),
@@ -152,8 +180,23 @@ public class ReturnsPopupController {
                         clearProductSelection();
                     }
                 });
+                final int idx = i;
+                checkBox.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                    if (event.getCode() == KeyCode.DOWN && idx < productCheckBoxes.size() - 1) {
+                        productCheckBoxes.get(idx + 1).requestFocus();
+                        event.consume();
+                    } else if (event.getCode() == KeyCode.UP && idx > 0) {
+                        productCheckBoxes.get(idx - 1).requestFocus();
+                        event.consume();
+                    } else if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+                        checkBox.setSelected(true);
+                        selectProduct(product);
+                        event.consume();
+                    }
+                });
 
                 productCheckboxContainer.getChildren().add(checkBox);
+                productCheckBoxes.add(checkBox);
             }
 
             productScrollPane.setVisible(true);
@@ -256,15 +299,9 @@ public class ReturnsPopupController {
                 onReturnProcessedCallback.run();
             }
 
-            // Close after a short delay
-            Platform.runLater(() -> {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    // Ignore
-                }
-                handleClose();
-            });
+            PauseTransition delay = new PauseTransition(Duration.millis(700));
+            delay.setOnFinished(e -> handleClose());
+            delay.play();
 
         } catch (Exception e) {
             e.printStackTrace();

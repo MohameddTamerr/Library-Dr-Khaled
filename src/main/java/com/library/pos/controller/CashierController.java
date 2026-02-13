@@ -1,6 +1,8 @@
 package com.library.pos.controller;
 
 import com.library.pos.model.Customer;
+import com.library.pos.model.CustomerDeferredPayment;
+import com.library.pos.model.CustomerDeferredSummary;
 import com.library.pos.model.OpenOrder;
 import com.library.pos.model.OpenOrderItem;
 import com.library.pos.model.OpenOrderStatus;
@@ -11,6 +13,7 @@ import com.library.pos.model.Supplier;
 import com.library.pos.model.SupplierPayment;
 import com.library.pos.model.User;
 import com.library.pos.service.CustomerService;
+import com.library.pos.service.CustomerDeferredService;
 import com.library.pos.service.OpenOrderService;
 import com.library.pos.service.ProductService;
 import com.library.pos.service.SaleService;
@@ -26,6 +29,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.Priority;
@@ -42,12 +46,15 @@ import org.springframework.context.ApplicationContext;
 import com.library.pos.util.AutoRefreshUtil;
 import com.library.pos.util.StageUtil;
 import com.library.pos.util.DialogUtil;
+import com.library.pos.util.ReceiptPrinter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.List;
 import java.util.ResourceBundle;
+import javafx.scene.Node;
+import javafx.scene.control.TextInputControl;
 import javafx.animation.Timeline;
 import javafx.animation.KeyFrame;
 import javafx.util.Duration;
@@ -157,6 +164,7 @@ public class CashierController {
     private final com.library.pos.repository.WorkSessionRepository sessionRepository;
     private final com.library.pos.service.UserService userService;
     private final SupplierService supplierService;
+    private final CustomerDeferredService customerDeferredService;
 
     private User currentUser;
     private Customer selectedCustomer;
@@ -179,7 +187,8 @@ public class CashierController {
     public CashierController(ProductService productService, SaleService saleService,
             CustomerService customerService, OpenOrderService openOrderService,
             ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
-            com.library.pos.service.UserService userService, SupplierService supplierService) {
+            com.library.pos.service.UserService userService, SupplierService supplierService,
+            CustomerDeferredService customerDeferredService) {
         this.productService = productService;
         this.saleService = saleService;
         this.customerService = customerService;
@@ -188,6 +197,7 @@ public class CashierController {
         this.sessionRepository = sessionRepository;
         this.userService = userService;
         this.supplierService = supplierService;
+        this.customerDeferredService = customerDeferredService;
     }
 
     @FXML
@@ -313,7 +323,8 @@ public class CashierController {
         }
 
         java.math.BigDecimal supplierCashTotal = supplierService.getDailyCashPaymentsTotal();
-        double netCash = salesTotal - supplierCashTotal.doubleValue();
+        java.math.BigDecimal customerDeferredCash = customerDeferredService.getDailyCashPaymentsTotal();
+        double netCash = salesTotal - supplierCashTotal.doubleValue() + customerDeferredCash.doubleValue();
 
         if (dailyCashLabel != null) {
             dailyCashLabel.setText(String.format("%.2f ج.م", netCash));
@@ -354,13 +365,23 @@ public class CashierController {
                         barcodeField.requestFocus();
                         event.consume();
                     }
+                    if (event.getCode() == KeyCode.F7) {
+                        if (customerSearchField != null) {
+                            customerSearchField.requestFocus();
+                            customerSearchField.selectAll();
+                        }
+                        event.consume();
+                    }
+                    if (event.getCode() == KeyCode.F8) {
+                        if (barcodeField != null) {
+                            barcodeField.requestFocus();
+                            barcodeField.selectAll();
+                        }
+                        event.consume();
+                    }
                     if (event.getCode() == KeyCode.ENTER) {
                         boolean hasCart = !cartItems.isEmpty();
-                        boolean barcodeFocused = barcodeField != null && barcodeField.isFocused();
-                        boolean barcodeHasText = barcodeField != null
-                                && barcodeField.getText() != null
-                                && !barcodeField.getText().trim().isEmpty();
-                        boolean canPay = hasCart && (!barcodeFocused || !barcodeHasText);
+                        boolean canPay = hasCart && shouldHandleGlobalCheckout();
                         if (canPay) {
                             handlePayment();
                             event.consume();
@@ -388,10 +409,19 @@ public class CashierController {
     private void setupCartTableClickHandler() {
         // Allow clicking on cart rows to quickly edit quantity
         cartTable.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 1) {
+            if (event.getClickCount() == 2) {
                 CartItem selectedItem = cartTable.getSelectionModel().getSelectedItem();
                 if (selectedItem != null) {
                     showQuantityEditDialog(selectedItem);
+                }
+            }
+        });
+        cartTable.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                CartItem selectedItem = cartTable.getSelectionModel().getSelectedItem();
+                if (selectedItem != null) {
+                    showQuantityEditDialog(selectedItem);
+                    event.consume();
                 }
             }
         });
@@ -529,7 +559,34 @@ public class CashierController {
 
         customerSearchField.focusedProperty().addListener((obs, old, focused) -> {
             if (!focused) {
-                hideCustomerSuggestions();
+                javafx.application.Platform.runLater(() -> {
+                    boolean fieldFocused = customerSearchField.isFocused();
+                    boolean listFocused = customerSearchList.isFocused();
+                    if (!fieldFocused && !listFocused) {
+                        hideCustomerSuggestions();
+                    }
+                });
+            }
+        });
+        customerSearchList.focusedProperty().addListener((obs, old, focused) -> {
+            if (!focused) {
+                javafx.application.Platform.runLater(() -> {
+                    boolean fieldFocused = customerSearchField.isFocused();
+                    boolean listFocused = customerSearchList.isFocused();
+                    if (!fieldFocused && !listFocused) {
+                        hideCustomerSuggestions();
+                    }
+                });
+            }
+        });
+        customerSearchList.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
+            if (!customerSearchList.isVisible()) {
+                return;
+            }
+            Customer selected = customerSearchList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                selectCustomer(selected);
+                event.consume();
             }
         });
 
@@ -556,6 +613,17 @@ public class CashierController {
                 event.consume();
             } else if (event.getCode() == KeyCode.ESCAPE) {
                 hideCustomerSuggestions();
+                event.consume();
+            } else if (event.getCode() == KeyCode.ENTER) {
+                Customer selected = customerSearchList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    selectCustomer(selected);
+                } else {
+                    String term = customerSearchField.getText();
+                    if (term != null && !term.trim().isEmpty()) {
+                        processCustomerSearch(term.trim(), true);
+                    }
+                }
                 event.consume();
             }
         });
@@ -1433,6 +1501,10 @@ public class CashierController {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.empty"));
             return;
         }
+        if (selectedCustomer == null || selectedCustomer.getId() == null) {
+            showAlert(Alert.AlertType.WARNING, "الدفع الآجل يتطلب اختيار عميل محفوظ من قائمة العملاء.");
+            return;
+        }
         showDeferredPaymentDialog();
     }
 
@@ -1560,28 +1632,20 @@ public class CashierController {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         totalBox.getChildren().addAll(totalLabel, spacer, totalValue);
 
-        // Customer name
+        // Selected saved customer info
         VBox customerBox = new VBox(8);
-        Label customerLabel = new Label(bundle.getString("cashier.customer") + ":");
+        Label customerLabel = new Label("العميل المسجل:");
         customerLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #94a3b8;");
-        TextField customerField = new TextField();
-        customerField.setPromptText(bundle.getString("cashier.customer.placeholder"));
-        customerField.setStyle("-fx-font-size: 18px; -fx-background-color: #334155; -fx-text-fill: white; " +
-                "-fx-border-color: #475569; -fx-border-radius: 8; -fx-background-radius: 8; " +
-                "-fx-padding: 12;");
-        customerBox.getChildren().addAll(customerLabel, customerField);
-
-        // Phone
-        VBox phoneBox = new VBox(8);
-        Label phoneLabel = new Label(
-                bundle.getString("cashier.phone") + " (" + bundle.getString("cashier.optional") + "):");
-        phoneLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #94a3b8;");
-        TextField phoneField = new TextField();
-        phoneField.setPromptText("01xxxxxxxxx");
-        phoneField.setStyle("-fx-font-size: 18px; -fx-background-color: #334155; -fx-text-fill: white; " +
-                "-fx-border-color: #475569; -fx-border-radius: 8; -fx-background-radius: 8; " +
-                "-fx-padding: 12;");
-        phoneBox.getChildren().addAll(phoneLabel, phoneField);
+        String customerName = selectedCustomer != null ? selectedCustomer.getCustomerName() : "";
+        String customerCode = selectedCustomer != null ? selectedCustomer.getCustomerCode() : "";
+        String customerMobile = selectedCustomer != null ? selectedCustomer.getMobile() : "";
+        Label customerValue = new Label(String.format("%s (%s) - %s",
+                customerName != null ? customerName : "",
+                customerCode != null ? customerCode : "-",
+                customerMobile != null ? customerMobile : "-"));
+        customerValue.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white; "
+                + "-fx-background-color: #334155; -fx-padding: 12; -fx-background-radius: 8;");
+        customerBox.getChildren().addAll(customerLabel, customerValue);
 
         Stage dialog = DialogUtil.createDialog(bundle.getString("cashier.deferred"), root,
                 workerNameLabel.getScene().getWindow());
@@ -1598,17 +1662,16 @@ public class CashierController {
         confirmBtn.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: #1e293b; -fx-font-weight: bold; " +
                 "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
         confirmBtn.setOnAction(e -> {
-            String customer = customerField.getText().trim();
-            if (customer.isEmpty()) {
-                showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.customer"));
+            if (selectedCustomer == null || selectedCustomer.getId() == null) {
+                showAlert(Alert.AlertType.WARNING, "اختر عميلًا محفوظًا أولاً.");
                 return;
             }
-            completeSale("DEFERRED", customer);
+            completeSale("DEFERRED", selectedCustomer.getCustomerName());
             dialog.close();
         });
         buttons.getChildren().addAll(cancelBtn, confirmBtn);
 
-        root.getChildren().addAll(totalBox, customerBox, phoneBox, buttons);
+        root.getChildren().addAll(totalBox, customerBox, buttons);
         root.setPrefWidth(450);
 
         dialog.showAndWait();
@@ -1634,9 +1697,16 @@ public class CashierController {
         }
 
         Customer orderCustomer = selectedCustomer;
+        if ("DEFERRED".equals(paymentType) && (orderCustomer == null || orderCustomer.getId() == null)) {
+            showAlert(Alert.AlertType.WARNING, "الدفع الآجل مسموح فقط لعميل محفوظ.");
+            return;
+        }
         User assignedDeliveryMan = deliveryManCombo != null
                 ? deliveryManCombo.getSelectionModel().getSelectedItem()
                 : null;
+
+        java.time.LocalDateTime orderTime = java.time.LocalDateTime.now();
+        List<Sale> savedSales = new java.util.ArrayList<>();
 
         // Process sales
         for (CartItem item : cartItems) {
@@ -1657,7 +1727,7 @@ public class CashierController {
                 notes = baseNotes + " | " + extra;
             }
             Sale sale = new Sale(
-                    java.time.LocalDateTime.now(),
+                    orderTime,
                     item.getProduct().getName(),
                     item.getQuantity(),
                     item.getTotal(),
@@ -1674,7 +1744,15 @@ public class CashierController {
                 sale.setStatus(com.library.pos.model.SaleStatus.DEFERRED);
             }
 
-            saleService.save(sale);
+            Sale saved = saleService.save(sale);
+            savedSales.add(saved);
+        }
+
+        if (!savedSales.isEmpty() && barcodeField != null && barcodeField.getScene() != null) {
+            ReceiptPrinter.printSalesReceipt(
+                    barcodeField.getScene().getWindow(),
+                    savedSales,
+                    "فاتورة بيع");
         }
         cartItems.clear();
         updateSummary();
@@ -1827,6 +1905,11 @@ public class CashierController {
     }
 
     @FXML
+    private void handleDeferredCollection() {
+        showDeferredCollectionDialog();
+    }
+
+    @FXML
     private void handleReturns() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/returns_popup.fxml"));
@@ -1912,23 +1995,83 @@ public class CashierController {
     }
 
     private void showSupplierPaymentDialog() {
-        // Build payment form
         VBox formCard = new VBox(12);
         formCard.setStyle(
                 "-fx-background-color: #0f172a; -fx-padding: 30; -fx-border-color: #3b82f6; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12;");
         formCard.setMaxWidth(450);
-        formCard.setMaxHeight(520);
+        formCard.setMaxHeight(620);
 
-        ComboBox<Supplier> supplierCombo = new ComboBox<>();
-        List<Supplier> allSuppliers = supplierService.listAll(true);
-        List<Supplier> uniqueSuppliers = allSuppliers.stream()
-                .collect(java.util.stream.Collectors.collectingAndThen(
-                        java.util.stream.Collectors.toCollection(
-                                () -> new java.util.TreeSet<>(java.util.Comparator.comparing(Supplier::toString))),
-                        java.util.ArrayList::new));
-        supplierCombo.setItems(FXCollections.observableArrayList(uniqueSuppliers));
-        supplierCombo.setPromptText("اختر المورد");
-        supplierCombo.setMaxWidth(Double.MAX_VALUE);
+        TextField supplierLookupField = new TextField();
+        supplierLookupField.setPromptText("ابحث باسم المورد أو الهاتف");
+        ListView<Supplier> supplierResultsList = new ListView<>();
+        supplierResultsList.setPrefHeight(140);
+        supplierResultsList.setMaxHeight(160);
+        supplierResultsList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Supplier item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    String phone = item.getPhone() != null ? item.getPhone() : "-";
+                    setText(item.getName() + " | " + phone);
+                }
+            }
+        });
+        Label selectedSupplierLabel = new Label("لم يتم اختيار مورد");
+        selectedSupplierLabel.setStyle("-fx-text-fill: #cbd5e1;");
+        final Supplier[] chosenSupplier = new Supplier[1];
+
+        Runnable searchSuppliers = () -> {
+            String term = supplierLookupField.getText() != null ? supplierLookupField.getText().trim() : "";
+            List<Supplier> results = term.isBlank()
+                    ? supplierService.listAll(true)
+                    : supplierService.searchByNameOrPhone(term);
+            supplierResultsList.setItems(FXCollections.observableArrayList(results));
+            if (!results.isEmpty()) {
+                supplierResultsList.getSelectionModel().selectFirst();
+            }
+        };
+        searchSuppliers.run();
+        supplierLookupField.textProperty().addListener((obs, oldVal, newVal) -> searchSuppliers.run());
+        supplierLookupField.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.DOWN) {
+                supplierResultsList.requestFocus();
+                if (!supplierResultsList.getItems().isEmpty()) {
+                    supplierResultsList.getSelectionModel().selectFirst();
+                }
+                event.consume();
+            } else if (event.getCode() == KeyCode.ENTER) {
+                Supplier selected = supplierResultsList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    chosenSupplier[0] = selected;
+                    String phone = selected.getPhone() != null ? selected.getPhone() : "-";
+                    selectedSupplierLabel.setText("المورد المختار: " + selected.getName() + " | " + phone);
+                    event.consume();
+                }
+            }
+        });
+
+        supplierResultsList.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
+            Supplier selected = supplierResultsList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                chosenSupplier[0] = selected;
+                String phone = selected.getPhone() != null ? selected.getPhone() : "-";
+                selectedSupplierLabel.setText("المورد المختار: " + selected.getName() + " | " + phone);
+                event.consume();
+            }
+        });
+        supplierResultsList.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                Supplier selected = supplierResultsList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    chosenSupplier[0] = selected;
+                    String phone = selected.getPhone() != null ? selected.getPhone() : "-";
+                    selectedSupplierLabel.setText("المورد المختار: " + selected.getName() + " | " + phone);
+                    event.consume();
+                }
+            }
+        });
 
         TextField amountField = new TextField();
         amountField.setPromptText("المبلغ المدفوع اليوم");
@@ -1942,12 +2085,10 @@ public class CashierController {
         notesField.setPromptText("ملاحظات");
         notesField.setPrefRowCount(2);
 
-        // Build the overlay (dark background + card)
         VBox overlay = new VBox();
         overlay.setAlignment(javafx.geometry.Pos.CENTER);
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.5);");
 
-        // Title row
         HBox titleRow = new HBox();
         titleRow.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         Label titleLabel = new Label("دفعة للمورد");
@@ -1959,7 +2100,6 @@ public class CashierController {
         closeBtn.setOnAction(e -> cashierRootStack.getChildren().remove(overlay));
         titleRow.getChildren().addAll(titleLabel, closeBtn);
 
-        // Buttons
         HBox btnBox = new HBox(10);
         btnBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         Button cancelBtn = new Button("إلغاء");
@@ -1971,7 +2111,7 @@ public class CashierController {
         saveBtn.setDefaultButton(true);
         saveBtn.setOnAction(e -> {
             try {
-                Supplier supplier = supplierCombo.getSelectionModel().getSelectedItem();
+                Supplier supplier = chosenSupplier[0];
                 if (supplier == null) {
                     showInAppMessage("يرجى اختيار المورد", "#ef4444");
                     return;
@@ -1999,7 +2139,6 @@ public class CashierController {
         });
         btnBox.getChildren().addAll(cancelBtn, saveBtn);
 
-        // Labels
         Label l1 = new Label("المورد");
         l1.setStyle("-fx-text-fill: #cbd5e1;");
         Label l2 = new Label("المبلغ");
@@ -2009,12 +2148,242 @@ public class CashierController {
         Label l4 = new Label("ملاحظات");
         l4.setStyle("-fx-text-fill: #cbd5e1;");
 
-        formCard.getChildren().addAll(titleRow, l1, supplierCombo, l2, amountField, l3, methodCombo, l4, notesField,
-                btnBox);
+        formCard.getChildren().addAll(titleRow, l1, supplierLookupField, supplierResultsList, selectedSupplierLabel, l2,
+                amountField, l3, methodCombo, l4, notesField, btnBox);
         overlay.getChildren().add(formCard);
-
-        // Add overlay to the root StackPane
         cashierRootStack.getChildren().add(overlay);
+        overlay.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                cashierRootStack.getChildren().remove(overlay);
+                event.consume();
+            }
+        });
+        javafx.application.Platform.runLater(() -> {
+            supplierLookupField.requestFocus();
+            supplierLookupField.selectAll();
+        });
+    }
+
+    private void showDeferredCollectionDialog() {
+        VBox formCard = new VBox(12);
+        formCard.setStyle(
+                "-fx-background-color: #0f172a; -fx-padding: 30; -fx-border-color: #3b82f6; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12;");
+        formCard.setMaxWidth(450);
+        formCard.setMaxHeight(620);
+
+        TextField customerLookupField = new TextField();
+        customerLookupField.setPromptText("ابحث باسم العميل أو الهاتف أو الكود");
+        ListView<Customer> customerResultsList = new ListView<>();
+        customerResultsList.setPrefHeight(140);
+        customerResultsList.setMaxHeight(160);
+        customerResultsList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Customer item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    String code = item.getCustomerCode() != null ? item.getCustomerCode() : "-";
+                    String mobile = item.getMobile() != null ? item.getMobile() : "-";
+                    setText(item.getCustomerName() + " | " + code + " | " + mobile);
+                }
+            }
+        });
+        Label selectedCustomerLabel = new Label("لم يتم اختيار عميل");
+        selectedCustomerLabel.setStyle("-fx-text-fill: #cbd5e1;");
+        final Customer[] chosenCustomer = new Customer[1];
+        final java.util.Map<Long, java.math.BigDecimal> balanceByCustomer = new java.util.LinkedHashMap<>();
+
+        java.util.function.Consumer<Customer> applyCustomerSelection = picked -> {
+            chosenCustomer[0] = picked;
+            if (picked == null) {
+                selectedCustomerLabel.setText("لم يتم اختيار عميل");
+                return;
+            }
+            String code = picked.getCustomerCode() != null ? picked.getCustomerCode() : "-";
+            String mobile = picked.getMobile() != null ? picked.getMobile() : "-";
+            java.math.BigDecimal remaining = picked.getId() != null
+                    ? balanceByCustomer.getOrDefault(picked.getId(), customerDeferredService.getBalanceDueForCustomer(picked.getId()))
+                    : java.math.BigDecimal.ZERO;
+            selectedCustomerLabel.setText("العميل المختار: " + picked.getCustomerName() + " | " + code + " | " + mobile
+                    + " | المتبقي: " + remaining.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString() + " ج.م");
+        };
+
+        Runnable searchCustomers = () -> {
+            String term = customerLookupField.getText() != null ? customerLookupField.getText().trim() : "";
+            List<CustomerDeferredSummary> summaries = customerDeferredService.listCustomerSummaries(term);
+            balanceByCustomer.clear();
+            List<Customer> results = new java.util.ArrayList<>();
+            for (CustomerDeferredSummary summary : summaries) {
+                if (summary == null || summary.getCustomer() == null || summary.getCustomer().getId() == null) {
+                    continue;
+                }
+                java.math.BigDecimal due = summary.getBalanceDue() != null ? summary.getBalanceDue() : java.math.BigDecimal.ZERO;
+                if (due.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                Long customerId = summary.getCustomer().getId();
+                balanceByCustomer.put(customerId, due);
+                results.add(summary.getCustomer());
+            }
+            customerResultsList.setItems(FXCollections.observableArrayList(results));
+            if (!results.isEmpty()) {
+                customerResultsList.getSelectionModel().selectFirst();
+                if (chosenCustomer[0] == null || chosenCustomer[0].getId() == null
+                        || !balanceByCustomer.containsKey(chosenCustomer[0].getId())) {
+                    applyCustomerSelection.accept(results.get(0));
+                } else {
+                    applyCustomerSelection.accept(chosenCustomer[0]);
+                }
+            } else {
+                applyCustomerSelection.accept(null);
+            }
+        };
+
+        if (selectedCustomer != null && selectedCustomer.getId() != null
+                && customerDeferredService.getBalanceDueForCustomer(selectedCustomer.getId())
+                        .compareTo(java.math.BigDecimal.ZERO) > 0) {
+            applyCustomerSelection.accept(selectedCustomer);
+        }
+
+        customerLookupField.textProperty().addListener((obs, oldVal, newVal) -> searchCustomers.run());
+        customerLookupField.setOnAction(e -> {
+            Customer picked = customerResultsList.getSelectionModel().getSelectedItem();
+            if (picked != null) {
+                applyCustomerSelection.accept(picked);
+            } else {
+                searchCustomers.run();
+            }
+        });
+        customerLookupField.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.DOWN) {
+                customerResultsList.requestFocus();
+                if (!customerResultsList.getItems().isEmpty()) {
+                    customerResultsList.getSelectionModel().selectFirst();
+                }
+                event.consume();
+            }
+        });
+        searchCustomers.run();
+
+        customerResultsList.setOnMouseClicked(e -> {
+            if (e.getClickCount() >= 1) {
+                Customer picked = customerResultsList.getSelectionModel().getSelectedItem();
+                if (picked != null) {
+                    applyCustomerSelection.accept(picked);
+                }
+            }
+        });
+        customerResultsList.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                Customer picked = customerResultsList.getSelectionModel().getSelectedItem();
+                if (picked != null) {
+                    applyCustomerSelection.accept(picked);
+                    event.consume();
+                }
+            }
+        });
+
+        TextField amountField = new TextField();
+        amountField.setPromptText("المبلغ المحصل");
+
+        ComboBox<String> methodCombo = new ComboBox<>();
+        methodCombo.setItems(FXCollections.observableArrayList("Cash", "InstaPay", "Visa", "Vodafone Cash"));
+        methodCombo.getSelectionModel().selectFirst();
+        methodCombo.setMaxWidth(Double.MAX_VALUE);
+
+        TextArea notesField = new TextArea();
+        notesField.setPromptText("ملاحظات");
+        notesField.setPrefRowCount(2);
+
+        VBox overlay = new VBox();
+        overlay.setAlignment(javafx.geometry.Pos.CENTER);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.5);");
+
+        HBox titleRow = new HBox();
+        titleRow.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        Label titleLabel = new Label("تحصيل دفعة آجل");
+        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+        Button closeBtn = new Button("✕");
+        closeBtn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #94a3b8; -fx-font-size: 18px; -fx-cursor: hand;");
+        closeBtn.setOnAction(e -> cashierRootStack.getChildren().remove(overlay));
+        titleRow.getChildren().addAll(titleLabel, closeBtn);
+
+        HBox btnBox = new HBox(10);
+        btnBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        Button cancelBtn = new Button("إلغاء");
+        cancelBtn.setStyle("-fx-background-color: #475569; -fx-text-fill: white; -fx-padding: 8 20; -fx-cursor: hand;");
+        cancelBtn.setOnAction(e -> cashierRootStack.getChildren().remove(overlay));
+        Button saveBtn = new Button("تسجيل");
+        saveBtn.setStyle(
+                "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-padding: 8 20; -fx-cursor: hand; -fx-font-weight: bold;");
+        saveBtn.setDefaultButton(true);
+        saveBtn.setOnAction(e -> {
+            try {
+                Customer customer = chosenCustomer[0];
+                if (customer == null || customer.getId() == null) {
+                    showInAppMessage("يرجى اختيار العميل", "#ef4444");
+                    return;
+                }
+                String amtStr = amountField.getText();
+                if (amtStr == null || amtStr.isBlank()) {
+                    showInAppMessage("يرجى إدخال المبلغ", "#ef4444");
+                    return;
+                }
+                java.math.BigDecimal amount = java.math.BigDecimal.valueOf(parseAmount(amtStr));
+                java.math.BigDecimal remaining = customerDeferredService.getBalanceDueForCustomer(customer.getId());
+                String remainingText = remaining.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+                if (remaining.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    showInAppMessage("لا يوجد رصيد آجل مستحق لهذا العميل. المتبقي: 0.00 ج.م", "#ef4444");
+                    return;
+                }
+                if (amount.compareTo(remaining) > 0) {
+                    showInAppMessage("لا يمكن دفع مبلغ أكبر من المتبقي. المتبقي: " + remainingText + " ج.م", "#ef4444");
+                    return;
+                }
+                CustomerDeferredPayment payment = new CustomerDeferredPayment();
+                payment.setCustomer(customer);
+                payment.setAmount(amount);
+                payment.setMethod(mapSupplierPaymentMethod(methodCombo.getSelectionModel().getSelectedItem()));
+                payment.setNotes(notesField.getText());
+                payment.setWorker(currentUser);
+                customerDeferredService.recordPayment(payment);
+                updateDailyCash();
+                updateDataSignature();
+                cashierRootStack.getChildren().remove(overlay);
+                showInAppMessage("تم تسجيل دفعة الآجل بنجاح", "#10b981");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showInAppMessage("خطأ: " + ex.getMessage(), "#ef4444");
+            }
+        });
+        btnBox.getChildren().addAll(cancelBtn, saveBtn);
+
+        Label l1 = new Label("العميل");
+        l1.setStyle("-fx-text-fill: #cbd5e1;");
+        Label l2 = new Label("المبلغ");
+        l2.setStyle("-fx-text-fill: #cbd5e1;");
+        Label l3 = new Label("طريقة الدفع");
+        l3.setStyle("-fx-text-fill: #cbd5e1;");
+        Label l4 = new Label("ملاحظات");
+        l4.setStyle("-fx-text-fill: #cbd5e1;");
+
+        formCard.getChildren().addAll(titleRow, l1, customerLookupField, customerResultsList, selectedCustomerLabel,
+                l2, amountField, l3, methodCombo, l4, notesField, btnBox);
+        overlay.getChildren().add(formCard);
+        cashierRootStack.getChildren().add(overlay);
+        overlay.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                cashierRootStack.getChildren().remove(overlay);
+                event.consume();
+            }
+        });
+        javafx.application.Platform.runLater(() -> {
+            customerLookupField.requestFocus();
+            customerLookupField.selectAll();
+        });
     }
 
     /**
@@ -2038,6 +2407,8 @@ public class CashierController {
         okBtn.setStyle("-fx-background-color: " + borderColor
                 + "; -fx-text-fill: white; -fx-padding: 10 30; -fx-cursor: hand; -fx-font-weight: bold;");
         okBtn.setOnAction(e -> cashierRootStack.getChildren().remove(overlay));
+        okBtn.setDefaultButton(true);
+        okBtn.setCancelButton(true);
 
         VBox card = new VBox(16, iconLabel, msgLabel, okBtn);
         card.setAlignment(javafx.geometry.Pos.CENTER);
@@ -2048,6 +2419,35 @@ public class CashierController {
 
         overlay.getChildren().add(card);
         cashierRootStack.getChildren().add(overlay);
+        javafx.application.Platform.runLater(okBtn::requestFocus);
+    }
+
+    private boolean shouldHandleGlobalCheckout() {
+        if (cashierRootStack != null && cashierRootStack.getChildren().size() > 1) {
+            // Overlay opened (dialogs/messages) -> avoid accidental checkout
+            return false;
+        }
+        Scene scene = barcodeField != null ? barcodeField.getScene() : null;
+        if (scene == null) {
+            return false;
+        }
+        Node focusOwner = scene.getFocusOwner();
+        if (focusOwner instanceof TextInputControl) {
+            return false;
+        }
+        if (focusOwner instanceof ComboBoxBase<?>) {
+            return false;
+        }
+        if (customerSearchField != null && customerSearchField.isFocused()) {
+            return false;
+        }
+        if (barcodeField != null && barcodeField.isFocused()) {
+            String barcodeText = barcodeField.getText();
+            if (barcodeText != null && !barcodeText.trim().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private PaymentMethod mapSupplierPaymentMethod(String method) {
@@ -2056,8 +2456,10 @@ public class CashierController {
         }
         return switch (method) {
             case "Cash" -> PaymentMethod.CASH;
-            case "InstaPay", "Visa", "Vodafone Cash" -> PaymentMethod.BANK;
-            default -> PaymentMethod.OTHER;
+            case "InstaPay" -> PaymentMethod.INSTAPAY;
+            case "Visa" -> PaymentMethod.VISA;
+            case "Vodafone Cash" -> PaymentMethod.VODAFONE_CASH;
+            default -> PaymentMethod.CASH;
         };
     }
 

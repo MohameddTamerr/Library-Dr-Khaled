@@ -271,9 +271,9 @@ public class DashboardController {
                 .sum();
         totalSalesLabel.setText(String.format("%.2f ج.م", totalRevenue));
 
-        // Net Profit (Estimated 25%)
-        double estimatedProfit = totalRevenue * 0.25;
-        netProfitLabel.setText(String.format("%.2f ج.م", estimatedProfit));
+        // Net Profit (real transaction-based calculation)
+        double netProfit = saleService.calculateNetProfit(sales);
+        netProfitLabel.setText(String.format("%.2f ج.م", netProfit));
 
         // Invoice Count (Only SOLD, exclude RETURNED for specific count?)
         // Or count all transactions? Let's count all for now.
@@ -441,6 +441,11 @@ public class DashboardController {
     @FXML
     public void showOrders() {
         loadView("/fxml/orders.fxml");
+    }
+
+    @FXML
+    public void showDeferredPayments() {
+        loadView("/fxml/deferred_payments.fxml");
     }
 
     @FXML

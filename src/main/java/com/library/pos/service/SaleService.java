@@ -35,6 +35,14 @@ public class SaleService {
         return saleRepository.findByCriteria(start, end, workerId, productName);
     }
 
+    public List<Sale> getDeferredWithSavedCustomers(String term) {
+        String normalized = term;
+        if (normalized != null && normalized.isBlank()) {
+            normalized = null;
+        }
+        return saleRepository.findDeferredWithSavedCustomers(SaleStatus.DEFERRED, normalized);
+    }
+
     public Double getDailyCash(Long workerId) {
         LocalDateTime start = LocalDate.now().atStartOfDay();
         LocalDateTime end = LocalDate.now().atTime(LocalTime.MAX);
@@ -83,6 +91,45 @@ public class SaleService {
         for (Sale sale : sales) {
             save(sale);
         }
+    }
+
+    public double calculateNetProfit(List<Sale> sales) {
+        if (sales == null || sales.isEmpty()) {
+            return 0.0;
+        }
+        double netProfit = 0.0;
+        for (Sale sale : sales) {
+            if (sale == null || sale.getStatus() == null) {
+                continue;
+            }
+            int quantityAbs = Math.abs(sale.getQuantity() != null ? sale.getQuantity() : 0);
+            if (quantityAbs == 0) {
+                continue;
+            }
+
+            double totalAmountAbs = Math.abs(sale.getTotalAmount() != null ? sale.getTotalAmount() : 0.0);
+            double unitSellPrice = totalAmountAbs / quantityAbs;
+            Double productCost = sale.getProduct() != null ? sale.getProduct().getCost() : null;
+            // Fallback when cost is unavailable in historical row.
+            double unitCost = productCost != null ? productCost : (unitSellPrice * 0.75);
+            double unitMargin = unitSellPrice - unitCost;
+
+            switch (sale.getStatus()) {
+                case SOLD, DEFERRED, DELIVERY -> netProfit += unitMargin * quantityAbs;
+                case RETURNED -> {
+                    boolean badCondition = sale.getReturnCondition() != null
+                            && "BAD".equalsIgnoreCase(sale.getReturnCondition());
+                    if (badCondition) {
+                        // Damaged return: full refunded sale value is a loss.
+                        netProfit -= totalAmountAbs;
+                    } else {
+                        // Good return: reverse only the earned margin.
+                        netProfit -= unitMargin * quantityAbs;
+                    }
+                }
+            }
+        }
+        return netProfit;
     }
 
     /**

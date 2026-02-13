@@ -1,6 +1,7 @@
 package com.library.pos.repository;
 
 import com.library.pos.model.Sale;
+import com.library.pos.model.SaleStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -8,6 +9,23 @@ import java.util.List;
 
 public interface SaleRepository extends JpaRepository<Sale, Long> {
         List<Sale> findByTimestampBetween(LocalDateTime start, LocalDateTime end);
+
+        @org.springframework.data.jpa.repository.Query("SELECT s FROM Sale s WHERE s.status = :status "
+                        + "AND s.customer IS NOT NULL "
+                        + "AND (:term IS NULL OR "
+                        + "LOWER(s.customer.customerName) LIKE LOWER(CONCAT('%', :term, '%')) OR "
+                        + "LOWER(COALESCE(s.customer.mobile, '')) LIKE LOWER(CONCAT('%', :term, '%')) OR "
+                        + "LOWER(COALESCE(s.customer.customerCode, '')) LIKE LOWER(CONCAT('%', :term, '%'))) "
+                        + "ORDER BY s.timestamp DESC")
+        List<Sale> findDeferredWithSavedCustomers(
+                        @org.springframework.data.repository.query.Param("status") SaleStatus status,
+                        @org.springframework.data.repository.query.Param("term") String term);
+
+        @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s "
+                        + "WHERE s.status = :status AND s.customer.id = :customerId")
+        Double sumTotalAmountByStatusAndCustomerId(
+                        @org.springframework.data.repository.query.Param("status") SaleStatus status,
+                        @org.springframework.data.repository.query.Param("customerId") Long customerId);
 
         @org.springframework.data.jpa.repository.Query("SELECT s FROM Sale s WHERE s.timestamp BETWEEN :start AND :end "
                         +

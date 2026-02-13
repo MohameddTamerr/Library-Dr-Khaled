@@ -85,6 +85,7 @@
     <TreeTableView fx:id="ordersTable" VBox.vgrow="ALWAYS" styleClass="tree-table-view" showRoot="false">
         <columns>
             <TreeTableColumn fx:id="idCol" text="#" prefWidth="50"/>
+            <TreeTableColumn fx:id="printCol" text="طباعة" prefWidth="80"/>
             <TreeTableColumn fx:id="dateCol" text="التاريخ" prefWidth="100"/>
             <TreeTableColumn fx:id="timeCol" text="الوقت" prefWidth="80"/>
             <TreeTableColumn fx:id="itemCol" text="البيان" prefWidth="250"/> <!-- Item or Verification -->

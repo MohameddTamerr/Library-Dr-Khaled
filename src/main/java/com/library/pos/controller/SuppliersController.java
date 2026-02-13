@@ -384,8 +384,10 @@ public class SuppliersController {
         }
         return switch (method) {
             case "Cash" -> PaymentMethod.CASH;
-            case "InstaPay", "Visa", "Vodafone Cash" -> PaymentMethod.BANK;
-            default -> PaymentMethod.OTHER;
+            case "InstaPay" -> PaymentMethod.INSTAPAY;
+            case "Visa" -> PaymentMethod.VISA;
+            case "Vodafone Cash" -> PaymentMethod.VODAFONE_CASH;
+            default -> PaymentMethod.CASH;
         };
     }
 

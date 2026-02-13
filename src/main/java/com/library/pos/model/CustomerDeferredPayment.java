@@ -17,8 +17,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "supplier_payments")
-public class SupplierPayment {
+@Table(name = "customer_deferred_payments")
+public class CustomerDeferredPayment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,8 +26,12 @@ public class SupplierPayment {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = false)
-    private Supplier supplier;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "worker_id")
+    private User worker;
 
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;
@@ -42,19 +46,6 @@ public class SupplierPayment {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
-    public SupplierPayment() {
-    }
-
-    public SupplierPayment(Long id, Supplier supplier, BigDecimal amount, LocalDateTime paymentDate,
-            PaymentMethod method, String notes) {
-        this.id = id;
-        this.supplier = supplier;
-        this.amount = amount;
-        this.paymentDate = paymentDate;
-        this.method = method;
-        this.notes = notes;
-    }
-
     public Long getId() {
         return id;
     }
@@ -63,12 +54,20 @@ public class SupplierPayment {
         this.id = id;
     }
 
-    public Supplier getSupplier() {
-        return supplier;
+    public Customer getCustomer() {
+        return customer;
     }
 
-    public void setSupplier(Supplier supplier) {
-        this.supplier = supplier;
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
+    public User getWorker() {
+        return worker;
+    }
+
+    public void setWorker(User worker) {
+        this.worker = worker;
     }
 
     public BigDecimal getAmount() {
@@ -110,6 +109,9 @@ public class SupplierPayment {
         }
         if (method == null) {
             method = PaymentMethod.CASH;
+        }
+        if (amount == null) {
+            amount = BigDecimal.ZERO;
         }
     }
 }
