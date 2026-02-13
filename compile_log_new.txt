@@ -1,0 +1,105 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.library:pos-system >-----------------------
+[INFO] Building Library POS System 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ pos-system ---
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] Copying 22 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ pos-system ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 78 source files with javac [debug release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[327,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[328,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[329,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[330,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[331,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[332,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[333,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[334,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[335,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[336,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[337,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[338,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[339,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[340,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[341,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[342,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[343,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[344,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[345,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[347,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[348,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[349,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[350,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[351,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[352,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[353,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[354,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[355,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[356,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[357,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[358,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[359,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[360,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[361,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[362,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[363,1] class, interface, enum, or record expected
+[INFO] 36 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.258 s
+[INFO] Finished at: 2026-02-13T10:55:16+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project pos-system: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[327,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[328,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[329,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[330,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[331,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[332,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[333,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[334,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[335,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[336,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[337,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[338,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[339,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[340,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[341,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[342,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[343,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[344,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[345,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[347,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[348,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[349,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[350,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[351,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[352,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[353,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[354,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[355,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[356,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[357,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[358,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[359,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[360,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[361,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[362,1] class, interface, enum, or record expected
+[ERROR] /C:/Users/user/Library-Dr-Khaled/src/main/java/com/library/pos/util/ReceiptPrinter.java:[363,1] class, interface, enum, or record expected
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

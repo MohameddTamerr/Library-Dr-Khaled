@@ -933,7 +933,8 @@ public class CashierController {
             return;
         }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        DialogUtil.initOwner(confirm, workerNameLabel.getScene() != null ? workerNameLabel.getScene().getWindow() : null);
+        DialogUtil.initOwner(confirm,
+                workerNameLabel.getScene() != null ? workerNameLabel.getScene().getWindow() : null);
         confirm.setTitle(bundle.getString("cashier.confirm"));
         confirm.setHeaderText(bundle.getString("cashier.order.confirm.delete"));
         confirm.setContentText(bundle.getString("cashier.order.confirm.delete.message"));
@@ -1451,7 +1452,8 @@ public class CashierController {
             return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        DialogUtil.initOwner(confirm, workerNameLabel.getScene() != null ? workerNameLabel.getScene().getWindow() : null);
+        DialogUtil.initOwner(confirm,
+                workerNameLabel.getScene() != null ? workerNameLabel.getScene().getWindow() : null);
         confirm.setTitle(bundle.getString("cashier.confirm"));
         confirm.setHeaderText(bundle.getString("cashier.clear.confirm"));
         confirm.setContentText(bundle.getString("cashier.clear.message"));
@@ -1469,6 +1471,45 @@ public class CashierController {
         itemCountLabel.setText(String.valueOf(itemCount));
         grandTotalLabel.setText(String.format("%.2f", total));
         updateOrderButtons();
+    }
+
+    @FXML
+    private void handlePreviewReceipt() {
+        if (cartItems.isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.empty"));
+            return;
+        }
+
+        List<Sale> previewSales = new java.util.ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Determine payment method and delivery info for the preview
+        String payment = paymentMethodCombo.getSelectionModel().getSelectedItem();
+        // Clean payment string
+        if (payment != null && payment.contains("(")) {
+            payment = payment.substring(payment.indexOf("(") + 1, payment.indexOf(")"));
+        }
+
+        User deliveryMan = deliveryManCombo != null ? deliveryManCombo.getValue() : null;
+        String notes = "Preview|Payment:" + (payment == null ? "CASH" : payment);
+        if (deliveryMan != null) {
+            notes += "|Delivery:" + deliveryMan.getFullName();
+        }
+
+        for (CartItem item : cartItems) {
+            Sale sale = new Sale();
+            sale.setId(0L); // Temporary ID
+            sale.setTimestamp(now);
+            sale.setItemName(item.getProduct().getName());
+            sale.setQuantity(item.getQuantity());
+            sale.setTotalAmount(item.getTotal());
+            sale.setWorker(currentUser);
+            sale.setCustomer(selectedCustomer);
+            sale.setNotes(notes);
+            previewSales.add(sale);
+        }
+
+        ReceiptPrinter.previewSalesReceipt(workerNameLabel.getScene().getWindow(), previewSales, "Preview");
     }
 
     @FXML
@@ -1744,6 +1785,8 @@ public class CashierController {
             sale.setProduct(item.getProduct());
             if (paymentType.equals("DEFERRED")) {
                 sale.setStatus(com.library.pos.model.SaleStatus.DEFERRED);
+            } else if (assignedDeliveryMan != null) {
+                sale.setStatus(com.library.pos.model.SaleStatus.DELIVERY);
             }
 
             Sale saved = saleService.save(sale);
@@ -2208,7 +2251,8 @@ public class CashierController {
             String code = picked.getCustomerCode() != null ? picked.getCustomerCode() : "-";
             String mobile = picked.getMobile() != null ? picked.getMobile() : "-";
             java.math.BigDecimal remaining = picked.getId() != null
-                    ? balanceByCustomer.getOrDefault(picked.getId(), customerDeferredService.getBalanceDueForCustomer(picked.getId()))
+                    ? balanceByCustomer.getOrDefault(picked.getId(),
+                            customerDeferredService.getBalanceDueForCustomer(picked.getId()))
                     : java.math.BigDecimal.ZERO;
             selectedCustomerLabel.setText("العميل المختار: " + picked.getCustomerName() + " | " + code + " | " + mobile
                     + " | المتبقي: " + remaining.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString() + " ج.م");
@@ -2223,7 +2267,8 @@ public class CashierController {
                 if (summary == null || summary.getCustomer() == null || summary.getCustomer().getId() == null) {
                     continue;
                 }
-                java.math.BigDecimal due = summary.getBalanceDue() != null ? summary.getBalanceDue() : java.math.BigDecimal.ZERO;
+                java.math.BigDecimal due = summary.getBalanceDue() != null ? summary.getBalanceDue()
+                        : java.math.BigDecimal.ZERO;
                 if (due.compareTo(java.math.BigDecimal.ZERO) <= 0) {
                     continue;
                 }

@@ -115,7 +115,8 @@ public class OrdersController {
                 {
                     printBtn.getStyleClass().add("button-primary");
                     printBtn.setOnAction(event -> {
-                        TreeItem<OrderViewModel> rowItem = getTreeTableRow() != null ? getTreeTableRow().getTreeItem() : null;
+                        TreeItem<OrderViewModel> rowItem = getTreeTableRow() != null ? getTreeTableRow().getTreeItem()
+                                : null;
                         if (rowItem == null || rowItem.getValue() == null || !rowItem.getValue().isOrderHeader()) {
                             return;
                         }
@@ -123,8 +124,10 @@ public class OrdersController {
                         if (orderSales == null || orderSales.isEmpty()) {
                             return;
                         }
-                        ReceiptPrinter.printSalesReceipt(
-                                ordersTable != null && ordersTable.getScene() != null ? ordersTable.getScene().getWindow() : null,
+                        ReceiptPrinter.previewSalesReceipt(
+                                ordersTable != null && ordersTable.getScene() != null
+                                        ? ordersTable.getScene().getWindow()
+                                        : null,
                                 orderSales,
                                 "فاتورة طلب سابق");
                     });
@@ -133,7 +136,8 @@ public class OrdersController {
                 @Override
                 protected void updateItem(Void item, boolean empty) {
                     super.updateItem(item, empty);
-                    TreeItem<OrderViewModel> rowItem = getTreeTableRow() != null ? getTreeTableRow().getTreeItem() : null;
+                    TreeItem<OrderViewModel> rowItem = getTreeTableRow() != null ? getTreeTableRow().getTreeItem()
+                            : null;
                     boolean show = !empty
                             && rowItem != null
                             && rowItem.getValue() != null
@@ -154,8 +158,36 @@ public class OrdersController {
                 param -> new SimpleDoubleProperty(param.getValue().getValue().getAmount()).asObject());
         statusCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getStatus()));
         paymentCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getPayment()));
-        deliveryManCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getDeliveryMan()));
+        deliveryManCol
+                .setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getDeliveryMan()));
         notesCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getNotes()));
+
+        // Context Menu for Preview
+        ordersTable.setRowFactory(tv -> {
+            javafx.scene.control.TreeTableRow<OrderViewModel> row = new javafx.scene.control.TreeTableRow<>();
+            javafx.scene.control.ContextMenu menu = new javafx.scene.control.ContextMenu();
+            javafx.scene.control.MenuItem previewItem = new javafx.scene.control.MenuItem("معاينة الفاتورة");
+            previewItem.setOnAction(event -> {
+                OrderViewModel item = row.getItem();
+                if (item != null && item.isOrderHeader() && item.getOrderSales() != null
+                        && !item.getOrderSales().isEmpty()) {
+                    ReceiptPrinter.previewSalesReceipt(
+                            ordersTable.getScene().getWindow(),
+                            item.getOrderSales(),
+                            "فاتورة " + item.getId());
+                }
+            });
+            menu.getItems().add(previewItem);
+
+            // Only show for non-empty rows that are Order Headers
+            row.contextMenuProperty().bind(javafx.beans.binding.Bindings.createObjectBinding(() -> {
+                if (row.isEmpty() || row.getItem() == null || !row.getItem().isOrderHeader()) {
+                    return null;
+                }
+                return menu;
+            }, row.itemProperty(), row.emptyProperty()));
+            return row;
+        });
 
         // Setup filter combo
         filterWorkerCombo.setConverter(new javafx.util.StringConverter<com.library.pos.model.User>() {
@@ -386,10 +418,15 @@ public class OrdersController {
     }
 
     private boolean isDelivery(Sale sale) {
-        if (sale == null || sale.getStatus() == null) {
+        if (sale == null) {
             return false;
         }
-        return sale.getStatus() == com.library.pos.model.SaleStatus.DELIVERY;
+        if (sale.getStatus() == com.library.pos.model.SaleStatus.DELIVERY) {
+            return true;
+        }
+        // Check notes for "Delivery:" if status is DEFERRED or SOLD
+        String notes = sale.getNotes();
+        return notes != null && notes.toLowerCase(Locale.ROOT).contains("delivery:");
     }
 
     private boolean isDeliveryOrder(List<Sale> sales) {

@@ -2,24 +2,20 @@ package com.library.pos.util;
 
 import com.library.pos.model.Customer;
 import com.library.pos.model.Sale;
-import com.library.pos.util.escpos.ReceiptConfig;
-import com.library.pos.util.escpos.ReceiptFormatter;
 import com.library.pos.util.escpos.ReceiptModels;
-import javafx.geometry.VPos;
+import javafx.geometry.Insets;
 import javafx.print.PageLayout;
 import javafx.print.PageOrientation;
 import javafx.print.Printer;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.TextAlignment;
+import javafx.scene.transform.Scale;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import javax.print.PrintService;
@@ -28,12 +24,12 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -48,6 +44,59 @@ public final class ReceiptPrinter {
     private ReceiptPrinter() {
     }
 
+    public static void previewSalesReceipt(Window owner, List<Sale> sales, String title) {
+        if (sales == null || sales.isEmpty()) {
+            return;
+        }
+        ReceiptModels.Order order = toOrder(sales);
+        VBox receiptNode = ReceiptNodeFactory.createReceiptNode(order, true);
+
+        // Apply CSS
+        receiptNode.getStylesheets().add(ReceiptPrinter.class.getResource("/css/receipt.css").toExternalForm());
+
+        ScrollPane scroll = new ScrollPane(receiptNode);
+        scroll.setFitToWidth(false); // Allow actual width
+        scroll.setPadding(new Insets(10));
+        scroll.setStyle("-fx-background-color: transparent;");
+
+        // Toolbar
+        javafx.scene.layout.HBox toolbar = new javafx.scene.layout.HBox(10);
+        toolbar.setAlignment(javafx.geometry.Pos.CENTER);
+        toolbar.setPadding(new Insets(10));
+        toolbar.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #ccc; -fx-border-width: 1 0 0 0;");
+
+        javafx.scene.control.Button printBtn = new javafx.scene.control.Button("طباعة");
+        printBtn.setStyle(
+                "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+
+        javafx.scene.control.Button closeBtn = new javafx.scene.control.Button("إغلاق");
+        closeBtn.setStyle("-fx-cursor: hand;");
+
+        toolbar.getChildren().addAll(printBtn, closeBtn);
+
+        VBox root = new VBox(scroll, toolbar);
+        javafx.scene.layout.VBox.setVgrow(scroll, javafx.scene.layout.Priority.ALWAYS);
+
+        Scene scene = new Scene(root, 400, 700);
+        Stage stage = new Stage();
+        stage.initOwner(owner);
+        stage.initModality(Modality.WINDOW_MODAL);
+        stage.setTitle("معاينة الفاتورة - " + title);
+        stage.setScene(scene);
+
+        // Actions
+        printBtn.setOnAction(e -> {
+            boolean success = printSalesReceipt(owner, sales, title);
+            if (success) {
+                stage.close();
+            }
+        });
+
+        closeBtn.setOnAction(e -> stage.close());
+
+        stage.show();
+    }
+
     public static boolean printSalesReceipt(Window owner, List<Sale> sales, String title) {
         if (sales == null || sales.isEmpty()) {
             return false;
@@ -55,76 +104,120 @@ public final class ReceiptPrinter {
         debug("printSalesReceipt start, sales=" + sales.size());
 
         ReceiptModels.Order order = toOrder(sales);
-        ReceiptConfig config = ReceiptConfig.builder()
-                .paperWidthChars(32)
-                .currency("ج.م")
-                .locale(Locale.forLanguageTag("ar-EG"))
-                .arabicPreferred(true)
-                .enableCut(true)
-                .enableDrawerKick(false)
-                .build();
+        VBox receiptNode = ReceiptNodeFactory.createReceiptNode(order, true);
+        receiptNode.getStylesheets().add(ReceiptPrinter.class.getResource("/css/receipt.css").toExternalForm());
 
-        try {
-            List<String> lines = new ReceiptFormatter(config).format(order, config.arabicPreferred());
-            debug("Trying JavaFX print path.");
-            if (printViaJavaFx(lines)) {
-                debug("JavaFX print success.");
-                return true;
-            }
-            debug("JavaFX path failed. Trying AWT path.");
-            if (printViaAwt(lines)) {
-                debug("AWT print success.");
-                return true;
-            }
-            debug("AWT path failed.");
-            return false;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            debug("Print pipeline failed: " + ex.getMessage());
-            return false;
+        // We need to layout the node to take a snapshot
+        Scene dummy = new Scene(receiptNode);
+        receiptNode.applyCss();
+        receiptNode.layout();
+
+        // 1. Try JavaFX print (Preferred)
+        debug("Trying JavaFX print path.");
+        if (printViaJavaFx(receiptNode)) {
+            debug("JavaFX print success.");
+            return true;
         }
+
+        // 2. Fallback to AWT (Image-based)
+        debug("JavaFX path failed. Trying AWT path.");
+        WritableImage snapshot = receiptNode.snapshot(null, null);
+        if (printViaAwt(snapshot)) {
+            debug("AWT print success.");
+            return true;
+        }
+
+        debug("AWT path failed.");
+        return false;
     }
 
-    private static boolean printViaAwt(List<String> lines) {
+    private static boolean printViaJavaFx(VBox node) {
+        Printer printer = resolvePreferredPrinter();
+        if (printer == null) {
+            return false;
+        }
+
+        PrinterJob job = PrinterJob.createPrinterJob(printer);
+        if (job == null) {
+            return false;
+        }
+
+        // Setup page layout (80mm width usually)
+        PageLayout pageLayout = printer.createPageLayout(
+                job.getJobSettings().getPageLayout().getPaper(),
+                PageOrientation.PORTRAIT,
+                Printer.MarginType.HARDWARE_MINIMUM);
+        job.getJobSettings().setPageLayout(pageLayout);
+
+        double printableWidth = pageLayout.getPrintableWidth();
+        double nodeWidth = node.getBoundsInParent().getWidth();
+        double scaleFactor = 1.0;
+
+        if (printableWidth > 0 && nodeWidth > 0) {
+            // Scale content to fit printer width if needed, or scale up?
+            // Usually receipts are small. If printableWidth is ~200px (58mm) vs ~280px
+            // (80mm)
+            scaleFactor = printableWidth / nodeWidth;
+        }
+
+        if (Math.abs(scaleFactor - 1.0) > 0.01) {
+            node.getTransforms().add(new Scale(scaleFactor, scaleFactor));
+        }
+
+        boolean printed = job.printPage(pageLayout, node);
+        if (printed) {
+            job.endJob();
+        }
+        return printed;
+    }
+
+    private static boolean printViaAwt(WritableImage image) {
+        // Convert WritableImage to BufferedImage if needed, or draw Image directly to
+        // Graphics
+        // For simplicity, we can reuse the Image approach but we need to convert JavaFX
+        // Image to AWT
+        // Or simpler: We just assume if JavaFX failed, AWT might work better with
+        // simple strings?
+        // No, we want to print the EXACT layout.
+        // Converting JavaFX Image to BufferedImage requires SwingFXUtils which might be
+        // in a separate module.
+        // Let's try to just use the text-based AWT fallback? No, we want graphics.
+
         try {
+            java.awt.image.BufferedImage bImage = javafx.embed.swing.SwingFXUtils.fromFXImage(image, null);
+
             PrintService service = resolveAwtPrinter();
-            if (service == null) {
-                debug("AWT: no printer service found.");
+            if (service == null)
                 return false;
-            }
-            debug("AWT: selected printer = " + service.getName());
 
             java.awt.print.PrinterJob awtJob = java.awt.print.PrinterJob.getPrinterJob();
             awtJob.setPrintService(service);
 
-            final List<String> safeLines = lines == null ? List.of("") : lines;
             awtJob.setPrintable(new Printable() {
                 @Override
                 public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) {
+                    if (pageIndex > 0)
+                        return Printable.NO_SUCH_PAGE;
+
                     Graphics2D g2 = (Graphics2D) graphics;
                     g2.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-                    g2.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 9));
 
-                    int lineHeight = g2.getFontMetrics().getHeight();
-                    int linesPerPage = Math.max(1, (int) (pageFormat.getImageableHeight() / lineHeight));
-                    int start = pageIndex * linesPerPage;
-                    if (start >= safeLines.size()) {
-                        return Printable.NO_SUCH_PAGE;
-                    }
-                    int end = Math.min(safeLines.size(), start + linesPerPage);
-                    int y = g2.getFontMetrics().getAscent();
-                    for (int i = start; i < end; i++) {
-                        String line = safeLines.get(i) == null ? "" : safeLines.get(i);
-                        g2.drawString(line, 0, y);
-                        y += lineHeight;
-                    }
+                    double pWidth = pageFormat.getImageableWidth();
+                    double iWidth = bImage.getWidth();
+                    double scale = pWidth / iWidth;
+
+                    // Maintain aspect ratio
+                    int drawWidth = (int) (iWidth * scale);
+                    int drawHeight = (int) (bImage.getHeight() * scale);
+
+                    g2.drawImage(bImage, 0, 0, drawWidth, drawHeight, null);
                     return Printable.PAGE_EXISTS;
                 }
             });
 
             awtJob.print();
             return true;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             debug("AWT print error: " + ex.getMessage());
             return false;
         }
@@ -143,88 +236,12 @@ public final class ReceiptPrinter {
         String hint = PRINTER_HINT.toLowerCase(Locale.ROOT);
         for (PrintService service : services) {
             String name = service.getName().toLowerCase(Locale.ROOT);
-            if (name.contains(hint) || name.contains("xprinter") || name.contains("xp-370b") || name.contains("xp370b")) {
+            if (name.contains(hint) || name.contains("xprinter") || name.contains("xp-370b")
+                    || name.contains("xp370b")) {
                 return service;
             }
         }
         return PrintServiceLookup.lookupDefaultPrintService();
-    }
-
-    private static boolean printViaJavaFx(List<String> lines) {
-        Printer printer = resolvePreferredPrinter();
-        if (printer == null) {
-            return false;
-        }
-
-        PrinterJob job = PrinterJob.createPrinterJob(printer);
-        if (job == null) {
-            return false;
-        }
-
-        PageLayout selectedLayout = job.getJobSettings().getPageLayout();
-        PageLayout pageLayout = printer.createPageLayout(
-                selectedLayout.getPaper(),
-                PageOrientation.PORTRAIT,
-                Printer.MarginType.HARDWARE_MINIMUM);
-        job.getJobSettings().setPageLayout(pageLayout);
-
-        double printableWidth = pageLayout.getPrintableWidth();
-        if (printableWidth <= 0) {
-            printableWidth = 260.0;
-        }
-        double printableHeight = pageLayout.getPrintableHeight();
-        if (printableHeight <= 0) {
-            printableHeight = 420.0;
-        }
-
-        double lineHeight = 13.5;
-        int linesPerPage = Math.max(1, (int) Math.floor((printableHeight - 2) / lineHeight));
-        List<VBox> pages = new ArrayList<>();
-
-        for (int start = 0; start < lines.size(); start += linesPerPage) {
-            int end = Math.min(lines.size(), start + linesPerPage);
-            int count = end - start;
-            double canvasHeight = Math.max(1, count * lineHeight + 2);
-
-            Canvas canvas = new Canvas(printableWidth, canvasHeight);
-            GraphicsContext gc = canvas.getGraphicsContext2D();
-            gc.setFill(Color.WHITE);
-            gc.fillRect(0, 0, printableWidth, canvasHeight);
-            gc.setFill(Color.BLACK);
-            gc.setFont(Font.font("Cairo", 10));
-            gc.setTextBaseline(VPos.TOP);
-
-            double y = 1;
-            for (int i = start; i < end; i++) {
-                String line = lines.get(i) == null ? "" : lines.get(i);
-                gc.setTextAlign(TextAlignment.LEFT);
-                gc.fillText(line, 1, y);
-                y += lineHeight;
-            }
-
-            WritableImage snapshot = canvas.snapshot(new SnapshotParameters(), null);
-            ImageView receiptImage = new ImageView(snapshot);
-            receiptImage.setPreserveRatio(true);
-            receiptImage.setFitWidth(printableWidth);
-
-            VBox content = new VBox(receiptImage);
-            new Scene(content);
-            content.applyCss();
-            content.layout();
-            pages.add(content);
-        }
-
-        boolean printed = true;
-        for (int i = pages.size() - 1; i >= 0; i--) {
-            if (!job.printPage(pageLayout, pages.get(i))) {
-                printed = false;
-                break;
-            }
-        }
-        if (printed) {
-            job.endJob();
-        }
-        return printed;
     }
 
     private static Printer resolvePreferredPrinter() {

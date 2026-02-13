@@ -61,6 +61,7 @@ public class WorkersController {
     private Long editingUserId = null;
 
     private final UserService userService;
+    private final com.library.pos.service.SaleService saleService;
     private Timeline autoRefreshTimeline;
     private static final int REFRESH_SECONDS_VISIBLE = 8;
     private static final int REFRESH_SECONDS_HIDDEN = 16;
@@ -69,8 +70,10 @@ public class WorkersController {
     private Long lastAdvanceId = null;
     private long lastAdvanceCount = -1;
 
-    public WorkersController(UserService userService) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkersController(UserService userService, com.library.pos.service.SaleService saleService) {
         this.userService = userService;
+        this.saleService = saleService;
     }
 
     @FXML
@@ -478,22 +481,126 @@ public class WorkersController {
     }
 
     private void handleShowReport(User worker) {
-        java.time.LocalDate now = java.time.LocalDate.now();
-        java.time.LocalDate start = now.withDayOfMonth(1);
-        java.time.LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
+        javafx.stage.Stage dialog = new javafx.stage.Stage();
+        if (workersTable != null && workersTable.getScene() != null) {
+            dialog.initOwner(workersTable.getScene().getWindow());
+        }
+        dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
+        dialog.setTitle("تقرير الموظف: " + worker.getFullName());
 
-        long minutes = userService.getWorkMinutes(worker, start, end);
-        long hours = minutes / 60;
-        long mins = minutes % 60;
+        javafx.scene.layout.VBox root = new javafx.scene.layout.VBox(15);
+        root.setPadding(new javafx.geometry.Insets(20));
+        root.setStyle("-fx-background-color: white;");
 
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        DialogUtil.initOwner(alert, workersTable.getScene() != null ? workersTable.getScene().getWindow() : null);
-        alert.setTitle("تقرير العمل");
-        alert.setHeaderText("تقرير شهر " + now.getMonth().toString());
-        alert.setContentText("الموظف: " + worker.getFullName() + "\n" +
-                "ساعات العمل هذا الشهر: " + hours + " ساعة و " + mins + " دقيقة.\n" +
-                "المسحوبات: " + (worker.getCurrentWithdrawal() != null ? worker.getCurrentWithdrawal() : 0.0));
-        alert.show();
+        // Filter Section
+        javafx.scene.layout.HBox filterBox = new javafx.scene.layout.HBox(10);
+        filterBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        DatePicker startDate = new DatePicker(java.time.LocalDate.now().withDayOfMonth(1));
+        DatePicker endDate = new DatePicker(java.time.LocalDate.now());
+        Button showBtn = new Button("عرض");
+        showBtn.setDefaultButton(true);
+
+        filterBox.getChildren().addAll(new Label("من:"), startDate, new Label("إلى:"), endDate, showBtn);
+
+        // Quick Select Buttons
+        javafx.scene.layout.HBox quickBox = new javafx.scene.layout.HBox(10);
+        quickBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        Button todayBtn = new Button("اليوم");
+        Button weekBtn = new Button("هذا الأسبوع");
+        Button monthBtn = new Button("هذا الشهر");
+
+        todayBtn.setOnAction(e -> {
+            startDate.setValue(java.time.LocalDate.now());
+            endDate.setValue(java.time.LocalDate.now());
+            showBtn.fire();
+        });
+
+        weekBtn.setOnAction(e -> {
+            startDate.setValue(java.time.LocalDate.now().minusDays(6));
+            endDate.setValue(java.time.LocalDate.now());
+            showBtn.fire();
+        });
+
+        monthBtn.setOnAction(e -> {
+            startDate.setValue(java.time.LocalDate.now().withDayOfMonth(1));
+            endDate.setValue(java.time.LocalDate.now().withDayOfMonth(java.time.LocalDate.now().lengthOfMonth()));
+            showBtn.fire();
+        });
+
+        quickBox.getChildren().addAll(todayBtn, weekBtn, monthBtn);
+
+        // Stats Area
+        TextArea statsArea = new TextArea();
+        statsArea.setEditable(false);
+        statsArea.setPrefRowCount(10);
+        statsArea.setStyle("-fx-font-family: monospace; -fx-font-size: 14px;");
+
+        showBtn.setOnAction(e -> {
+            java.time.LocalDate start = startDate.getValue();
+            java.time.LocalDate end = endDate.getValue();
+            if (start == null || end == null)
+                return;
+
+            // 1. Work Duration
+            long minutes = userService.getWorkMinutes(worker, start, end);
+            long hours = minutes / 60;
+            long mins = minutes % 60;
+
+            // 2. Sales Data
+            java.time.LocalDateTime startDt = start.atStartOfDay();
+            java.time.LocalDateTime endDt = end.atTime(java.time.LocalTime.MAX);
+
+            // Fetch sales
+            List<com.library.pos.model.Sale> sales = saleService.search(startDt, endDt, worker.getId(), null);
+
+            double totalSales = 0;
+            int salesCount = 0;
+            double totalReturns = 0;
+            int returnsCount = 0;
+
+            for (com.library.pos.model.Sale s : sales) {
+                if (s.getStatus() == com.library.pos.model.SaleStatus.RETURNED) {
+                    totalReturns += Math.abs(s.getTotalAmount());
+                    returnsCount++;
+                } else {
+                    totalSales += s.getTotalAmount();
+                    salesCount++;
+                }
+            }
+
+            // 3. Withdrawals
+            Double withdrawals = userService.getWithdrawals(worker, start, end);
+            if (withdrawals == null)
+                withdrawals = 0.0;
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("تقرير الفترة: ").append(start).append(" إلى ").append(end).append("\n");
+            sb.append("--------------------------------------------------\n");
+            sb.append(String.format("مدة العمل المسجلة:   %d ساعة و %d دقيقة\n", hours, mins));
+            sb.append("--------------------------------------------------\n");
+            sb.append(String.format("عدد المبيعات:        %d\n", salesCount));
+            sb.append(String.format("إجمالي المبيعات:     %.2f\n", totalSales));
+            sb.append("--------------------------------------------------\n");
+            sb.append(String.format("عدد المرتجعات:       %d\n", returnsCount));
+            sb.append(String.format("إجمالي المرتجعات:    %.2f\n", totalReturns));
+            sb.append("--------------------------------------------------\n");
+            sb.append(String.format("صافي المبيعات:       %.2f\n", totalSales - totalReturns));
+            sb.append("--------------------------------------------------\n");
+            sb.append(String.format("المسحوبات (سلف):     %.2f\n", withdrawals));
+            sb.append("--------------------------------------------------\n");
+
+            statsArea.setText(sb.toString());
+        });
+
+        // Trigger initial load
+        showBtn.fire();
+
+        root.getChildren().addAll(filterBox, quickBox, statsArea);
+
+        javafx.scene.Scene scene = new javafx.scene.Scene(root, 500, 500);
+        dialog.setScene(scene);
+        dialog.show();
     }
 
     private void showAlert(String title, String content) {

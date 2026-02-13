@@ -4,7 +4,8 @@ public enum PaymentMethod {
     CASH("Cash"),
     INSTAPAY("InstaPay"),
     VISA("Visa"),
-    VODAFONE_CASH("Vodafone Cash");
+    VODAFONE_CASH("Vodafone Cash"),
+    BANK("Bank Transfer");
 
     private final String label;
 

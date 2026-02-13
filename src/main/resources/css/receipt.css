@@ -1,0 +1,56 @@
+.receipt-root {
+    -fx-background-color: white;
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 10px;
+    -fx-padding: 0 5 0 5;
+    -fx-text-fill: black;
+    /* Force black text */
+    /* Small side padding */
+}
+
+/* Ensure all labels inside inherit or force black */
+.receipt-root .label,
+.receipt-root .text {
+    -fx-text-fill: black;
+}
+
+.shop-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+.shop-phone {
+    -fx-font-size: 11px;
+    -fx-alignment: center;
+}
+
+.header-label {
+    -fx-font-weight: bold;
+}
+
+.dashed-line {
+    -fx-border-style: segments(3, 3);
+    -fx-border-width: 1 0 0 0;
+    /* Top border only */
+    -fx-border-color: black;
+    -fx-min-height: 5px;
+}
+
+.item-header {
+    -fx-font-weight: bold;
+    -fx-padding: 2 0 2 0;
+}
+
+.item-row {
+    -fx-padding: 2 0 2 0;
+}
+
+.total-section {
+    -fx-padding: 5 0 0 0;
+}
+
+.total-row {
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+}

@@ -13,6 +13,12 @@ public final class EscPosCommands {
         out.write('@');
     }
 
+    private static void align(ByteArrayOutputStream out, int alignment) {
+        out.write(0x1B);
+        out.write('a');
+        out.write(alignment);
+    }
+
     public static void alignLeft(ByteArrayOutputStream out) {
         align(out, 0);
     }

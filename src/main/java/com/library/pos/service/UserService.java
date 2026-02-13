@@ -53,11 +53,15 @@ public class UserService {
         java.time.LocalDate end = now.withDayOfMonth(now.lengthOfMonth());
 
         users.forEach(w -> {
-            Double drawn = advanceRepository.findByWorkerAndAdvanceDateBetween(w, start, end).stream()
-                    .mapToDouble(com.library.pos.model.SalaryAdvance::getAmount)
-                    .sum();
+            Double drawn = getWithdrawals(w, start, end);
             w.setCurrentWithdrawal(drawn);
         });
+    }
+
+    public Double getWithdrawals(User worker, java.time.LocalDate start, java.time.LocalDate end) {
+        return advanceRepository.findByWorkerAndAdvanceDateBetween(worker, start, end).stream()
+                .mapToDouble(com.library.pos.model.SalaryAdvance::getAmount)
+                .sum();
     }
 
     public long getWorkMinutes(User worker, java.time.LocalDate start, java.time.LocalDate end) {

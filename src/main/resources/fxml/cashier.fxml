@@ -134,6 +134,8 @@
                         <padding><Insets top="12" right="16" bottom="16" left="16"/></padding>
                         <Button text="تأكيد الدفع (Enter)" onAction="#handlePayment" 
                                 styleClass="btn-success-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        <Button text="طباعة تجريبية" onAction="#handlePreviewReceipt" 
+                                styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                         <Button text="دفع آجل" onAction="#handleDeferredPayment" 
                                 styleClass="btn-warning-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                     </HBox>
