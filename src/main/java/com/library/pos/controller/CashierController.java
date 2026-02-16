@@ -884,6 +884,9 @@ public class CashierController {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.order.alert.empty"));
             return;
         }
+        if (!validateDeliveryInvoiceRequirements()) {
+            return;
+        }
         OpenOrder order = activeOrder != null ? activeOrder : new OpenOrder();
         order.setStatus(OpenOrderStatus.OPEN);
         order.setCustomer(selectedCustomer);
@@ -1019,6 +1022,9 @@ public class CashierController {
         }
         cartItems.clear();
         for (OpenOrderItem item : order.getItems()) {
+            if (item == null || item.getProduct() == null) {
+                continue;
+            }
             cartItems.add(new CartItem(item.getProduct(), item.getQuantity()));
         }
         updateSummary();
@@ -1054,6 +1060,34 @@ public class CashierController {
         } else {
             deliveryManSummaryLabel.setText("");
         }
+    }
+
+    private boolean validateDeliveryInvoiceRequirements() {
+        User assignedDeliveryMan = deliveryManCombo != null
+                ? deliveryManCombo.getSelectionModel().getSelectedItem()
+                : null;
+        if (assignedDeliveryMan == null) {
+            return true;
+        }
+
+        if (selectedCustomer == null) {
+            showAlert(Alert.AlertType.WARNING,
+                    "\u0641\u0627\u062a\u0648\u0631\u0629 \u0627\u0644\u062a\u0648\u0635\u064a\u0644 \u062a\u062a\u0637\u0644\u0628 \u0627\u062e\u062a\u064a\u0627\u0631 \u0639\u0645\u064a\u0644.");
+            return false;
+        }
+        String customerName = selectedCustomer.getCustomerName();
+        if (customerName == null || customerName.isBlank()) {
+            showAlert(Alert.AlertType.WARNING,
+                    "\u0641\u0627\u062a\u0648\u0631\u0629 \u0627\u0644\u062a\u0648\u0635\u064a\u0644 \u062a\u062a\u0637\u0644\u0628 \u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064a\u0644.");
+            return false;
+        }
+        String customerAddress = selectedCustomer.getAddress();
+        if (customerAddress == null || customerAddress.isBlank()) {
+            showAlert(Alert.AlertType.WARNING,
+                    "\u0641\u0627\u062a\u0648\u0631\u0629 \u0627\u0644\u062a\u0648\u0635\u064a\u0644 \u062a\u062a\u0637\u0644\u0628 \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0639\u0645\u064a\u0644.");
+            return false;
+        }
+        return true;
     }
 
     private void showQuantityEditDialog(CartItem item) {
@@ -1214,10 +1248,7 @@ public class CashierController {
             return;
         }
 
-        Product exact = results.stream()
-                .filter(p -> p.getBarcode() != null && p.getBarcode().equalsIgnoreCase(trimmed))
-                .findFirst()
-                .orElse(null);
+        Product exact = productService.findByBarcode(trimmed).orElse(null);
 
         Product chosen = exact;
 
@@ -1479,6 +1510,9 @@ public class CashierController {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.empty"));
             return;
         }
+        if (!validateDeliveryInvoiceRequirements()) {
+            return;
+        }
 
         List<Sale> previewSales = new java.util.ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
@@ -1518,6 +1552,9 @@ public class CashierController {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.empty"));
             return;
         }
+        if (!validateDeliveryInvoiceRequirements()) {
+            return;
+        }
         String selected = paymentMethodCombo.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showAlert(Alert.AlertType.WARNING, "الرجاء اختيار طريقة الدفع");
@@ -1546,6 +1583,9 @@ public class CashierController {
         }
         if (selectedCustomer == null || selectedCustomer.getId() == null) {
             showAlert(Alert.AlertType.WARNING, "الدفع الآجل يتطلب اختيار عميل محفوظ من قائمة العملاء.");
+            return;
+        }
+        if (!validateDeliveryInvoiceRequirements()) {
             return;
         }
         showDeferredPaymentDialog();
@@ -1709,6 +1749,9 @@ public class CashierController {
                 showAlert(Alert.AlertType.WARNING, "اختر عميلًا محفوظًا أولاً.");
                 return;
             }
+            if (!validateDeliveryInvoiceRequirements()) {
+                return;
+            }
             completeSale("DEFERRED", selectedCustomer.getCustomerName());
             dialog.close();
         });
@@ -1739,6 +1782,10 @@ public class CashierController {
             // for sale.
         }
 
+        if (!validateDeliveryInvoiceRequirements()) {
+            return;
+        }
+
         Customer orderCustomer = selectedCustomer;
         if ("DEFERRED".equals(paymentType) && (orderCustomer == null || orderCustomer.getId() == null)) {
             showAlert(Alert.AlertType.WARNING, "الدفع الآجل مسموح فقط لعميل محفوظ.");
@@ -1757,17 +1804,22 @@ public class CashierController {
                     ? "Deferred: " + customerName
                     : paymentType + " Payment";
             String notes = baseNotes;
+            java.util.List<String> details = new java.util.ArrayList<>();
             if (orderCustomer != null) {
-                StringBuilder extra = new StringBuilder();
-                extra.append("Customer: ").append(orderCustomer.getCustomerName());
+                if (orderCustomer.getCustomerName() != null && !orderCustomer.getCustomerName().isBlank()) {
+                    details.add("Customer: " + orderCustomer.getCustomerName());
+                }
                 String address = orderCustomer.getAddress();
                 if (address != null && !address.isBlank()) {
-                    extra.append(", Address: ").append(address);
+                    details.add("Address: " + address);
                 }
-                if (assignedDeliveryMan != null) {
-                    extra.append(", Delivery: ").append(assignedDeliveryMan.getFullName());
-                }
-                notes = baseNotes + " | " + extra;
+            }
+            if (assignedDeliveryMan != null && assignedDeliveryMan.getFullName() != null
+                    && !assignedDeliveryMan.getFullName().isBlank()) {
+                details.add("Delivery: " + assignedDeliveryMan.getFullName());
+            }
+            if (!details.isEmpty()) {
+                notes = baseNotes + " | " + String.join(", ", details);
             }
             Sale sale = new Sale(
                     orderTime,
@@ -1943,6 +1995,45 @@ public class CashierController {
         DialogUtil.initOwner(alert, barcodeField.getScene() != null ? barcodeField.getScene().getWindow() : null);
         alert.setContentText(msg);
         alert.show();
+    }
+
+    @FXML
+    private void handleOpenOrdersScreen() {
+        openUtilityWindow("/fxml/orders.fxml", "الاوردرات");
+    }
+
+    @FXML
+    private void handleOpenDeferredPaymentsScreen() {
+        openUtilityWindow("/fxml/deferred_payments.fxml", "المدفوعات الآجلة");
+    }
+
+    private void openUtilityWindow(String fxmlPath, String title) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            loader.setControllerFactory(applicationContext::getBean);
+            loader.setResources(bundle != null ? bundle : ResourceBundle.getBundle("messages"));
+            Scene scene = new Scene(loader.load());
+
+            java.net.URL css = getClass().getResource("/css/style.css");
+            if (css != null) {
+                scene.getStylesheets().add(css.toExternalForm());
+            }
+
+            Stage stage = new Stage();
+            if (barcodeField != null && barcodeField.getScene() != null) {
+                stage.initOwner(barcodeField.getScene().getWindow());
+            }
+            stage.initModality(Modality.WINDOW_MODAL);
+            stage.setTitle(title);
+            stage.setMinWidth(900);
+            stage.setMinHeight(600);
+            stage.setScene(scene);
+            stage.centerOnScreen();
+            stage.show();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "خطأ في فتح الشاشة: " + ex.getMessage());
+        }
     }
 
     @FXML

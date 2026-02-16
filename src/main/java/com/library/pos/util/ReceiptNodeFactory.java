@@ -65,6 +65,12 @@ public class ReceiptNodeFactory {
         if (hasText(order.getCustomerCode())) {
             addMetaRow(metaBox, labels.customerCode, order.getCustomerCode());
         }
+        if (hasText(order.getCustomerName())) {
+            addMetaRow(metaBox, "\u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064a\u0644:", order.getCustomerName());
+        }
+        if (hasText(order.getCustomerAddress())) {
+            addMetaRow(metaBox, "\u0627\u0644\u0639\u0646\u0648\u0627\u0646:", order.getCustomerAddress());
+        }
         if (hasText(order.getDeliveredBy())) {
             addMetaRow(metaBox, labels.deliveredBy, order.getDeliveredBy());
         }
@@ -380,12 +386,12 @@ public class ReceiptNodeFactory {
                         "الاجمالي النهائي",
                         "المدفوع",
                         "المتبقي",
-                        "");
+                        "\u062A\u0634\u0631\u0641\u0646\u0627 \u0628\u0627\u0644\u062A\u0639\u0627\u0645\u0644 \u0645\u0639\u0643");
             }
             return new Labels("Demo Shop", "123456", "Invoice:", "Date:", "Cashier:", "Customer:", "Driver:",
                     "Payment:",
                     "Item", "Qty", "Price", "Total", "Subtotal", "Discount", "Tax", "Total", "Paid", "Change",
-                    "Thank You");
+                    "\u062A\u0634\u0631\u0641\u0646\u0627 \u0628\u0627\u0644\u062A\u0639\u0627\u0645\u0644 \u0645\u0639\u0643");
         }
     }
 }

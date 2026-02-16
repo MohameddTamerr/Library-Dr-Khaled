@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,6 +27,7 @@ public class OpenOrderItem {
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     private Product product;
 
     @Column(name = "quantity", nullable = false)

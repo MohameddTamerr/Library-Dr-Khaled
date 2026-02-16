@@ -32,6 +32,8 @@
             <padding><Insets top="8" right="16" bottom="8" left="16"/></padding>
             
             <Label text="%cashier.title" styleClass="header-title"/>
+            <Button text="الاوردرات" onAction="#handleOpenOrdersScreen" styleClass="btn-secondary"/>
+            <Button text="المدفوعات الآجلة" onAction="#handleOpenDeferredPaymentsScreen" styleClass="btn-secondary"/>
             
             <Region HBox.hgrow="ALWAYS"/>
             

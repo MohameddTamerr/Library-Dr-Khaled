@@ -492,7 +492,14 @@ public final class ReceiptPrinter {
         order.setInvoiceNo(first.getId() == null ? "-" : String.valueOf(first.getId()));
         order.setDateTime(first.getTimestamp());
         order.setCashier(first.getWorker() != null ? first.getWorker().getFullName() : "-");
-        order.setCustomerCode(resolveCustomerCode(first.getCustomer()));
+        boolean deliveryInvoice = isDeliveryInvoice(first);
+        if (deliveryInvoice) {
+            order.setCustomerCode(resolveCustomerCodeForDelivery(first.getCustomer()));
+            order.setCustomerName(resolveCustomerName(first.getCustomer()));
+            order.setCustomerAddress(resolveCustomerAddress(first.getCustomer()));
+        } else {
+            order.setCustomerCode(resolveCustomerCode(first.getCustomer()));
+        }
         order.setDeliveredBy(extractDeliveryWorker(first.getNotes()));
         order.setPaymentMethod(extractPaymentMethod(first.getNotes()));
 
@@ -541,6 +548,41 @@ public final class ReceiptPrinter {
             return customer.getCustomerName();
         }
         return "عميل نقدي";
+    }
+
+    private static String resolveCustomerCodeForDelivery(Customer customer) {
+        if (customer == null) {
+            return null;
+        }
+        if (customer.getCustomerCode() != null && !customer.getCustomerCode().isBlank()) {
+            return customer.getCustomerCode();
+        }
+        return null;
+    }
+
+    private static String resolveCustomerName(Customer customer) {
+        if (customer == null || customer.getCustomerName() == null || customer.getCustomerName().isBlank()) {
+            return null;
+        }
+        return customer.getCustomerName().trim();
+    }
+
+    private static String resolveCustomerAddress(Customer customer) {
+        if (customer == null || customer.getAddress() == null || customer.getAddress().isBlank()) {
+            return null;
+        }
+        return customer.getAddress().trim();
+    }
+
+    private static boolean isDeliveryInvoice(Sale sale) {
+        if (sale == null) {
+            return false;
+        }
+        if (sale.getStatus() == com.library.pos.model.SaleStatus.DELIVERY) {
+            return true;
+        }
+        String notes = sale.getNotes();
+        return notes != null && notes.toLowerCase(Locale.ROOT).contains("delivery:");
     }
 
     private static String extractPaymentMethod(String notes) {

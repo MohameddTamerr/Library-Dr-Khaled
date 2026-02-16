@@ -1,14 +1,24 @@
 package com.library.pos.util;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class SecurityUtil {
 
     private static final String SECRET_PHRASE = "DrKhaled_Library_POS_Secret_Key_2024_#$@!";
+    private static final String REVOCATION_FILE = "revoked_devices.dat";
 
     public static String getMachineId() {
         try {
@@ -39,6 +49,85 @@ public class SecurityUtil {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static Path getRevocationFilePath() {
+        return Paths.get(REVOCATION_FILE);
+    }
+
+    public static boolean isCurrentMachineRevoked() {
+        return isMachineRevoked(getMachineId());
+    }
+
+    public static boolean isMachineRevoked(String machineId) {
+        if (machineId == null || machineId.isBlank()) {
+            return false;
+        }
+        return listRevokedMachines().contains(machineId.trim());
+    }
+
+    public static Set<String> listRevokedMachines() {
+        Path path = getRevocationFilePath();
+        if (!Files.exists(path)) {
+            return Collections.emptySet();
+        }
+
+        try {
+            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+            Set<String> revoked = new LinkedHashSet<>();
+            for (String line : lines) {
+                if (line == null) {
+                    continue;
+                }
+                String value = line.trim();
+                if (value.isBlank() || value.startsWith("#")) {
+                    continue;
+                }
+                revoked.add(value);
+            }
+            return Collections.unmodifiableSet(revoked);
+        } catch (IOException e) {
+            return Collections.emptySet();
+        }
+    }
+
+    public static boolean revokeMachine(String machineId) throws IOException {
+        String normalized = normalizeMachineId(machineId);
+        Set<String> revoked = new LinkedHashSet<>(listRevokedMachines());
+        boolean changed = revoked.add(normalized);
+        if (changed) {
+            writeRevokedMachines(revoked);
+        }
+        return changed;
+    }
+
+    public static boolean unrevokeMachine(String machineId) throws IOException {
+        String normalized = normalizeMachineId(machineId);
+        Set<String> revoked = new LinkedHashSet<>(listRevokedMachines());
+        boolean changed = revoked.remove(normalized);
+        if (changed) {
+            writeRevokedMachines(revoked);
+        }
+        return changed;
+    }
+
+    private static void writeRevokedMachines(Set<String> revoked) throws IOException {
+        List<String> lines = new ArrayList<>();
+        lines.add("# Library POS revoked machine IDs");
+        lines.add("# One machine ID per line");
+
+        List<String> sorted = new ArrayList<>(revoked);
+        Collections.sort(sorted);
+        lines.addAll(sorted);
+
+        Files.write(getRevocationFilePath(), lines, StandardCharsets.UTF_8);
+    }
+
+    private static String normalizeMachineId(String machineId) {
+        if (machineId == null || machineId.isBlank()) {
+            throw new IllegalArgumentException("Machine ID cannot be empty.");
+        }
+        return machineId.trim();
     }
 
     private static String getProcessorId() {

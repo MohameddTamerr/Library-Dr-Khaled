@@ -41,6 +41,8 @@ public final class ReceiptFormatter {
         }
         addIfPresent(out, center(pair(labels.cashier, order.getCashier())));
         addIfPresent(out, center(pair(labels.customerCode, order.getCustomerCode())));
+        addIfPresent(out, center(pair("\u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064a\u0644:", order.getCustomerName())));
+        addIfPresent(out, center(pair("\u0627\u0644\u0639\u0646\u0648\u0627\u0646:", order.getCustomerAddress())));
         addIfPresent(out, center(pair(labels.deliveredBy, order.getDeliveredBy())));
         addIfPresent(out, center(pair(labels.paymentMethod, order.getPaymentMethod())));
 
@@ -334,25 +336,25 @@ public final class ReceiptFormatter {
         private static Labels of(boolean arabic) {
             if (arabic) {
                 return new Labels(
-                        "مكتبه سمسم",
+                        "Ù…ÙƒØªØ¨Ù‡ Ø³Ù…Ø³Ù…",
                         "01064419197",
-                        "رقم الفاتورة:",
-                        "التاريخ:",
-                        "الكاشير:",
-                        "كود العميل:",
-                        "عامل التوصيل:",
-                        "طريقة الدفع:",
-                        "الصنف",
-                        "كم",
-                        "السعر",
-                        "الإجمالي",
-                        "الإجمالي الفرعي",
-                        "الخصم",
-                        "الضريبة",
-                        "الإجمالي النهائي",
-                        "المدفوع",
-                        "الباقي",
-                        "شكرا لزيارتكم");
+                        "Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©:",
+                        "Ø§Ù„ØªØ§Ø±ÙŠØ®:",
+                        "Ø§Ù„ÙƒØ§Ø´ÙŠØ±:",
+                        "ÙƒÙˆØ¯ Ø§Ù„Ø¹Ù…ÙŠÙ„:",
+                        "Ø¹Ø§Ù…Ù„ Ø§Ù„ØªÙˆØµÙŠÙ„:",
+                        "Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹:",
+                        "Ø§Ù„ØµÙ†Ù",
+                        "ÙƒÙ…",
+                        "Ø§Ù„Ø³Ø¹Ø±",
+                        "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ",
+                        "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØ±Ø¹ÙŠ",
+                        "Ø§Ù„Ø®ØµÙ…",
+                        "Ø§Ù„Ø¶Ø±ÙŠØ¨Ø©",
+                        "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ",
+                        "Ø§Ù„Ù…Ø¯ÙÙˆØ¹",
+                        "Ø§Ù„Ø¨Ø§Ù‚ÙŠ",
+                        "\u062A\u0634\u0631\u0641\u0646\u0627 \u0628\u0627\u0644\u062A\u0639\u0627\u0645\u0644 \u0645\u0639\u0643");
             }
 
             return new Labels(
@@ -374,7 +376,7 @@ public final class ReceiptFormatter {
                     "Grand Total",
                     "Paid",
                     "Change",
-                    "Thank you");
+                    "\u062A\u0634\u0631\u0641\u0646\u0627 \u0628\u0627\u0644\u062A\u0639\u0627\u0645\u0644 \u0645\u0639\u0643");
         }
     }
 }

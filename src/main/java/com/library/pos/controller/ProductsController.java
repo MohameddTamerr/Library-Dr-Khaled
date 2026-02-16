@@ -235,6 +235,20 @@ public class ProductsController {
 
         TextField name = new TextField();
         TextField barcode = new TextField();
+        javafx.scene.layout.VBox additionalBarcodesBox = new javafx.scene.layout.VBox(6);
+        Button addBarcodeBtn = new Button("+");
+        addBarcodeBtn.getStyleClass().add("button-primary");
+        addBarcodeBtn.setStyle("-fx-min-width: 32; -fx-min-height: 32; -fx-font-size: 14px; -fx-font-weight: bold;");
+
+        addBarcodeBtn.setOnAction(ev -> additionalBarcodesBox.getChildren()
+                .add(createAdditionalBarcodeRow("", additionalBarcodesBox)));
+
+        javafx.scene.layout.HBox barcodeBox = new javafx.scene.layout.HBox(6, barcode, addBarcodeBtn);
+        barcodeBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        barcode.setMaxWidth(Double.MAX_VALUE);
+        javafx.scene.layout.HBox.setHgrow(barcode, javafx.scene.layout.Priority.ALWAYS);
+
+        javafx.scene.layout.VBox barcodeSection = new javafx.scene.layout.VBox(6, barcodeBox, additionalBarcodesBox);
 
         ComboBox<String> category = new ComboBox<>();
         category.setEditable(true);
@@ -325,6 +339,10 @@ public class ProductsController {
         if (existing != null) {
             name.setText(existing.getName());
             barcode.setText(existing.getBarcode());
+            List<String> extraBarcodes = productService.getAdditionalBarcodes(existing.getId());
+            for (String code : extraBarcodes) {
+                additionalBarcodesBox.getChildren().add(createAdditionalBarcodeRow(code, additionalBarcodesBox));
+            }
             category.setValue(existing.getCategory());
             supplier.setValue(existing.getSupplier());
             cost.setText(String.valueOf(existing.getCost()));
@@ -334,7 +352,7 @@ public class ProductsController {
         }
 
         grid.addRow(0, createStyledLabel(t("products.field.name")), name);
-        grid.addRow(1, createStyledLabel(t("products.field.barcode")), barcode);
+        grid.addRow(1, createStyledLabel(t("products.field.barcode")), barcodeSection);
         grid.addRow(2, createStyledLabel(t("products.field.category")), categoryBox);
         grid.addRow(3, createStyledLabel(t("products.field.supplier")), supplier);
         grid.addRow(4, createStyledLabel(t("products.field.cost")), cost);
@@ -360,6 +378,56 @@ public class ProductsController {
 
         saveBtn.setOnAction(e -> {
             try {
+                String primaryBarcode = barcode.getText() != null ? barcode.getText().trim() : "";
+                if (primaryBarcode.isBlank()) {
+                    showAlert(t("products.alert.invalid"));
+                    return;
+                }
+
+                Long currentProductId = existing != null ? existing.getId() : null;
+                if (productService.isBarcodeUsedByAnotherProduct(primaryBarcode, currentProductId)) {
+                    showAlert(t("products.alert.barcode.exists"));
+                    return;
+                }
+
+                java.util.List<String> additionalBarcodes = new java.util.ArrayList<>();
+                java.util.Set<String> localBarcodeSet = new java.util.LinkedHashSet<>();
+                localBarcodeSet.add(primaryBarcode.toLowerCase(java.util.Locale.ROOT));
+
+                for (javafx.scene.Node node : additionalBarcodesBox.getChildren()) {
+                    if (!(node instanceof javafx.scene.layout.HBox row)) {
+                        continue;
+                    }
+                    TextField extraField = null;
+                    for (javafx.scene.Node child : row.getChildren()) {
+                        if (child instanceof TextField tf) {
+                            extraField = tf;
+                            break;
+                        }
+                    }
+                    if (extraField == null) {
+                        continue;
+                    }
+
+                    String extra = extraField.getText() != null ? extraField.getText().trim() : "";
+                    if (extra.isBlank()) {
+                        continue;
+                    }
+
+                    String lower = extra.toLowerCase(java.util.Locale.ROOT);
+                    if (!localBarcodeSet.add(lower)) {
+                        showAlert(t("products.alert.barcode.exists"));
+                        return;
+                    }
+
+                    if (productService.isBarcodeUsedByAnotherProduct(extra, currentProductId)) {
+                        showAlert(t("products.alert.barcode.exists"));
+                        return;
+                    }
+
+                    additionalBarcodes.add(extra);
+                }
+
                 String catVal = category.getValue();
                 if (catVal == null)
                     catVal = category.getEditor().getText();
@@ -370,7 +438,7 @@ public class ProductsController {
 
                 Product p = new Product(
                         name.getText().trim(),
-                        barcode.getText().trim(),
+                        primaryBarcode,
                         catVal != null ? catVal : "",
                         Double.parseDouble(cost.getText().trim()),
                         Double.parseDouble(sellPrice.getText().trim()),
@@ -382,15 +450,7 @@ public class ProductsController {
                     p.setId(existing.getId());
                 }
 
-                // Check duplicate barcode
-                if (existing == null || !existing.getBarcode().equals(p.getBarcode())) {
-                    if (productService.findByBarcode(p.getBarcode()).isPresent()) {
-                        showAlert(t("products.alert.barcode.exists"));
-                        return;
-                    }
-                }
-
-                productService.save(p);
+                productService.save(p, additionalBarcodes);
                 refreshTable();
                 dialog.close();
             } catch (Exception ex) {
@@ -419,6 +479,27 @@ public class ProductsController {
         Label label = new Label(text);
         label.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
         return label;
+    }
+
+    private javafx.scene.layout.HBox createAdditionalBarcodeRow(String initialValue,
+            javafx.scene.layout.VBox parentContainer) {
+        TextField barcodeField = new TextField();
+        barcodeField.setPromptText("Additional barcode");
+        if (initialValue != null) {
+            barcodeField.setText(initialValue);
+        }
+
+        Button removeBtn = new Button("-");
+        removeBtn.getStyleClass().add("button-secondary");
+        removeBtn.setStyle("-fx-min-width: 32; -fx-min-height: 32; -fx-font-size: 14px; -fx-font-weight: bold;");
+
+        javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(6, barcodeField, removeBtn);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        barcodeField.setMaxWidth(Double.MAX_VALUE);
+        javafx.scene.layout.HBox.setHgrow(barcodeField, javafx.scene.layout.Priority.ALWAYS);
+
+        removeBtn.setOnAction(e -> parentContainer.getChildren().remove(row));
+        return row;
     }
 
     private static class HBoxWrapper extends javafx.scene.layout.HBox {
