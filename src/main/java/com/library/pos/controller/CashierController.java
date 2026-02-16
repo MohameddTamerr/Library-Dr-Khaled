@@ -181,6 +181,10 @@ public class CashierController {
     private Timeline autoRefreshTimeline;
     private static final int REFRESH_SECONDS_VISIBLE = 3;
     private static final int REFRESH_SECONDS_HIDDEN = 6;
+    private static final long SCANNER_INTER_KEY_MS = 80L;
+    private static final int MIN_SCANNER_LENGTH = 4;
+    private final StringBuilder scannerBuffer = new StringBuilder();
+    private long lastScannerCharTime = 0L;
     private java.time.LocalDateTime lastSaleTimestamp;
     private long lastSaleCount = -1;
 
@@ -353,11 +357,18 @@ public class CashierController {
         // Will be set up when scene is available
         javafx.application.Platform.runLater(() -> {
             if (barcodeField.getScene() != null) {
-                barcodeField.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                Scene scene = barcodeField.getScene();
+                scene.addEventFilter(KeyEvent.KEY_TYPED, this::handleGlobalScannerTyped);
+                scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                    if (event.getCode() == KeyCode.ENTER && shouldCaptureGlobalScannerInput()) {
+                        if (handleGlobalScannerSubmit()) {
+                            event.consume();
+                            return;
+                        }
+                    }
                     // F1-F6 for quick products
                     if (event.getCode().isFunctionKey()) {
                         handleFunctionKey(event.getCode());
-                        event.consume();
                     }
                     // Enter to add to cart when product is selected
                     if (event.getCode() == KeyCode.ESCAPE) {
@@ -379,6 +390,57 @@ public class CashierController {
                         }
                         event.consume();
                     }
+                    if (event.getCode() == KeyCode.F9) {
+                        if (cartTable != null) {
+                            cartTable.requestFocus();
+                            if (!cartItems.isEmpty()) {
+                                cartTable.getSelectionModel().selectFirst();
+                            }
+                        }
+                        event.consume();
+                    }
+                    if (event.getCode() == KeyCode.F10) {
+                        if (paymentMethodCombo != null) {
+                            paymentMethodCombo.requestFocus();
+                            paymentMethodCombo.show();
+                        }
+                        event.consume();
+                    }
+                    if (event.getCode() == KeyCode.F11) {
+                        if (deliveryManCombo != null) {
+                            deliveryManCombo.requestFocus();
+                            deliveryManCombo.show();
+                        }
+                        event.consume();
+                    }
+                    if (event.getCode().isFunctionKey()) {
+                        event.consume();
+                    }
+
+                    if (event.isControlDown() && event.getCode() == KeyCode.N && !isOverlayOpen()) {
+                        handleNewOrder();
+                        event.consume();
+                    }
+                    if (event.isControlDown() && event.getCode() == KeyCode.S && !isOverlayOpen()) {
+                        handleSaveOrder();
+                        event.consume();
+                    }
+                    if (event.isControlDown() && event.getCode() == KeyCode.P && !isOverlayOpen()) {
+                        handlePreviewReceipt();
+                        event.consume();
+                    }
+                    if (event.isControlDown() && event.getCode() == KeyCode.L && !isOverlayOpen()) {
+                        handleClearCart();
+                        event.consume();
+                    }
+                    if (event.isControlDown() && event.getCode() == KeyCode.O && !isOverlayOpen()) {
+                        handleOpenOrdersScreen();
+                        event.consume();
+                    }
+                    if (event.isControlDown() && event.getCode() == KeyCode.D && !isOverlayOpen()) {
+                        handleOpenDeferredPaymentsScreen();
+                        event.consume();
+                    }
                     if (event.getCode() == KeyCode.ENTER) {
                         boolean hasCart = !cartItems.isEmpty();
                         boolean canPay = hasCart && shouldHandleGlobalCheckout();
@@ -390,6 +452,63 @@ public class CashierController {
                 });
             }
         });
+    }
+
+    private void handleGlobalScannerTyped(KeyEvent event) {
+        if (!shouldCaptureGlobalScannerInput()) {
+            scannerBuffer.setLength(0);
+            return;
+        }
+
+        String typed = event.getCharacter();
+        if (typed == null || typed.isEmpty()) {
+            return;
+        }
+
+        char ch = typed.charAt(0);
+        if (Character.isISOControl(ch)) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if ((now - lastScannerCharTime) > SCANNER_INTER_KEY_MS) {
+            scannerBuffer.setLength(0);
+        }
+        lastScannerCharTime = now;
+        scannerBuffer.append(ch);
+    }
+
+    private boolean handleGlobalScannerSubmit() {
+        if (scannerBuffer.length() == 0) {
+            return false;
+        }
+
+        String scanned = normalizeSearchTerm(scannerBuffer.toString());
+        scannerBuffer.setLength(0);
+        if (scanned == null || scanned.length() < MIN_SCANNER_LENGTH) {
+            return false;
+        }
+
+        processSearch(scanned, false);
+        return true;
+    }
+
+    private boolean shouldCaptureGlobalScannerInput() {
+        if (isOverlayOpen()) {
+            return false;
+        }
+        Scene scene = barcodeField != null ? barcodeField.getScene() : null;
+        if (scene == null) {
+            return false;
+        }
+        Node focusOwner = scene.getFocusOwner();
+        if (focusOwner instanceof TextInputControl) {
+            return false;
+        }
+        if (focusOwner instanceof ComboBoxBase<?> combo && combo.isEditable()) {
+            return false;
+        }
+        return true;
     }
 
     private void handleFunctionKey(KeyCode code) {
@@ -421,6 +540,21 @@ public class CashierController {
                 CartItem selectedItem = cartTable.getSelectionModel().getSelectedItem();
                 if (selectedItem != null) {
                     showQuantityEditDialog(selectedItem);
+                    event.consume();
+                }
+            } else if (event.getCode() == KeyCode.DELETE) {
+                CartItem selectedItem = cartTable.getSelectionModel().getSelectedItem();
+                if (selectedItem != null) {
+                    cartItems.remove(selectedItem);
+                    updateSummary();
+                    event.consume();
+                }
+            } else if (event.getCode() == KeyCode.PLUS || event.getCode() == KeyCode.ADD) {
+                if (adjustSelectedCartItemQuantity(1)) {
+                    event.consume();
+                }
+            } else if (event.getCode() == KeyCode.MINUS || event.getCode() == KeyCode.SUBTRACT) {
+                if (adjustSelectedCartItemQuantity(-1)) {
                     event.consume();
                 }
             }
@@ -464,6 +598,22 @@ public class CashierController {
                 }
             }
         });
+        suggestionList.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                Product selected = suggestionList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    addProductToCart(selected, 1);
+                    hideSuggestions();
+                    barcodeField.clear();
+                    barcodeField.requestFocus();
+                }
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                hideSuggestions();
+                barcodeField.requestFocus();
+                event.consume();
+            }
+        });
 
         barcodeField.textProperty().addListener((obs, old, value) -> {
             if (value == null || value.trim().isEmpty()) {
@@ -495,6 +645,9 @@ public class CashierController {
             } else if (event.getCode() == KeyCode.UP) {
                 suggestionList.getSelectionModel().selectPrevious();
                 suggestionList.scrollTo(suggestionList.getSelectionModel().getSelectedIndex());
+                event.consume();
+            } else if (event.getCode() == KeyCode.TAB) {
+                suggestionList.requestFocus();
                 event.consume();
             } else if (event.getCode() == KeyCode.ESCAPE) {
                 hideSuggestions();
@@ -541,6 +694,21 @@ public class CashierController {
                 if (selected != null) {
                     selectCustomer(selected);
                 }
+            }
+        });
+        customerSearchList.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                Customer selected = customerSearchList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    selectCustomer(selected);
+                }
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                hideCustomerSuggestions();
+                if (barcodeField != null) {
+                    barcodeField.requestFocus();
+                }
+                event.consume();
             }
         });
 
@@ -610,6 +778,9 @@ public class CashierController {
             } else if (event.getCode() == KeyCode.UP) {
                 customerSearchList.getSelectionModel().selectPrevious();
                 customerSearchList.scrollTo(customerSearchList.getSelectionModel().getSelectedIndex());
+                event.consume();
+            } else if (event.getCode() == KeyCode.TAB) {
+                customerSearchList.requestFocus();
                 event.consume();
             } else if (event.getCode() == KeyCode.ESCAPE) {
                 hideCustomerSuggestions();
@@ -777,6 +948,23 @@ public class CashierController {
                 loadOrderToCart(newVal);
             }
         });
+        openDeliveryOrdersList.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                OpenOrder selected = openDeliveryOrdersList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    loadOrderToCart(selected);
+                    if (barcodeField != null) {
+                        barcodeField.requestFocus();
+                    }
+                }
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                if (barcodeField != null) {
+                    barcodeField.requestFocus();
+                }
+                event.consume();
+            }
+        });
 
         openStoreOrdersList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
@@ -784,6 +972,23 @@ public class CashierController {
                     openDeliveryOrdersList.getSelectionModel().clearSelection();
                 }
                 loadOrderToCart(newVal);
+            }
+        });
+        openStoreOrdersList.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                OpenOrder selected = openStoreOrdersList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    loadOrderToCart(selected);
+                    if (barcodeField != null) {
+                        barcodeField.requestFocus();
+                    }
+                }
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                if (barcodeField != null) {
+                    barcodeField.requestFocus();
+                }
+                event.consume();
             }
         });
     }
@@ -1237,7 +1442,23 @@ public class CashierController {
         }
 
         String trimmed = term.trim();
+        String normalized = normalizeSearchTerm(trimmed);
+
+        Product exact = productService.findByBarcode(normalized != null ? normalized : trimmed).orElse(null);
+        if (exact != null) {
+            addProductToCart(exact, 1);
+            if (barcodeField != null) {
+                barcodeField.clear();
+                barcodeField.requestFocus();
+            }
+            hideSuggestions();
+            return;
+        }
+
         List<Product> results = productService.searchByBarcodeOrName(trimmed);
+        if (results.isEmpty() && normalized != null && !normalized.equals(trimmed)) {
+            results = productService.searchByBarcodeOrName(normalized);
+        }
         if (results.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.notfound"));
             resetSelection();
@@ -1247,10 +1468,7 @@ public class CashierController {
             hideSuggestions();
             return;
         }
-
-        Product exact = productService.findByBarcode(trimmed).orElse(null);
-
-        Product chosen = exact;
+        Product chosen = null;
 
         if (chosen == null && allowSuggestions && suggestionList != null && suggestionList.isVisible()) {
             Product selected = suggestionList.getSelectionModel().getSelectedItem();
@@ -1339,6 +1557,35 @@ public class CashierController {
         }
 
         updateSummary();
+    }
+
+    private boolean adjustSelectedCartItemQuantity(int delta) {
+        if (cartTable == null) {
+            return false;
+        }
+        CartItem selectedItem = cartTable.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) {
+            return false;
+        }
+
+        int newQty = selectedItem.getQuantity() + delta;
+        if (newQty <= 0) {
+            cartItems.remove(selectedItem);
+            updateSummary();
+            return true;
+        }
+
+        Product product = selectedItem.getProduct();
+        int maxQty = product != null && product.getQuantity() != null ? product.getQuantity() : Integer.MAX_VALUE;
+        if (newQty > maxQty) {
+            showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
+            return true;
+        }
+
+        selectedItem.setQuantity(newQty);
+        cartTable.refresh();
+        updateSummary();
+        return true;
     }
 
     private void selectProduct(Product p) {
@@ -2036,6 +2283,17 @@ public class CashierController {
         }
     }
 
+    private String normalizeSearchTerm(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isBlank()) {
+            return null;
+        }
+        return trimmed.replaceAll("\\s+", "");
+    }
+
     @FXML
     private void handleSupplierPayment() {
         showSupplierPaymentDialog();
@@ -2563,8 +2821,12 @@ public class CashierController {
         javafx.application.Platform.runLater(okBtn::requestFocus);
     }
 
+    private boolean isOverlayOpen() {
+        return cashierRootStack != null && cashierRootStack.getChildren().size() > 1;
+    }
+
     private boolean shouldHandleGlobalCheckout() {
-        if (cashierRootStack != null && cashierRootStack.getChildren().size() > 1) {
+        if (isOverlayOpen()) {
             // Overlay opened (dialogs/messages) -> avoid accidental checkout
             return false;
         }

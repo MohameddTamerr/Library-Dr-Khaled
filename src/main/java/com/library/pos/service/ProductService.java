@@ -94,7 +94,7 @@ public class ProductService {
             return direct;
         }
 
-        return productBarcodeRepository.findByBarcodeIgnoreCase(normalized).map(ProductBarcode::getProduct);
+        return productRepository.findByAdditionalBarcodeIgnoreCase(normalized);
     }
 
     public List<Product> searchByBarcodeOrName(String term) {

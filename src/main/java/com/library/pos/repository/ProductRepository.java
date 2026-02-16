@@ -13,6 +13,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findByBarcodeIgnoreCase(String barcode);
 
+    @Query("""
+            SELECT p
+            FROM Product p
+            JOIN p.additionalBarcodes b
+            WHERE lower(b.barcode) = lower(:barcode)
+            """)
+    Optional<Product> findByAdditionalBarcodeIgnoreCase(@Param("barcode") String barcode);
+
     List<Product> findByBarcodeContainingIgnoreCaseOrNameContainingIgnoreCase(String barcode, String name);
 
     @Query("""
