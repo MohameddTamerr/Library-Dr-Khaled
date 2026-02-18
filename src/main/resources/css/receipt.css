@@ -1,7 +1,7 @@
 .receipt-root {
     -fx-background-color: white;
     -fx-font-family: "Tahoma", "Arial";
-    -fx-font-size: 11px;
+    -fx-font-size: 13px;
     -fx-padding: 6 4 6 4;
     -fx-text-fill: black;
 }
@@ -15,14 +15,14 @@
 
 /* Header */
 .shop-name {
-    -fx-font-size: 17px;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-alignment: center;
     -fx-padding: 0 0 5 0;
 }
 
 .shop-phone {
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
     -fx-alignment: center;
     -fx-padding: 0 0 5 0;
@@ -36,11 +36,11 @@
 
 .meta-label {
     -fx-font-weight: bold;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
 }
 
 .meta-value {
-    -fx-font-size: 11px;
+    -fx-font-size: 13px;
 }
 
 .header-label {
@@ -86,12 +86,12 @@
 }
 
 .total-due-label {
-    -fx-font-size: 15px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
 }
 
 .total-due-amount {
-    -fx-font-size: 20px;
+    -fx-font-size: 24px;
     -fx-font-weight: bold;
 }
 

@@ -569,23 +569,9 @@ public class CashierController {
         suggestionList.setItems(suggestionItems);
         suggestionList.setVisible(false);
         suggestionList.setManaged(false);
-        suggestionList.setFixedCellSize(34);
+        suggestionList.setFixedCellSize(65);
 
-        suggestionList.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(Product item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setGraphic(null);
-                } else {
-                    String name = item.getName() != null ? item.getName() : "";
-                    String barcode = item.getBarcode() != null ? item.getBarcode() : "";
-                    setText(name + " | " + barcode);
-                    setGraphic(null);
-                }
-            }
-        });
+        suggestionList.setCellFactory(list -> new ProductListCell());
 
         suggestionList.setOnMouseClicked(event -> {
             if (event.getClickCount() == 1) {
@@ -1526,7 +1512,9 @@ public class CashierController {
         if (count <= 0) {
             return;
         }
-        double height = suggestionList.getFixedCellSize() * count + 8;
+        // Cap height at 6 items to allow scrolling
+        int displayCount = Math.min(count, 6);
+        double height = suggestionList.getFixedCellSize() * displayCount + 10;
         suggestionList.setPrefHeight(height);
         suggestionList.setMinHeight(Region.USE_PREF_SIZE);
         suggestionList.setMaxHeight(Region.USE_PREF_SIZE);
@@ -2930,6 +2918,47 @@ public class CashierController {
                 } else {
                     setGraphic(null);
                 }
+            }
+        }
+    }
+
+    private class ProductListCell extends ListCell<Product> {
+        private final HBox container = new HBox();
+        private final VBox infoBox = new VBox();
+        private final Label nameLabel = new Label();
+        private final Label barcodeLabel = new Label();
+        private final Label priceLabel = new Label();
+        private final Label currencyLabel = new Label(" ج.م");
+        private final HBox priceBox = new HBox();
+
+        public ProductListCell() {
+            container.getStyleClass().add("product-cell-container");
+            infoBox.getStyleClass().add("product-cell-info");
+            nameLabel.getStyleClass().add("product-cell-name");
+            barcodeLabel.getStyleClass().add("product-cell-barcode");
+            priceLabel.getStyleClass().add("product-cell-price");
+            currencyLabel.getStyleClass().add("product-cell-currency");
+
+            HBox.setHgrow(infoBox, Priority.ALWAYS);
+            infoBox.getChildren().addAll(nameLabel, barcodeLabel);
+
+            priceBox.setAlignment(Pos.CENTER_RIGHT);
+            priceBox.getChildren().addAll(priceLabel, currencyLabel);
+
+            container.getChildren().addAll(infoBox, priceBox);
+            container.setNodeOrientation(javafx.geometry.NodeOrientation.RIGHT_TO_LEFT);
+        }
+
+        @Override
+        protected void updateItem(Product item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setGraphic(null);
+            } else {
+                nameLabel.setText(item.getName());
+                barcodeLabel.setText(item.getBarcode());
+                priceLabel.setText(String.format("%.2f", item.getSellPrice()));
+                setGraphic(container);
             }
         }
     }

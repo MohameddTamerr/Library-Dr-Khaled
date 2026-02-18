@@ -156,13 +156,10 @@ public final class ReceiptPrinter {
         debug("Print mode: " + mode);
 
         if (mode == PrintMode.ESC_POS) {
-            debug("Trying ESC/POS raw path.");
-            if (printViaEscPos(order)) {
-                debug("ESC/POS print success.");
-                return true;
-            }
-            debug("ESC/POS path failed.");
-            return false;
+            debug("Trying ESC/POS raw path (Double).");
+            boolean s1 = printViaEscPos(order);
+            boolean s2 = printViaEscPos(order);
+            return s1 || s2;
         }
 
         // DEBUG: Save snapshot to checking rendering
@@ -177,23 +174,21 @@ public final class ReceiptPrinter {
         }
 
         if (mode == PrintMode.JAVAFX) {
-            debug("Trying JavaFX print path.");
-            if (printViaJavaFx(receiptNode)) {
-                debug("JavaFX print success.");
+            debug("Trying JavaFX print path (Double).");
+            boolean s1 = printViaJavaFx(receiptNode);
+            boolean s2 = printViaJavaFx(receiptNode);
+            if (s1 || s2)
                 return true;
-            }
+
             debug("JavaFX path failed. Falling back to AWT.");
             WritableImage snapshot = receiptNode.snapshot(null, null);
-            if (printViaAwt(snapshot)) {
-                debug("AWT print success.");
-                return true;
-            }
-            debug("AWT path failed.");
-            return false;
+            boolean a1 = printViaAwt(snapshot);
+            boolean a2 = printViaAwt(snapshot);
+            return a1 || a2;
         }
 
         if (mode == PrintMode.AWT) {
-            debug("Trying AWT print path.");
+            debug("Trying AWT print path (Double).");
             // Explicitly set width again to be sure
             receiptNode.setPrefWidth(targetWidth);
             receiptNode.setMaxWidth(targetWidth);
@@ -201,25 +196,22 @@ public final class ReceiptPrinter {
             receiptNode.layout();
 
             WritableImage snapshot = receiptNode.snapshot(null, null);
-            if (printViaAwt(snapshot)) {
-                debug("AWT print success.");
-                return true;
-            }
-            debug("AWT path failed.");
-            return false;
+            boolean a1 = printViaAwt(snapshot);
+            boolean a2 = printViaAwt(snapshot);
+            return a1 || a2;
         }
 
         // AUTO
-        debug("Trying JavaFX print path.");
+        debug("Trying JavaFX print path (Double).");
         if (printViaJavaFx(receiptNode)) {
-            debug("JavaFX print success.");
+            printViaJavaFx(receiptNode);
             return true;
         }
 
-        debug("JavaFX path failed. Trying AWT path.");
+        debug("JavaFX path failed. Trying AWT path (Double).");
         WritableImage snapshot = receiptNode.snapshot(null, null);
         if (printViaAwt(snapshot)) {
-            debug("AWT print success.");
+            printViaAwt(snapshot);
             return true;
         }
 

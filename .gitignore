@@ -22,3 +22,10 @@ logs/
 # Database (optional if using SQLite locally)
 # library.db
 target/
+
+# Large database files - never commit these
+*.db
+*.MDF
+*.mdf
+*.LDF
+*.ldf
