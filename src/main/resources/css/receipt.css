@@ -1,74 +1,111 @@
 .receipt-root {
     -fx-background-color: white;
-    -fx-font-family: "Segoe UI", "Arial", sans-serif;
-    -fx-font-size: 9.5px;
-    -fx-padding: 0;
+    -fx-font-family: "Tahoma", "Arial";
+    -fx-font-size: 13px;
+    -fx-padding: 6 4 6 4;
     -fx-text-fill: black;
 }
 
 .receipt-root .label,
 .receipt-root .text {
     -fx-text-fill: black;
+    -fx-effect: null;
+    /* Remove any default text effects for sharpness */
 }
 
+/* Header */
 .shop-name {
-    -fx-font-size: 14px;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-alignment: center;
+    -fx-padding: 0 0 5 0;
 }
 
 .shop-phone {
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
     -fx-alignment: center;
+    -fx-padding: 0 0 5 0;
 }
 
-/* Table Style */
+/* Meta Data Section */
+.meta-row {
+    -fx-padding: 2 0 2 0;
+    -fx-alignment: center-right;
+}
+
+.meta-label {
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.meta-value {
+    -fx-font-size: 13px;
+}
+
+.header-label {
+    -fx-font-weight: bold;
+}
+
+/* Items Table */
 .item-table {
-    -fx-border-color: black;
-    -fx-border-width: 1;
-    -fx-grid-lines-visible: true;
-}
-
-.cell-label {
-    -fx-padding: 2 4 2 4;
+    -fx-padding: 5 0 5 0;
 }
 
 .item-header-cell {
     -fx-font-weight: bold;
-    -fx-background-color: #f0f0f0;
     -fx-border-color: black;
     -fx-border-width: 0 0 1 0;
+    -fx-border-style: dashed;
+    -fx-padding: 5 0 5 0;
 }
 
+.cell-label {
+    -fx-padding: 3 0 3 0;
+}
+
+/* Totals Section */
+.total-section {
+    -fx-padding: 5 0 0 0;
+}
+
+.total-row-label {
+    -fx-font-weight: bold;
+}
+
+/* Boxed Requirement */
 .total-due-box {
     -fx-border-color: black;
-    -fx-border-width: 2 0 2 0;
-    -fx-padding: 10 0 5 0;
+    -fx-border-width: 3;
+    -fx-border-style: solid;
+    -fx-padding: 9 8 9 8;
     -fx-alignment: center;
+    -fx-background-radius: 0;
+    -fx-background-color: white;
+    -fx-border-insets: 0;
 }
 
 .total-due-label {
-    -fx-font-size: 12px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
 }
 
 .total-due-amount {
-    -fx-font-size: 20px;
+    -fx-font-size: 24px;
     -fx-font-weight: bold;
-    -fx-border-color: black;
-    -fx-border-width: 1 0 1 0;
-    -fx-padding: 5 20 5 20;
 }
 
+/* Separators */
 .dashed-line {
-    -fx-border-style: segments(3, 3);
+    -fx-border-style: segments(4, 2);
     -fx-border-width: 1 0 0 0;
     -fx-border-color: black;
     -fx-min-height: 5px;
 }
 
+/* Footer */
 .footer-label {
     -fx-font-size: 9px;
-    -fx-font-style: italic;
     -fx-alignment: center;
+    -fx-padding: 10 0 0 0;
 }

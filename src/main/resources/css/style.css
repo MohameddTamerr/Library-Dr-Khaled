@@ -61,13 +61,13 @@
 
 .sidebar-title {
     -fx-text-fill: -text-on-dark;
-    -fx-font-size: 20px;
+    -fx-font-size: 24px;
     -fx-font-weight: bold;
 }
 
 .sidebar-user {
     -fx-text-fill: rgba(255, 255, 255, 0.7);
-    -fx-font-size: 13px;
+    -fx-font-size: 15px;
 }
 
 /* Sidebar Buttons */
@@ -152,7 +152,7 @@
 .btn-info-large {
     -fx-background-color: #0ea5e9;
     -fx-text-fill: white;
-    -fx-font-size: 16px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-padding: 14 20;
     -fx-background-radius: 10;
@@ -187,7 +187,7 @@
 }
 
 .h1 {
-    -fx-font-size: 24px;
+    -fx-font-size: 28px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
@@ -208,26 +208,26 @@
 /* Card Typography */
 .card-title,
 .panel-title {
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-secondary;
     -fx-text-transform: uppercase;
 }
 
 .card-value {
-    -fx-font-size: 28px;
+    -fx-font-size: 32px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
 
 .card-value-green {
-    -fx-font-size: 28px;
+    -fx-font-size: 32px;
     -fx-font-weight: bold;
     -fx-text-fill: -color-success;
 }
 
 .card-value-warning {
-    -fx-font-size: 28px;
+    -fx-font-size: 32px;
     -fx-font-weight: bold;
     -fx-text-fill: -color-warning;
 }
@@ -251,13 +251,14 @@
 .table-view .column-header .label {
     -fx-text-fill: -text-secondary;
     -fx-font-weight: bold;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
 }
 
 .table-view .table-cell {
     -fx-text-fill: -text-primary;
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 12 10;
+    -fx-padding: 7 10;
+    -fx-font-size: 16px;
 }
 
 .table-row-cell {
@@ -332,7 +333,7 @@
 }
 
 .cashier-body {
-    -fx-padding: 12 16 16 16;
+    -fx-padding: 8 12 8 12;
     -fx-background-color: -bg-main;
 }
 
@@ -352,13 +353,13 @@
 }
 
 .product-name {
-    -fx-font-size: 24px;
+    -fx-font-size: 28px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
 
 .product-price {
-    -fx-font-size: 28px;
+    -fx-font-size: 32px;
     -fx-font-weight: bold;
     -fx-text-fill: -color-primary;
 }
@@ -374,19 +375,19 @@
 }
 
 .header-title {
-    -fx-font-size: 24px;
+    -fx-font-size: 28px;
     -fx-font-weight: bold;
     -fx-text-fill: white;
 }
 
 .worker-label {
     -fx-text-fill: rgba(255, 255, 255, 0.9);
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
 }
 
 .datetime-label {
     -fx-text-fill: rgba(255, 255, 255, 0.8);
-    -fx-font-size: 13px;
+    -fx-font-size: 15px;
 }
 
 /* Scanner & Barcode */
@@ -402,7 +403,7 @@
 }
 
 .section-label {
-    -fx-font-size: 16px;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
@@ -412,8 +413,8 @@
     -fx-border-color: -border-color;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 10 14;
-    -fx-font-size: 16px;
+    -fx-padding: 8 12;
+    -fx-font-size: 15px;
     -fx-text-fill: -text-primary;
 }
 
@@ -431,7 +432,7 @@
 }
 
 .suggestion-list .list-cell {
-    -fx-padding: 6 10;
+    -fx-padding: 4 8;
     -fx-text-fill: -text-primary;
 }
 
@@ -447,19 +448,19 @@
 
 /* Product Card Details */
 .product-stock {
-    -fx-font-size: 18px;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-secondary;
 }
 
 .barcode-display {
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
     -fx-text-fill: -text-muted;
     -fx-font-family: 'Consolas', monospace;
 }
 
 .label-muted {
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-text-fill: -text-muted;
 }
 
@@ -471,15 +472,15 @@
 }
 
 .qty-label {
-    -fx-font-size: 16px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
 
 .qty-btn {
-    -fx-min-width: 40;
-    -fx-min-height: 40;
-    -fx-font-size: 18px;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-background-color: -color-primary;
     -fx-text-fill: white;
@@ -492,10 +493,10 @@
 }
 
 .qty-input {
-    -fx-min-width: 60;
-    -fx-max-width: 80;
-    -fx-min-height: 40;
-    -fx-font-size: 18px;
+    -fx-min-width: 70;
+    -fx-max-width: 90;
+    -fx-min-height: 48;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-background-color: -bg-panel;
     -fx-text-fill: -text-primary;
@@ -508,7 +509,7 @@
 .btn-add {
     -fx-background-color: -color-success;
     -fx-text-fill: white;
-    -fx-font-size: 16px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-padding: 12 24;
     -fx-background-radius: 8;
@@ -529,7 +530,7 @@
 .btn-danger-sm {
     -fx-background-color: -color-danger;
     -fx-text-fill: white;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-padding: 6 12;
     -fx-background-radius: 6;
     -fx-cursor: hand;
@@ -553,20 +554,20 @@
 }
 
 .quick-inline .quick-btn {
-    -fx-min-width: 50;
-    -fx-min-height: 34;
-    -fx-font-size: 13px;
+    -fx-min-width: 60;
+    -fx-min-height: 40;
+    -fx-font-size: 15px;
 }
 
 .section-label-small {
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-text-fill: -text-muted;
     -fx-font-weight: bold;
 }
 
 .quick-btn {
-    -fx-min-width: 50;
-    -fx-min-height: 35;
+    -fx-min-width: 60;
+    -fx-min-height: 42;
     -fx-background-color: -bg-main;
     -fx-border-color: -border-color;
     -fx-border-radius: 6;
@@ -617,7 +618,7 @@
 
 .field-label {
     -fx-text-fill: -text-secondary;
-    -fx-font-size: 13px;
+    -fx-font-size: 15px;
     -fx-padding: 4 0 0 0;
 }
 
@@ -644,7 +645,7 @@
 }
 
 .cart-title {
-    -fx-font-size: 18px;
+    -fx-font-size: 22px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
@@ -662,6 +663,10 @@
     -fx-background-color: #f9fbff;
 }
 
+.cart-table {
+    -fx-cell-size: 50px;
+}
+
 /* Cart Summary */
 .cart-summary {
     -fx-background-color: transparent;
@@ -670,12 +675,12 @@
 }
 
 .summary-label {
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
     -fx-text-fill: -text-secondary;
 }
 
 .summary-value {
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
     -fx-text-fill: -text-primary;
     -fx-font-weight: bold;
 }
@@ -687,28 +692,28 @@
 }
 
 .total-value {
-    -fx-font-size: 24px;
+    -fx-font-size: 22px;
     -fx-font-weight: bold;
     -fx-text-fill: -color-success;
 }
 
 .currency-label {
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
     -fx-text-fill: -text-muted;
 }
 
 /* Payment Buttons */
 .payment-buttons {
     -fx-background-color: transparent;
-    -fx-padding: 12 16 16 16;
+    -fx-padding: 6 12 8 12;
 }
 
 .btn-success-large {
     -fx-background-color: -color-success;
     -fx-text-fill: white;
-    -fx-font-size: 16px;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
-    -fx-padding: 14 20;
+    -fx-padding: 10 16;
     -fx-background-radius: 10;
     -fx-cursor: hand;
     -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.25), 10, 0, 0, 3);
@@ -721,9 +726,9 @@
 .btn-warning-large {
     -fx-background-color: -color-warning;
     -fx-text-fill: white;
-    -fx-font-size: 16px;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
-    -fx-padding: 14 20;
+    -fx-padding: 10 16;
     -fx-background-radius: 10;
     -fx-cursor: hand;
     -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.25), 10, 0, 0, 3);
@@ -741,7 +746,7 @@
 .payment-method-combo {
     -fx-background-color: -bg-panel;
     -fx-text-fill: -text-primary;
-    -fx-font-size: 16px;
+    -fx-font-size: 18px;
     -fx-padding: 10;
     -fx-background-radius: 8;
     -fx-border-color: -border-color;
@@ -850,4 +855,54 @@
 
 .condition-radio-bad .radio {
     -fx-text-fill: -color-danger;
+}
+
+/* ============================================
+   Enhanced Product Suggestion Cell
+   ============================================ */
+.product-cell-container {
+    -fx-padding: 6 10;
+    -fx-spacing: 12;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.product-cell-info {
+    -fx-spacing: 4;
+}
+
+.product-cell-name {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.product-cell-barcode {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+    -fx-font-family: 'Consolas', monospace;
+}
+
+.product-cell-price {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-success;
+}
+
+.product-cell-currency {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+}
+
+/* Login Screen Enhancements */
+.login-label {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.login-input {
+    -fx-font-size: 24px;
+    -fx-padding: 12 16;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
 }

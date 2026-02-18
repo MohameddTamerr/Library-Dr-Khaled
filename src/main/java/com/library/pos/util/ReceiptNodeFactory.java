@@ -5,32 +5,31 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
-import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 public class ReceiptNodeFactory {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
-    // Approx 80mm printer width in pixels (assuming 203 DPI ~ 8 dots/mm) -> ~576px
-    // But for JavaFX logical pixels (96 DPI), 80mm is approx 300px.
-    // XPrinter XP-370B is often 76mm-80mm. Let's aim for ~280-300px width.
     private static final double RECEIPT_WIDTH = 290;
+    private static final double MIN_RECEIPT_WIDTH = 220;
 
     public static VBox createReceiptNode(ReceiptModels.Order order, boolean arabic) {
         return createReceiptNode(order, arabic, RECEIPT_WIDTH);
     }
 
     public static VBox createReceiptNode(ReceiptModels.Order order, boolean arabic, double width) {
-        VBox root = new VBox(5);
+        double safeWidth = Math.max(MIN_RECEIPT_WIDTH, width);
+        VBox root = new VBox(0); // Removing default spacing, controlling via padding/margins
         root.getStyleClass().add("receipt-root");
-        root.setPrefWidth(width);
-        root.setMaxWidth(width);
+        root.setPrefWidth(safeWidth);
+        root.setMaxWidth(safeWidth);
+        root.setMinWidth(safeWidth);
         root.setAlignment(Pos.TOP_CENTER);
+        root.setPadding(new javafx.geometry.Insets(5, 2, 5, 2));
 
         if (arabic) {
             root.setNodeOrientation(javafx.geometry.NodeOrientation.RIGHT_TO_LEFT);
@@ -38,42 +37,62 @@ public class ReceiptNodeFactory {
 
         Labels labels = Labels.of(arabic);
 
-        // 1. Header
-        root.getChildren().addAll(
-                styledLabel(labels.storeName, "shop-name"),
-                styledLabel(labels.phone, "shop-phone"),
-                new Separator());
-
-        // 2. Meta Data
-        addMetaRow(root, labels.invoiceNo, order.getInvoiceNo());
-        if (order.getDateTime() != null) {
-            addMetaRow(root, labels.dateTime, DATE_TIME.format(order.getDateTime()));
+        // --- 1. Header Section ---
+        VBox headerBox = new VBox(2);
+        headerBox.setAlignment(Pos.CENTER);
+        headerBox.getChildren().add(styledLabel(labels.storeName, "shop-name"));
+        if (hasText(labels.phone)) {
+            headerBox.getChildren().add(styledLabel(labels.phone, "shop-phone"));
         }
-        addMetaRow(root, labels.cashier, order.getCashier());
-        if (hasText(order.getCustomerCode())) {
-            addMetaRow(root, labels.customerCode, order.getCustomerCode());
-        }
-        if (hasText(order.getDeliveredBy())) {
-            addMetaRow(root, labels.deliveredBy, order.getDeliveredBy());
-        }
-        if (hasText(order.getPaymentMethod())) {
-            addMetaRow(root, labels.paymentMethod, order.getPaymentMethod());
-        }
+        root.getChildren().add(headerBox);
 
         root.getChildren().add(new Separator());
 
-        // 3. Items Table
+        // --- 2. Meta Data Section ---
+        VBox metaBox = new VBox(2);
+        metaBox.getStyleClass().add("meta-section");
+        metaBox.setFillWidth(true);
+        metaBox.setMaxWidth(Double.MAX_VALUE);
+
+        // Organize meta data in a clean vertical list or key-value pairs
+        addMetaRow(metaBox, labels.invoiceNo, order.getInvoiceNo());
+        if (order.getDateTime() != null) {
+            addMetaRow(metaBox, labels.dateTime, DATE_TIME.format(order.getDateTime()));
+        }
+        addMetaRow(metaBox, labels.cashier, order.getCashier());
+
+        // Optional fields
+        if (hasText(order.getCustomerCode())) {
+            addMetaRow(metaBox, labels.customerCode, order.getCustomerCode());
+        }
+        if (hasText(order.getCustomerName())) {
+            addMetaRow(metaBox, "\u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064a\u0644:", order.getCustomerName());
+        }
+        if (hasText(order.getCustomerAddress())) {
+            addMetaRow(metaBox, "\u0627\u0644\u0639\u0646\u0648\u0627\u0646:", order.getCustomerAddress());
+        }
+        if (hasText(order.getDeliveredBy())) {
+            addMetaRow(metaBox, labels.deliveredBy, order.getDeliveredBy());
+        }
+        if (hasText(order.getPaymentMethod())) {
+            addMetaRow(metaBox, labels.paymentMethod, order.getPaymentMethod());
+        }
+        root.getChildren().add(metaBox);
+
+        root.getChildren().add(new Separator());
+
+        // --- 3. Items Table ---
         VBox tableBox = new VBox();
         tableBox.getStyleClass().add("item-table");
 
-        // Header Row
-        GridPane itemHeader = createItemGrid(width, true, labels.item, labels.qty, labels.unitPrice, labels.lineTotal);
+        // Header
+        GridPane itemHeader = createItemGrid(safeWidth, true, labels.item, labels.qty, labels.unitPrice, labels.lineTotal);
         itemHeader.getStyleClass().add("item-header-cell");
         tableBox.getChildren().add(itemHeader);
 
-        // Item Rows
+        // Items
         for (ReceiptModels.OrderItem item : order.getItems()) {
-            GridPane itemRow = createItemGrid(width, false,
+            GridPane itemRow = createItemGrid(safeWidth, false,
                     item.getName(),
                     formatQty(item.getQty()),
                     formatMoney(item.getUnitPrice()),
@@ -82,15 +101,17 @@ public class ReceiptNodeFactory {
         }
         root.getChildren().add(tableBox);
 
-        // 4. Totals & Boxed "Required Amount"
+        root.getChildren().add(new Separator());
+
+        // --- 4. Totals Section ---
         VBox totalsBox = new VBox(2);
         totalsBox.getStyleClass().add("total-section");
         totalsBox.setAlignment(Pos.CENTER);
 
+        // Subtotal, Discount, Tax
         if (isNonZero(order.getSubtotal()) && order.getSubtotal().compareTo(order.getTotal()) != 0) {
             totalsBox.getChildren().add(createTotalRow(labels.subtotal, formatMoney(order.getSubtotal())));
         }
-
         if (isNonZero(order.getDiscount())) {
             totalsBox.getChildren().add(createTotalRow(labels.discount, formatMoney(order.getDiscount())));
         }
@@ -98,16 +119,31 @@ public class ReceiptNodeFactory {
             totalsBox.getChildren().add(createTotalRow(labels.tax, formatMoney(order.getTax())));
         }
 
-        // Boxed Total Due ("المطلوب")
+        // Boxed Total Due
         VBox totalDueBox = new VBox(5);
         totalDueBox.getStyleClass().add("total-due-box");
+        totalDueBox.setAlignment(Pos.CENTER);
+        totalDueBox.setPrefWidth(Math.max(150, safeWidth - 16));
+        totalDueBox.setMaxWidth(Double.MAX_VALUE);
+        totalDueBox.setMinWidth(Math.max(150, safeWidth - 16));
+        VBox.setMargin(totalDueBox, new javafx.geometry.Insets(6, 4, 6, 4));
+
         Label requiredLabel = new Label("المطلوب");
         requiredLabel.getStyleClass().add("total-due-label");
+        requiredLabel.setAlignment(Pos.CENTER);
+        requiredLabel.setMaxWidth(Double.MAX_VALUE);
+        requiredLabel.setTextAlignment(TextAlignment.CENTER);
+
         Label amountLabel = new Label(formatMoney(order.getTotal()));
         amountLabel.getStyleClass().add("total-due-amount");
+        amountLabel.setAlignment(Pos.CENTER);
+        amountLabel.setMaxWidth(Double.MAX_VALUE);
+        amountLabel.setTextAlignment(TextAlignment.CENTER);
+
         totalDueBox.getChildren().addAll(requiredLabel, amountLabel);
         totalsBox.getChildren().add(totalDueBox);
 
+        // Paid & Change
         if (order.getPaid() != null) {
             totalsBox.getChildren().add(createTotalRow(labels.paid, formatMoney(order.getPaid())));
         }
@@ -117,92 +153,125 @@ public class ReceiptNodeFactory {
 
         root.getChildren().add(totalsBox);
 
-        // 6. Footer
+        // --- 5. Footer ---
         root.getChildren().add(new Separator());
         root.getChildren().add(styledLabel(labels.thankYou, "footer-label"));
 
         return root;
     }
 
+    // --- Helpers ---
+
     private static void addMetaRow(VBox root, String label, String value) {
         if (!hasText(value))
             return;
-        HBox row = new HBox(5);
-        row.setAlignment(Pos.CENTER);
+
+        HBox row = new HBox(6);
+        row.getStyleClass().add("meta-row");
+        row.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
+        row.setAlignment(Pos.CENTER_RIGHT);
         row.setMaxWidth(Double.MAX_VALUE);
+
         Label lbl = new Label(label);
-        lbl.getStyleClass().add("header-label");
+        lbl.getStyleClass().add("meta-label");
+        lbl.setMinWidth(Region.USE_PREF_SIZE);
+        lbl.setAlignment(Pos.CENTER_RIGHT);
+        lbl.setTextAlignment(TextAlignment.RIGHT);
+
         Label val = new Label(value);
-        row.getChildren().addAll(lbl, val);
+        val.getStyleClass().add("meta-value");
+        val.setWrapText(true);
+        val.setAlignment(Pos.CENTER_RIGHT);
+        val.setTextAlignment(TextAlignment.RIGHT);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        row.getChildren().addAll(spacer, val, lbl);
         root.getChildren().add(row);
     }
 
     private static GridPane createItemGrid(double width, boolean isHeader, String name, String qty, String price,
             String total) {
+        double safeWidth = Math.max(MIN_RECEIPT_WIDTH, width);
         GridPane grid = new GridPane();
-        grid.setPrefWidth(width);
-        grid.setMaxWidth(width);
+        grid.setPrefWidth(safeWidth);
+        grid.setMaxWidth(safeWidth);
+        grid.setMinWidth(safeWidth);
+        // Force LTR on the grid itself — we manually order columns for RTL reading
+        grid.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
+        grid.setStyle("-fx-node-orientation: ltr;"); // Override CSS too
 
-        // Columns setup (RTL Perspective from right to left):
-        // Col 0: Name (Flex)
-        // Col 1: Price (Fixed)
-        // Col 2: Qty (Fixed)
-        // Col 3: Total (Fixed)
+        // Visual order left-to-right: Total, Qty, Price, Name
+        // Reading right-to-left: Name, Price, Qty, Total
+        double totalW = Math.max(48, Math.round(safeWidth * 0.2d));
+        double qtyW = Math.max(30, Math.round(safeWidth * 0.14d));
+        double priceW = Math.max(48, Math.round(safeWidth * 0.2d));
+        double nameW = Math.max(70, safeWidth - totalW - qtyW - priceW - 10);
 
-        ColumnConstraints colName = new ColumnConstraints();
-        colName.setHgrow(Priority.ALWAYS);
-        colName.setHalignment(javafx.geometry.HPos.RIGHT);
-
-        ColumnConstraints colPrice = new ColumnConstraints();
-        colPrice.setPrefWidth(55);
-        colPrice.setHalignment(javafx.geometry.HPos.CENTER);
-
-        ColumnConstraints colQty = new ColumnConstraints();
-        colQty.setPrefWidth(35);
-        colQty.setHalignment(javafx.geometry.HPos.CENTER);
-
-        ColumnConstraints colTotal = new ColumnConstraints();
-        colTotal.setPrefWidth(60);
+        ColumnConstraints colTotal = new ColumnConstraints(totalW);
         colTotal.setHalignment(javafx.geometry.HPos.LEFT);
 
-        grid.getColumnConstraints().addAll(colName, colPrice, colQty, colTotal);
+        ColumnConstraints colQty = new ColumnConstraints(qtyW);
+        colQty.setHalignment(javafx.geometry.HPos.CENTER);
 
-        Label nameLbl = new Label(name);
-        nameLbl.setWrapText(true);
-        nameLbl.setMaxWidth(Double.MAX_VALUE);
-        nameLbl.setAlignment(Pos.CENTER_RIGHT);
-        nameLbl.getStyleClass().add("cell-label");
+        ColumnConstraints colPrice = new ColumnConstraints(priceW);
+        colPrice.setHalignment(javafx.geometry.HPos.CENTER);
 
-        Label priceLbl = new Label(price);
-        priceLbl.setMaxWidth(Double.MAX_VALUE);
-        priceLbl.setAlignment(Pos.CENTER);
-        priceLbl.getStyleClass().add("cell-label");
+        ColumnConstraints colName = new ColumnConstraints(nameW);
+        colName.setHalignment(javafx.geometry.HPos.RIGHT);
 
-        Label qtyLbl = new Label(qty);
-        qtyLbl.setMaxWidth(Double.MAX_VALUE);
-        qtyLbl.setAlignment(Pos.CENTER);
-        qtyLbl.getStyleClass().add("cell-label");
+        grid.getColumnConstraints().addAll(colTotal, colQty, colPrice, colName);
+
+        // Styles
+        String style = isHeader ? "header-label" : "cell-label";
 
         Label totalLbl = new Label(total);
-        totalLbl.setMaxWidth(Double.MAX_VALUE);
+        totalLbl.getStyleClass().add(style);
         totalLbl.setAlignment(Pos.CENTER_LEFT);
-        totalLbl.getStyleClass().add("cell-label");
+        totalLbl.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
 
-        grid.add(nameLbl, 0, 0);
-        grid.add(priceLbl, 1, 0);
-        grid.add(qtyLbl, 2, 0);
-        grid.add(totalLbl, 3, 0);
+        Label qtyLbl = new Label(qty);
+        qtyLbl.getStyleClass().add(style);
+        qtyLbl.setAlignment(Pos.CENTER);
+        qtyLbl.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
+
+        Label priceLbl = new Label(price);
+        priceLbl.getStyleClass().add(style);
+        priceLbl.setAlignment(Pos.CENTER);
+        priceLbl.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
+
+        Label nameLbl = new Label(name);
+        nameLbl.getStyleClass().add(style);
+        nameLbl.setWrapText(false);
+        nameLbl.setPrefWidth(nameW);
+        nameLbl.setMinWidth(nameW);
+        nameLbl.setMaxWidth(nameW);
+        nameLbl.setAlignment(Pos.CENTER_RIGHT);
+        nameLbl.setTextAlignment(TextAlignment.RIGHT);
+        nameLbl.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
+
+        // Visual order left-to-right: Total(0), Qty(1), Price(2), Name(3)
+        grid.add(totalLbl, 0, 0);
+        grid.add(qtyLbl, 1, 0);
+        grid.add(priceLbl, 2, 0);
+        grid.add(nameLbl, 3, 0);
 
         return grid;
     }
 
     private static HBox createTotalRow(String label, String value) {
         HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT); // Will be CENTER_RIGHT in RTL
+        row.setAlignment(Pos.CENTER_RIGHT);
+
         Label lbl = new Label(label);
+        lbl.getStyleClass().add("total-row-label");
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
+
         Label val = new Label(value);
+        val.getStyleClass().add("total-row-value");
 
         row.getChildren().addAll(lbl, spacer, val);
         return row;
@@ -222,7 +291,7 @@ public class ReceiptNodeFactory {
     private static class Separator extends HBox {
         public Separator() {
             this.getStyleClass().add("dashed-line");
-            this.setPrefHeight(10);
+            this.setPrefHeight(5); // Reduced height as CSS handles detailed styling
         }
     }
 
@@ -249,6 +318,7 @@ public class ReceiptNodeFactory {
         return val.toString();
     }
 
+    // --- Immutable Labels Class (Preserved) ---
     private static final class Labels {
         final String storeName;
         final String phone;
@@ -299,9 +369,9 @@ public class ReceiptNodeFactory {
             if (arabic) {
                 return new Labels(
                         "مكتبة سمسم 2",
-                        "فاتورة ضريبية مبسطة",
+                        "فاتورة ضريبية مبسطة\nرقم تليفون: 01060390597 - 01025891972\nالعنوان: ابراج مدينه نصر عماره ٢ب شارع المدارس",
                         "رقم الفاتورة:",
-                        "", // Date handled inside? Image shows just date string
+                        "التاريخ:",
                         "الكاشير:",
                         "العميل:",
                         "عامل التوصيل:",
@@ -310,18 +380,18 @@ public class ReceiptNodeFactory {
                         "كم",
                         "سعر",
                         "اجمالي",
-                        "الاجمالي", // Subtotal
+                        "الاجمالي",
                         "الخصم",
                         "الضريبة",
                         "الاجمالي النهائي",
                         "المدفوع",
                         "المتبقي",
-                        "");
+                        "\u062A\u0634\u0631\u0641\u0646\u0627 \u0628\u0627\u0644\u062A\u0639\u0627\u0645\u0644 \u0645\u0639\u0643");
             }
             return new Labels("Demo Shop", "123456", "Invoice:", "Date:", "Cashier:", "Customer:", "Driver:",
                     "Payment:",
                     "Item", "Qty", "Price", "Total", "Subtotal", "Discount", "Tax", "Total", "Paid", "Change",
-                    "Thank You");
+                    "\u062A\u0634\u0631\u0641\u0646\u0627 \u0628\u0627\u0644\u062A\u0639\u0627\u0645\u0644 \u0645\u0639\u0643");
         }
     }
 }

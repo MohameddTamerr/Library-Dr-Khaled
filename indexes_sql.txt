@@ -1,0 +1,2 @@
+(0, 'sqlite_autoindex_products_1', 1, 'u', 0)
+  [(0, 1, 'barcode')]

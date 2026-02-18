@@ -32,6 +32,8 @@
             <padding><Insets top="8" right="16" bottom="8" left="16"/></padding>
             
             <Label text="%cashier.title" styleClass="header-title"/>
+            <Button text="الاوردرات" onAction="#handleOpenOrdersScreen" styleClass="btn-secondary"/>
+            <Button text="المدفوعات الآجلة" onAction="#handleOpenDeferredPaymentsScreen" styleClass="btn-secondary"/>
             
             <Region HBox.hgrow="ALWAYS"/>
             
@@ -52,7 +54,7 @@
 
     <!-- CENTER: Main Content -->
     <center>
-        <VBox spacing="12" styleClass="cashier-body">
+        <VBox spacing="8" styleClass="cashier-body">
             <!-- Top Row: Scan + Quick + Cart Header -->
             <HBox spacing="16" alignment="TOP_LEFT" styleClass="cashier-top-row">
                 <VBox styleClass="scanner-panel cashier-left" spacing="12" HBox.hgrow="ALWAYS">
@@ -172,7 +174,7 @@
                     <Separator/>
                     <Label text="%cashier.orders.open" styleClass="section-label-small"/>
                     <Label text="طلبات التوصيل" styleClass="section-label-small"/>
-                    <ListView fx:id="openDeliveryOrdersList" styleClass="list-view" prefHeight="160"/>
+                    <ListView fx:id="openDeliveryOrdersList" styleClass="list-view" prefHeight="100"/>
                     <Label text="طلبات داخل المحل" styleClass="section-label-small"/>
                     <ListView fx:id="openStoreOrdersList" styleClass="list-view" VBox.vgrow="ALWAYS"/>
                 </VBox>

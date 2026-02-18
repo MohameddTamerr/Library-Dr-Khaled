@@ -42,6 +42,15 @@ public class ActivationController {
         String machineId = SecurityUtil.getMachineId();
         machineIdField.setText(machineId);
         machineIdField.setEditable(false);
+        if (SecurityUtil.isMachineRevoked(machineId)) {
+            if (licenseKeyField != null) {
+                licenseKeyField.setDisable(true);
+            }
+            if (activateButton != null) {
+                activateButton.setDisable(true);
+            }
+            showAlert("This device is blocked by administrator. Please contact support.");
+        }
     }
 
     public void setStage(Stage stage) {
@@ -62,6 +71,10 @@ public class ActivationController {
 
     @FXML
     private void handleActivate() {
+        if (SecurityUtil.isMachineRevoked(machineIdField.getText())) {
+            showAlert("This device is blocked by administrator. Please contact support.");
+            return;
+        }
         String key = licenseKeyField.getText().trim();
         if (key.isEmpty()) {
             showAlert("Please enter a license key.");

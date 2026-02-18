@@ -47,6 +47,10 @@ public final class ReceiptPrinter {
     private static final String PRINTER_HINT = "Xprinter XP-370B";
     private static final DateTimeFormatter DEBUG_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final PrintConfig PRINT_CONFIG = PrintConfig.load();
+    private static final double DEFAULT_LAYOUT_WIDTH = 290.0d;
+    private static final double MIN_LAYOUT_WIDTH = 220.0d;
+    private static final double MAX_LAYOUT_WIDTH = 330.0d;
+    private static final double POINTS_TO_FX = 96.0d / 72.0d;
 
     private ReceiptPrinter() {
     }
@@ -61,8 +65,13 @@ public final class ReceiptPrinter {
         // Apply CSS
         receiptNode.getStylesheets().add(ReceiptPrinter.class.getResource("/css/receipt.css").toExternalForm());
 
-        ScrollPane scroll = new ScrollPane(receiptNode);
-        scroll.setFitToWidth(false); // Allow actual width
+        // Wrap receipt in a centered container
+        javafx.scene.layout.StackPane centerWrapper = new javafx.scene.layout.StackPane(receiptNode);
+        centerWrapper.setAlignment(javafx.geometry.Pos.TOP_CENTER);
+        centerWrapper.setPadding(new Insets(10));
+
+        ScrollPane scroll = new ScrollPane(centerWrapper);
+        scroll.setFitToWidth(true);
         scroll.setPadding(new Insets(10));
         scroll.setStyle("-fx-background-color: transparent;");
 
@@ -112,18 +121,28 @@ public final class ReceiptPrinter {
 
         ReceiptModels.Order order = toOrder(sales);
 
-        // Resolve target width based on preferred printer
-        double targetWidth = 300;
+        // Resolve receipt node width in JavaFX pixels.
+        double targetWidth = DEFAULT_LAYOUT_WIDTH;
         if (PRINT_CONFIG.receiptWidth != null && PRINT_CONFIG.receiptWidth > 0) {
             targetWidth = PRINT_CONFIG.receiptWidth;
             debug("Using manual receipt width override: " + targetWidth);
         } else {
             Printer printer = resolvePreferredPrinter();
             if (printer != null) {
-                targetWidth = printer.getDefaultPageLayout().getPrintableWidth();
-                debug("Detected printer printable width: " + targetWidth);
+                double detectedWidthPoints = printer.getDefaultPageLayout().getPrintableWidth();
+                double detectedWidthFx = detectedWidthPoints * POINTS_TO_FX;
+                if (detectedWidthFx >= MIN_LAYOUT_WIDTH) {
+                    targetWidth = detectedWidthFx;
+                    debug("Detected printer printable width: " + detectedWidthPoints + "pt (" + detectedWidthFx
+                            + "px)");
+                } else {
+                    debug("Ignored too-small detected printer width: " + detectedWidthPoints + "pt ("
+                            + detectedWidthFx + "px). Using default width.");
+                }
             }
         }
+        targetWidth = Math.max(MIN_LAYOUT_WIDTH, Math.min(MAX_LAYOUT_WIDTH, targetWidth));
+        debug("Using receipt node width: " + targetWidth + "px");
 
         VBox receiptNode = ReceiptNodeFactory.createReceiptNode(order, true, targetWidth);
         receiptNode.getStylesheets().add(ReceiptPrinter.class.getResource("/css/receipt.css").toExternalForm());
@@ -137,52 +156,62 @@ public final class ReceiptPrinter {
         debug("Print mode: " + mode);
 
         if (mode == PrintMode.ESC_POS) {
-            debug("Trying ESC/POS raw path.");
-            if (printViaEscPos(order)) {
-                debug("ESC/POS print success.");
-                return true;
-            }
-            debug("ESC/POS path failed.");
-            return false;
+            debug("Trying ESC/POS raw path (Double).");
+            boolean s1 = printViaEscPos(order);
+            boolean s2 = printViaEscPos(order);
+            return s1 || s2;
+        }
+
+        // DEBUG: Save snapshot to checking rendering
+        try {
+            WritableImage debugSnap = receiptNode.snapshot(null, null);
+            java.io.File debugFile = new java.io.File(
+                    System.getProperty("user.home") + "/Desktop/debug_receipt_" + System.currentTimeMillis() + ".png");
+            javax.imageio.ImageIO.write(javafx.embed.swing.SwingFXUtils.fromFXImage(debugSnap, null), "png", debugFile);
+            debug("Saved debug receipt image to: " + debugFile.getAbsolutePath());
+        } catch (Exception ex) {
+            debug("Failed to save debug image: " + ex.getMessage());
         }
 
         if (mode == PrintMode.JAVAFX) {
-            debug("Trying JavaFX print path.");
-            if (printViaJavaFx(receiptNode)) {
-                debug("JavaFX print success.");
+            debug("Trying JavaFX print path (Double).");
+            boolean s1 = printViaJavaFx(receiptNode);
+            boolean s2 = printViaJavaFx(receiptNode);
+            if (s1 || s2)
                 return true;
-            }
-            debug("JavaFX path failed.");
-            return false;
+
+            debug("JavaFX path failed. Falling back to AWT.");
+            WritableImage snapshot = receiptNode.snapshot(null, null);
+            boolean a1 = printViaAwt(snapshot);
+            boolean a2 = printViaAwt(snapshot);
+            return a1 || a2;
         }
 
         if (mode == PrintMode.AWT) {
-            debug("Trying AWT print path.");
+            debug("Trying AWT print path (Double).");
             // Explicitly set width again to be sure
             receiptNode.setPrefWidth(targetWidth);
             receiptNode.setMaxWidth(targetWidth);
+            receiptNode.setMinWidth(targetWidth);
             receiptNode.layout();
 
             WritableImage snapshot = receiptNode.snapshot(null, null);
-            if (printViaAwt(snapshot)) {
-                debug("AWT print success.");
-                return true;
-            }
-            debug("AWT path failed.");
-            return false;
+            boolean a1 = printViaAwt(snapshot);
+            boolean a2 = printViaAwt(snapshot);
+            return a1 || a2;
         }
 
         // AUTO
-        debug("Trying JavaFX print path.");
+        debug("Trying JavaFX print path (Double).");
         if (printViaJavaFx(receiptNode)) {
-            debug("JavaFX print success.");
+            printViaJavaFx(receiptNode);
             return true;
         }
 
-        debug("JavaFX path failed. Trying AWT path.");
+        debug("JavaFX path failed. Trying AWT path (Double).");
         WritableImage snapshot = receiptNode.snapshot(null, null);
         if (printViaAwt(snapshot)) {
-            debug("AWT print success.");
+            printViaAwt(snapshot);
             return true;
         }
 
@@ -208,27 +237,32 @@ public final class ReceiptPrinter {
                 Printer.MarginType.HARDWARE_MINIMUM);
         job.getJobSettings().setPageLayout(pageLayout);
 
-        double printableWidth = pageLayout.getPrintableWidth();
-        debug("JavaFX Printable Width: " + printableWidth);
+        double printableWidthPoints = pageLayout.getPrintableWidth();
+        double printableHeightPoints = pageLayout.getPrintableHeight();
+        double printableWidthFx = printableWidthPoints * POINTS_TO_FX;
+        double printableHeightFx = printableHeightPoints * POINTS_TO_FX;
+        debug("JavaFX printable area: " + printableWidthPoints + "pt x " + printableHeightPoints
+                + "pt (" + printableWidthFx + "px x " + printableHeightFx + "px)");
 
-        // Re-create the node with the actual printable width for "flexible" layout
-        // We need the order object again.
-        // Note: This method is called with a node already created, but we want a fresh
-        // layout.
-        // For robustness, let's assume we might need to recreate it if scale is not
-        // used.
-
-        // However, if we already have the node, we can try to resize it if it's a VBox
-        // with prefWidth.
-        if (printableWidth > 0) {
-            nodeStub.setPrefWidth(printableWidth);
-            nodeStub.setMaxWidth(printableWidth);
+        if (printableWidthFx > 0) {
+            double width = Math.max(MIN_LAYOUT_WIDTH, Math.min(MAX_LAYOUT_WIDTH, printableWidthFx));
+            nodeStub.setPrefWidth(width);
+            nodeStub.setMaxWidth(width);
+            nodeStub.setMinWidth(width);
         }
 
         // Layout again
-        Scene dummy = new Scene(nodeStub);
+        if (nodeStub.getScene() == null) {
+            new Scene(nodeStub);
+        }
         nodeStub.applyCss();
         nodeStub.layout();
+        double contentHeight = nodeStub.prefHeight(-1);
+        if (printableHeightFx > 0 && contentHeight > printableHeightFx) {
+            debug("JavaFX page height is too short for receipt content (" + contentHeight
+                    + "px > " + printableHeightFx + "px).");
+            return false;
+        }
 
         try {
             boolean printed = job.printPage(pageLayout, nodeStub);
@@ -450,7 +484,14 @@ public final class ReceiptPrinter {
         order.setInvoiceNo(first.getId() == null ? "-" : String.valueOf(first.getId()));
         order.setDateTime(first.getTimestamp());
         order.setCashier(first.getWorker() != null ? first.getWorker().getFullName() : "-");
-        order.setCustomerCode(resolveCustomerCode(first.getCustomer()));
+        boolean deliveryInvoice = isDeliveryInvoice(first);
+        if (deliveryInvoice) {
+            order.setCustomerCode(resolveCustomerCodeForDelivery(first.getCustomer()));
+            order.setCustomerName(resolveCustomerName(first.getCustomer()));
+            order.setCustomerAddress(resolveCustomerAddress(first.getCustomer()));
+        } else {
+            order.setCustomerCode(resolveCustomerCode(first.getCustomer()));
+        }
         order.setDeliveredBy(extractDeliveryWorker(first.getNotes()));
         order.setPaymentMethod(extractPaymentMethod(first.getNotes()));
 
@@ -499,6 +540,41 @@ public final class ReceiptPrinter {
             return customer.getCustomerName();
         }
         return "عميل نقدي";
+    }
+
+    private static String resolveCustomerCodeForDelivery(Customer customer) {
+        if (customer == null) {
+            return null;
+        }
+        if (customer.getCustomerCode() != null && !customer.getCustomerCode().isBlank()) {
+            return customer.getCustomerCode();
+        }
+        return null;
+    }
+
+    private static String resolveCustomerName(Customer customer) {
+        if (customer == null || customer.getCustomerName() == null || customer.getCustomerName().isBlank()) {
+            return null;
+        }
+        return customer.getCustomerName().trim();
+    }
+
+    private static String resolveCustomerAddress(Customer customer) {
+        if (customer == null || customer.getAddress() == null || customer.getAddress().isBlank()) {
+            return null;
+        }
+        return customer.getAddress().trim();
+    }
+
+    private static boolean isDeliveryInvoice(Sale sale) {
+        if (sale == null) {
+            return false;
+        }
+        if (sale.getStatus() == com.library.pos.model.SaleStatus.DELIVERY) {
+            return true;
+        }
+        String notes = sale.getNotes();
+        return notes != null && notes.toLowerCase(Locale.ROOT).contains("delivery:");
     }
 
     private static String extractPaymentMethod(String notes) {

@@ -47,12 +47,18 @@ public class LibraryPosApplication extends Application {
 
     private boolean isLicenseValid() {
         try {
+            if (com.library.pos.util.SecurityUtil.isCurrentMachineRevoked()) {
+                return false;
+            }
             java.nio.file.Path path = java.nio.file.Paths.get("license.dat");
             if (!java.nio.file.Files.exists(path)) {
                 return false;
             }
             String key = java.nio.file.Files.readString(path).trim();
-            return com.library.pos.util.SecurityUtil.validateKey(key);
+            if (!com.library.pos.util.SecurityUtil.validateKey(key)) {
+                return false;
+            }
+            return !com.library.pos.util.SecurityUtil.isCurrentMachineRevoked();
         } catch (Exception e) {
             return false;
         }

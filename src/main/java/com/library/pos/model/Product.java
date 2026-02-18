@@ -2,6 +2,8 @@ package com.library.pos.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -41,6 +43,9 @@ public class Product {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductBarcode> additionalBarcodes = new ArrayList<>();
 
     public Product() {
     }
@@ -102,6 +107,10 @@ public class Product {
         return updatedAt;
     }
 
+    public List<ProductBarcode> getAdditionalBarcodes() {
+        return additionalBarcodes;
+    }
+
     // Setters
     public void setId(Long id) {
         this.id = id;
@@ -145,6 +154,10 @@ public class Product {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public void setAdditionalBarcodes(List<ProductBarcode> additionalBarcodes) {
+        this.additionalBarcodes = additionalBarcodes;
     }
 
     @PrePersist

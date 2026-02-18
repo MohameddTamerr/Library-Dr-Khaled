@@ -6,6 +6,7 @@ import com.library.pos.model.SaleStatus;
 import com.library.pos.repository.ProductRepository;
 import com.library.pos.repository.SaleRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -188,6 +189,11 @@ public class SaleService {
      * @param returnWorker     The worker processing the return
      * @return The created return Sale record
      */
+    @Transactional
+    public void deleteAllSales() {
+        saleRepository.deleteAll();
+    }
+
     public Sale processProductReturn(Product product, int quantityToReturn, String condition,
             com.library.pos.model.User returnWorker) {
         if (product == null || quantityToReturn <= 0) {

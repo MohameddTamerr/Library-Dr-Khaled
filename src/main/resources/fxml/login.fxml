@@ -29,11 +29,11 @@
         </ImageView>
         <Region prefHeight="10"/> 
         <Label text="%app.title" styleClass="branding-text"/>
-        <Label text="Dr. Khaled Library System" styleClass="branding-subtext"/>
+        <Label text="%login.welcome" styleClass="branding-subtext"/>
     </VBox>
 
     <!-- RIGHT SIDE: Login Form -->
-    <VBox prefWidth="450" styleClass="login-panel" alignment="CENTER_LEFT">
+    <VBox prefWidth="450" styleClass="login-panel" alignment="CENTER">
         
         <HBox alignment="TOP_RIGHT" maxWidth="Infinity">
             <Button fx:id="languageButton" text="%btn.language" onAction="#toggleLanguage" styleClass="button-icon"/>
@@ -41,29 +41,29 @@
 
         <Region prefHeight="40"/>
 
-        <VBox spacing="5">
-            <Label text="%login.welcome" style="-fx-text-fill: -color-text-muted; -fx-font-size: 14px;"/>
-            <Label text="%btn.login" styleClass="h1"/>
+        <VBox spacing="10" alignment="CENTER">
+            <Label text="%login.welcome" style="-fx-text-fill: -color-text-muted; -fx-font-size: 18px;"/>
+            <Label text="%btn.login" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: -text-primary;"/>
         </VBox>
 
-        <Region prefHeight="30"/>
+        <Region prefHeight="40"/>
 
-        <VBox spacing="20" maxWidth="Infinity">
-            <VBox spacing="8">
-                <Label text="%login.username" style="-fx-font-weight: bold; -fx-text-fill: -color-text;"/>
-                <TextField fx:id="usernameField" promptText="admin" styleClass="text-field"/>
+        <VBox spacing="25" maxWidth="350" alignment="CENTER">
+            <VBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="%login.username" styleClass="login-label"/>
+                <TextField fx:id="usernameField" promptText="admin" styleClass="login-input"/>
             </VBox>
             
-            <VBox spacing="8">
-                <Label text="%login.password" style="-fx-font-weight: bold; -fx-text-fill: -color-text;"/>
-                <PasswordField fx:id="passwordField" promptText="admin" styleClass="password-field"/>
+            <VBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="%login.password" styleClass="login-label"/>
+                <PasswordField fx:id="passwordField" promptText="admin" styleClass="login-input"/>
             </VBox>
 
-            <Label fx:id="errorLabel" text="%login.error.invalid" textFill="#ef4444" visible="false" wrapText="true"/>
+            <Label fx:id="errorLabel" text="%login.error.invalid" textFill="#ef4444" visible="false" wrapText="true" style="-fx-font-size: 16px;"/>
 
             <Button fx:id="loginButton" text="%btn.login" onAction="#handleLogin" 
                     maxWidth="Infinity" defaultButton="true"
-                    styleClass="button-primary"/>
+                    styleClass="button-primary" style="-fx-font-size: 20px; -fx-padding: 12 20;"/>
         </VBox>
         
         <Region VBox.vgrow="ALWAYS"/>
