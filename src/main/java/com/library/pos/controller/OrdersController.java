@@ -1,9 +1,11 @@
 package com.library.pos.controller;
 
 import com.library.pos.model.Sale;
+import com.library.pos.model.SaleStatus;
 import com.library.pos.service.SaleService;
 import com.library.pos.util.AutoRefreshUtil;
 import com.library.pos.util.ReceiptPrinter;
+import javafx.stage.FileChooser;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -27,6 +29,16 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.io.File;
+import java.io.IOException;
+import com.ibm.icu.text.ArabicShaping;
+import com.ibm.icu.text.ArabicShapingException;
+import com.ibm.icu.text.Bidi;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 
 @Component
 public class OrdersController {
@@ -114,6 +126,10 @@ public class OrdersController {
 
                 {
                     printBtn.getStyleClass().add("button-primary");
+                    printBtn.getStyleClass().add("button-print");
+                    printBtn.setMinWidth(70);
+                    printBtn.setPrefWidth(70);
+                    printBtn.setMaxWidth(Double.MAX_VALUE);
                     printBtn.setOnAction(event -> {
                         TreeItem<OrderViewModel> rowItem = getTreeTableRow() != null ? getTreeTableRow().getTreeItem()
                                 : null;
@@ -439,6 +455,337 @@ public class OrdersController {
         updatePaymentMethodTotals(sales);
         updateOrderCounts(sales);
         populateTree(sales);
+    }
+
+    @FXML
+    private void handleExportSoldProductsPdf() {
+        LocalDate from = fromDatePicker != null ? fromDatePicker.getValue() : null;
+        LocalDate to = toDatePicker != null ? toDatePicker.getValue() : null;
+        List<Sale> sales = new ArrayList<>();
+        if (from == null || to == null) {
+            LocalDate today = LocalDate.now();
+            from = today;
+            to = today;
+        }
+        LocalDateTime start = from.atStartOfDay();
+        LocalDateTime end = to.atTime(LocalTime.MAX);
+        sales = saleService.search(start, end, null, null);
+
+        List<Sale> sold = sales.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (sold.isEmpty()) {
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("تصدير المنتجات المباعة");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        String home = System.getProperty("user.home");
+        if (home != null && !home.isBlank()) {
+            File downloads = new File(home, "Downloads");
+            if (downloads.exists() && downloads.isDirectory()) {
+                chooser.setInitialDirectory(downloads);
+            }
+        }
+        chooser.setInitialFileName("sold-products-" + LocalDate.now() + ".pdf");
+        File file = chooser.showSaveDialog(
+                ordersTable != null && ordersTable.getScene() != null ? ordersTable.getScene().getWindow() : null);
+        if (file == null) {
+            return;
+        }
+
+        Map<String, ProductSummary> summaries = new HashMap<>();
+        for (Sale s : sold) {
+            String name = s.getItemName() != null ? s.getItemName().trim() : "";
+            if (name.isEmpty()) {
+                name = "منتج غير معروف";
+            }
+            ProductSummary summary = summaries.computeIfAbsent(name, k -> new ProductSummary());
+            summary.quantity += s.getQuantity() != null ? s.getQuantity() : 0;
+            summary.total += s.getTotalAmount() != null ? s.getTotalAmount() : 0.0;
+        }
+
+        // Sort by total price descending
+        Map<String, ProductSummary> sortedSummaries = summaries.entrySet().stream()
+                .sorted((e1, e2) -> Double.compare(e2.getValue().total, e1.getValue().total))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
+
+        try {
+            exportSoldProductsPdf(file, sortedSummaries, from, to);
+        } catch (Exception e) {
+            System.out.println("Failed to export PDF: " + e.getMessage());
+        }
+    }
+
+    private void exportSoldProductsPdf(File file, Map<String, ProductSummary> summaries, LocalDate from, LocalDate to)
+            throws IOException {
+        try (PDDocument doc = new PDDocument()) {
+            PDType0Font font = loadArabicFont(doc);
+            PDRectangle pageSize = PDRectangle.A4;
+            float margin = 30f;
+            float fontSize = 11f;
+            float headerFontSize = 14f;
+            float titleFontSize = 16f;
+            float leading = 12f;
+            float rowPadding = 5f;
+
+            PDPage page = new PDPage(pageSize);
+            doc.addPage(page);
+            PDPageContentStream content = new PDPageContentStream(doc, page);
+            content.setFont(font, titleFontSize);
+
+            float y = pageSize.getHeight() - margin - 10f;
+            float tableTopGap = 25f;
+
+            // Header with larger font
+            y = drawLine(content, font, titleFontSize, margin, pageSize.getWidth() - margin, y,
+                    "تقرير المنتجات المباعة");
+            content.setFont(font, fontSize);
+            String rangeText = "الفترة: "
+                    + (from != null ? from.toString() : "-")
+                    + " إلى "
+                    + (to != null ? to.toString() : "-");
+            y = drawLine(content, font, fontSize, margin, pageSize.getWidth() - margin, y, rangeText);
+            y = drawLine(content, font, fontSize, margin, pageSize.getWidth() - margin, y,
+                    "التاريخ: " + LocalDate.now());
+
+            y -= tableTopGap;
+
+            float tableLeft = margin;
+            float tableRight = pageSize.getWidth() - margin;
+            float tableWidth = tableRight - tableLeft;
+
+            // 3 columns: product (55%), qty (20%), total (25%)
+            float colTotalWidth = tableWidth * 0.25f;
+            float colQtyWidth = tableWidth * 0.20f;
+            float colProductWidth = tableWidth - colTotalWidth - colQtyWidth;
+
+            float colTotalRight = tableRight;
+            float colQtyRight = colTotalRight - colTotalWidth;
+            float colProductRight = colQtyRight - colQtyWidth;
+            float colProductLeft = tableLeft;
+            float colQtyLeft = colProductRight;
+            float colTotalLeft = colQtyRight;
+
+            // Table header
+            float headerY = y;
+            y = drawTableHeader(content, font, headerFontSize, tableLeft, tableRight, colProductLeft, colProductRight, 
+                    colQtyLeft, colQtyRight, colTotalLeft, colTotalRight, y, leading, rowPadding);
+            float tableTop = y;
+
+            int totalQty = 0;
+            double totalAmount = 0.0;
+
+            for (Map.Entry<String, ProductSummary> entry : summaries.entrySet()) {
+                ProductSummary s = entry.getValue();
+                totalQty += s.quantity;
+                totalAmount += s.total;
+
+                String product = entry.getKey();
+                List<String> productLines = wrapLine(product, font, fontSize, colProductWidth - 16f);
+                int lines = Math.max(1, productLines.size());
+                float rowHeight = (leading * lines) + (rowPadding * 2);
+
+                if (y - rowHeight <= margin + 20) {
+                    // Close vertical lines for current table
+                    drawVLine(content, colProductLeft, headerY, y);
+                    drawVLine(content, colProductRight, headerY, y);
+                    drawVLine(content, colQtyRight, headerY, y);
+                    drawVLine(content, colTotalRight, headerY, y);
+                    
+                    content.close();
+                    page = new PDPage(pageSize);
+                    doc.addPage(page);
+                    content = new PDPageContentStream(doc, page);
+                    content.setFont(font, fontSize);
+                    y = pageSize.getHeight() - margin;
+
+                    headerY = y;
+                    y = drawTableHeader(content, font, headerFontSize, tableLeft, tableRight, colProductLeft, colProductRight,
+                            colQtyLeft, colQtyRight, colTotalLeft, colTotalRight, y, leading, rowPadding);
+                    tableTop = y;
+                }
+
+                float rowTop = y;
+                float rowBottom = y - rowHeight;
+                if (rowTop != tableTop) {
+                    drawHLine(content, tableLeft, tableRight, rowTop);
+                }
+                // Calculate vertical center for single line or first line of multi-line
+                float verticalOffset = rowHeight / 2f + fontSize / 2f;
+                for (int i = 0; i < lines; i++) {
+                    String line = i < productLines.size() ? productLines.get(i) : "";
+                    float textY = rowTop - verticalOffset - (i * leading);
+                    drawTextCentered(content, font, fontSize, shapeRtl(line), colProductLeft, colProductRight, textY);
+                    if (i == 0) {
+                        drawTextCentered(content, font, fontSize, shapeRtl(String.valueOf(s.quantity)),
+                                colQtyLeft, colQtyRight, textY);
+                        drawTextCentered(content, font, fontSize,
+                                shapeRtl(String.format(Locale.ROOT, "%.2f", s.total)), colTotalLeft, colTotalRight, textY);
+                    }
+                }
+                drawHLine(content, tableLeft, tableRight, rowBottom);
+                y = rowBottom;
+            }
+
+            // Total row with bold effect
+            float totalTop = y;
+            float totalRowHeight = leading + (rowPadding * 2) + 2f;
+            float totalBottom = y - totalRowHeight;
+            drawHLine(content, tableLeft, tableRight, totalTop);
+            float totalVerticalOffset = totalRowHeight / 2f + headerFontSize / 2f;
+            float totalTextY = totalTop - totalVerticalOffset;
+            
+            // Draw total label - all centered
+            drawTextCentered(content, font, headerFontSize, shapeRtl("الإجمالي"), colProductLeft, colProductRight, totalTextY);
+            drawTextCentered(content, font, headerFontSize, shapeRtl(String.valueOf(totalQty)), 
+                    colQtyLeft, colQtyRight, totalTextY);
+            drawTextCentered(content, font, headerFontSize,
+                    shapeRtl(String.format(Locale.ROOT, "%.2f", totalAmount)), colTotalLeft, colTotalRight, totalTextY);
+            drawHLine(content, tableLeft, tableRight, totalBottom);
+
+            // Draw vertical column lines for the entire table
+            drawVLine(content, colProductLeft, headerY, totalBottom);
+            drawVLine(content, colProductRight, headerY, totalBottom);
+            drawVLine(content, colQtyRight, headerY, totalBottom);
+            drawVLine(content, colTotalRight, headerY, totalBottom);
+
+            content.close();
+            doc.save(file);
+        }
+    }
+
+    private float drawLine(PDPageContentStream content, PDType0Font font, float fontSize, float xLeft, float xRight,
+            float y, String text) throws IOException {
+        String shaped = shapeRtl(text);
+        content.setFont(font, fontSize);
+        content.beginText();
+        content.newLineAtOffset(xLeft, y);
+        content.showText(shaped);
+        content.endText();
+        return y - 20f;
+    }
+
+    private float drawTableHeader(PDPageContentStream content, PDType0Font font, float fontSize, float tableLeft,
+            float tableRight, float colProductLeft, float colProductRight, float colQtyLeft, float colQtyRight, 
+            float colTotalLeft, float colTotalRight, float y, float leading, float rowPadding)
+            throws IOException {
+        // Top border
+        content.setLineWidth(1.5f);
+        drawHLine(content, tableLeft, tableRight, y);
+        content.setLineWidth(0.5f);
+        
+        float headerHeight = leading + (rowPadding * 2) + 2f;
+        float textY = y - rowPadding - 3f;
+        
+        // Draw header text centered
+        drawTextCentered(content, font, fontSize, shapeRtl("المنتج"), colProductLeft, colProductRight, textY);
+        drawTextCentered(content, font, fontSize, shapeRtl("الكمية"), colQtyLeft, colQtyRight, textY);
+        drawTextCentered(content, font, fontSize, shapeRtl("الإجمالي"), colTotalLeft, colTotalRight, textY);
+        
+        y -= headerHeight;
+        content.setLineWidth(1.5f);
+        drawHLine(content, tableLeft, tableRight, y);
+        content.setLineWidth(0.5f);
+        return y;
+    }
+
+    private void drawHLine(PDPageContentStream content, float xLeft, float xRight, float y) throws IOException {
+        content.moveTo(xLeft, y);
+        content.lineTo(xRight, y);
+        content.stroke();
+    }
+
+    private void drawVLine(PDPageContentStream content, float x, float yTop, float yBottom) throws IOException {
+        content.moveTo(x, yTop);
+        content.lineTo(x, yBottom);
+        content.stroke();
+    }
+
+    private void drawTextRight(PDPageContentStream content, PDType0Font font, float fontSize, String text, float xRight,
+            float y) throws IOException {
+        float width = font.getStringWidth(text) / 1000f * fontSize;
+        content.beginText();
+        content.newLineAtOffset(xRight - width, y);
+        content.showText(text);
+        content.endText();
+    }
+
+    private void drawTextCentered(PDPageContentStream content, PDType0Font font, float fontSize, String text,
+            float xLeft, float xRight, float y) throws IOException {
+        float width = font.getStringWidth(text) / 1000f * fontSize;
+        float colWidth = xRight - xLeft;
+        float x = xLeft + (colWidth - width) / 2f;
+        content.beginText();
+        content.newLineAtOffset(x, y);
+        content.showText(text);
+        content.endText();
+    }
+
+    private PDType0Font loadArabicFont(PDDocument doc) throws IOException {
+        String windir = System.getenv("WINDIR");
+        if (windir == null || windir.isBlank()) {
+            windir = "C:\\\\Windows";
+        }
+        File tahoma = new File(windir + "\\\\Fonts\\\\tahoma.ttf");
+        File arial = new File(windir + "\\\\Fonts\\\\arial.ttf");
+        if (tahoma.exists()) {
+            return PDType0Font.load(doc, tahoma);
+        }
+        if (arial.exists()) {
+            return PDType0Font.load(doc, arial);
+        }
+        throw new IOException("No Arabic-capable font found.");
+    }
+
+    private String shapeRtl(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        try {
+            ArabicShaping shaper = new ArabicShaping(ArabicShaping.LETTERS_SHAPE);
+            String shaped = shaper.shape(text);
+            Bidi bidi = new Bidi(shaped, Bidi.DIRECTION_RIGHT_TO_LEFT);
+            return bidi.writeReordered(Bidi.DO_MIRRORING);
+        } catch (ArabicShapingException e) {
+            return text;
+        } catch (Exception e) {
+            return text;
+        }
+    }
+
+    private List<String> wrapLine(String text, PDType0Font font, float fontSize, float maxWidth) throws IOException {
+        List<String> lines = new ArrayList<>();
+        String[] words = text.split("\\s+");
+        StringBuilder current = new StringBuilder();
+        for (String word : words) {
+            String candidate = current.length() == 0 ? word : current + " " + word;
+            float width = font.getStringWidth(candidate) / 1000f * fontSize;
+            if (width <= maxWidth || current.length() == 0) {
+                current.setLength(0);
+                current.append(candidate);
+            } else {
+                lines.add(current.toString());
+                current.setLength(0);
+                current.append(word);
+            }
+        }
+        if (current.length() > 0) {
+            lines.add(current.toString());
+        }
+        return lines;
+    }
+
+    private static class ProductSummary {
+        int quantity = 0;
+        double total = 0.0;
     }
 
     // VIEW MODEL

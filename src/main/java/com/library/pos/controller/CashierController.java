@@ -2260,8 +2260,10 @@ public class CashierController {
             }
             stage.initModality(Modality.WINDOW_MODAL);
             stage.setTitle(title);
-            stage.setMinWidth(900);
-            stage.setMinHeight(600);
+            stage.setMinWidth(820);
+            stage.setMinHeight(520);
+            stage.setWidth(860);
+            stage.setHeight(560);
             stage.setScene(scene);
             stage.centerOnScreen();
             stage.show();

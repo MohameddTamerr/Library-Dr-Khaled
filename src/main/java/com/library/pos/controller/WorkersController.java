@@ -141,7 +141,8 @@ public class WorkersController {
 
     private void addActionButtonsToTable() {
         TableColumn<User, Void> colBtn = new TableColumn<>("إجراءات");
-        colBtn.setPrefWidth(120);
+        colBtn.setMinWidth(150);
+        colBtn.setPrefWidth(160);
 
         javafx.util.Callback<TableColumn<User, Void>, TableCell<User, Void>> cellFactory = new javafx.util.Callback<>() {
             @Override
@@ -151,20 +152,26 @@ public class WorkersController {
                     private final Button btnEdit = new Button("تعديل");
                     private final Button btnDelete = new Button("حذف");
                     private final Button btnWithdraw = new Button("سلفة");
-                    private final javafx.scene.layout.HBox pane = new javafx.scene.layout.HBox(5, btnWithdraw, btnEdit,
-                            btnDelete);
+                    private final javafx.scene.layout.GridPane pane = new javafx.scene.layout.GridPane();
 
                     {
-                        btnEdit.setStyle(
-                                "-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 5 10;");
-                        btnDelete.setStyle(
-                                "-fx-background-color: #ef4444; -fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 5 10;");
-                        btnWithdraw.setStyle(
-                                "-fx-background-color: #10b981; -fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 5 10;");
+                        String baseStyle = "-fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 11px; -fx-padding: 4 6;";
+                        btnEdit.setStyle("-fx-background-color: #f59e0b; " + baseStyle);
+                        btnDelete.setStyle("-fx-background-color: #ef4444; " + baseStyle);
+                        btnWithdraw.setStyle("-fx-background-color: #10b981; " + baseStyle);
+
+                        double btnWidth = 60;
+                        btnEdit.setMinWidth(btnWidth);
+                        btnEdit.setPrefWidth(btnWidth);
+                        btnDelete.setMinWidth(btnWidth);
+                        btnDelete.setPrefWidth(btnWidth);
+                        btnWithdraw.setMinWidth(btnWidth);
+                        btnWithdraw.setPrefWidth(btnWidth);
 
                         btnWithdraw.setTooltip(new Tooltip("سحب مبلغ"));
-
                         pane.setAlignment(javafx.geometry.Pos.CENTER);
+                        pane.setHgap(6);
+                        pane.setVgap(6);
 
                         btnDelete.setOnAction((event) -> {
                             User data = getTableView().getItems().get(getIndex());
@@ -183,15 +190,19 @@ public class WorkersController {
 
                         // Add Report Button (Info icon)
                         Button btnReport = new Button("تقرير");
-                        btnReport.setStyle(
-                                "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 5 10;");
+                        btnReport.setStyle("-fx-background-color: #3b82f6; " + baseStyle);
+                        btnReport.setMinWidth(btnWidth);
+                        btnReport.setPrefWidth(btnWidth);
                         btnReport.setTooltip(new Tooltip("تقرير ساعات العمل"));
                         btnReport.setOnAction(e -> {
                             User data = getTableView().getItems().get(getIndex());
                             handleShowReport(data);
                         });
 
-                        pane.getChildren().add(0, btnReport);
+                        pane.add(btnReport, 0, 0);
+                        pane.add(btnWithdraw, 1, 0);
+                        pane.add(btnEdit, 0, 1);
+                        pane.add(btnDelete, 1, 1);
                     }
 
                     @Override
@@ -533,7 +544,8 @@ public class WorkersController {
         // Stats Area
         TextArea statsArea = new TextArea();
         statsArea.setEditable(false);
-        statsArea.setPrefRowCount(10);
+        statsArea.setPrefRowCount(16);
+        statsArea.setPrefHeight(520);
         statsArea.setStyle("-fx-font-family: monospace; -fx-font-size: 14px;");
 
         showBtn.setOnAction(e -> {
@@ -598,7 +610,7 @@ public class WorkersController {
 
         root.getChildren().addAll(filterBox, quickBox, statsArea);
 
-        javafx.scene.Scene scene = new javafx.scene.Scene(root, 500, 500);
+        javafx.scene.Scene scene = new javafx.scene.Scene(root, 680, 500);
         dialog.setScene(scene);
         dialog.show();
     }

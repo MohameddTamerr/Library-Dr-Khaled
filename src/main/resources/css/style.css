@@ -104,6 +104,13 @@
     -fx-background-color: -color-primary-dark;
 }
 
+/* Compact primary button for narrow table cells */
+.button-print {
+    -fx-font-size: 11px;
+    -fx-padding: 4 8;
+    -fx-background-radius: 6;
+}
+
 /* Cashier/Dashboard Button System */
 .btn-primary {
     -fx-background-color: -color-primary;
@@ -375,9 +382,23 @@
 }
 
 .header-title {
-    -fx-font-size: 28px;
+    -fx-font-size: 22px;
     -fx-font-weight: bold;
     -fx-text-fill: white;
+}
+
+.header-bar .button {
+    -fx-font-size: 12px;
+    -fx-padding: 6 10;
+    -fx-wrap-text: true;
+    -fx-content-display: center;
+    -fx-text-overrun: clip;
+}
+
+.header-bar .header-compact-btn {
+    -fx-font-size: 11px;
+    -fx-padding: 4 8;
+    -fx-min-height: 28px;
 }
 
 .worker-label {
@@ -443,6 +464,19 @@
 .suggestion-list .list-cell:filled:selected {
     -fx-background-color: -color-primary;
     -fx-text-fill: white;
+}
+
+.suggestion-list .list-cell:filled:selected .product-cell-name {
+    -fx-text-fill: white;
+}
+
+.suggestion-list .list-cell:filled:selected .product-cell-barcode {
+    -fx-text-fill: #d1d5db;
+}
+
+.suggestion-list .list-cell:filled:selected .product-cell-price,
+.suggestion-list .list-cell:filled:selected .product-cell-currency {
+    -fx-text-fill: #22c55e;
 }
 
 
@@ -878,14 +912,16 @@
 
 .product-cell-barcode {
     -fx-font-size: 11px;
-    -fx-text-fill: -text-muted;
+    -fx-text-fill: #9ca3af;
     -fx-font-family: 'Consolas', monospace;
 }
 
 .product-cell-price {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-text-fill: -color-success;
+    -fx-text-fill: #22c55e;
+    /* Thin black outline for visibility */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.9), 1, 1, 0, 0);
 }
 
 .product-cell-currency {

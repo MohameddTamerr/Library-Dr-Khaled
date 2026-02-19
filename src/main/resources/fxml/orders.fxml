@@ -70,22 +70,23 @@
     <!-- Filter Bar -->
     <HBox spacing="10" alignment="CENTER_LEFT" styleClass="card">
         <Label text="من:"/>
-        <DatePicker fx:id="fromDatePicker"/>
+        <DatePicker fx:id="fromDatePicker" prefWidth="170" minWidth="150"/>
         <Label text="إلى:"/>
-        <DatePicker fx:id="toDatePicker"/>
-        <ComboBox fx:id="filterWorkerCombo" promptText="الموظف" prefWidth="150"/>
-        <ComboBox fx:id="filterOrderTypeCombo" promptText="نوع الطلب" prefWidth="150"/>
-        <TextField fx:id="filterProductField" promptText="بحث عن منتج..." prefWidth="150"/>
-        <Button text="تصفية" onAction="#handleFilter" styleClass="button-primary"/>
+        <DatePicker fx:id="toDatePicker" prefWidth="170" minWidth="150"/>
+        <ComboBox fx:id="filterWorkerCombo" promptText="الموظف" prefWidth="150" minWidth="130"/>
+        <ComboBox fx:id="filterOrderTypeCombo" promptText="نوع الطلب" prefWidth="150" minWidth="130"/>
+        <TextField fx:id="filterProductField" promptText="بحث عن منتج..." prefWidth="170" minWidth="140"/>
+        <Button text="تصفية" onAction="#handleFilter" styleClass="button-primary" minWidth="70"/>
+        <Button text="تصدير PDF" onAction="#handleExportSoldProductsPdf" styleClass="button-action" minWidth="110"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button text="عرض الكل" onAction="#loadAll" styleClass="button-sidebar" style="-fx-text-fill: -text-primary; -fx-background-color: -bg-panel;"/>
+        <Button text="عرض الكل" onAction="#loadAll" styleClass="button-sidebar" style="-fx-text-fill: -text-primary; -fx-background-color: -bg-panel;" minWidth="90"/>
     </HBox>
 
     <!-- Orders Tree Table -->
     <TreeTableView fx:id="ordersTable" VBox.vgrow="ALWAYS" styleClass="tree-table-view" showRoot="false">
         <columns>
             <TreeTableColumn fx:id="idCol" text="#" prefWidth="50"/>
-            <TreeTableColumn fx:id="printCol" text="طباعة" prefWidth="80"/>
+            <TreeTableColumn fx:id="printCol" text="طباعة" prefWidth="90" minWidth="80"/>
             <TreeTableColumn fx:id="dateCol" text="التاريخ" prefWidth="100"/>
             <TreeTableColumn fx:id="timeCol" text="الوقت" prefWidth="80"/>
             <TreeTableColumn fx:id="itemCol" text="البيان" prefWidth="250"/> <!-- Item or Verification -->
