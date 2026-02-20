@@ -165,6 +165,7 @@ public class CashierController {
     private final com.library.pos.service.UserService userService;
     private final SupplierService supplierService;
     private final CustomerDeferredService customerDeferredService;
+    private final com.library.pos.service.WastedItemService wastedItemService;
 
     private User currentUser;
     private Customer selectedCustomer;
@@ -192,7 +193,8 @@ public class CashierController {
             CustomerService customerService, OpenOrderService openOrderService,
             ApplicationContext applicationContext, com.library.pos.repository.WorkSessionRepository sessionRepository,
             com.library.pos.service.UserService userService, SupplierService supplierService,
-            CustomerDeferredService customerDeferredService) {
+            CustomerDeferredService customerDeferredService,
+            com.library.pos.service.WastedItemService wastedItemService) {
         this.productService = productService;
         this.saleService = saleService;
         this.customerService = customerService;
@@ -202,6 +204,7 @@ public class CashierController {
         this.userService = userService;
         this.supplierService = supplierService;
         this.customerDeferredService = customerDeferredService;
+        this.wastedItemService = wastedItemService;
     }
 
     @FXML
@@ -2292,6 +2295,43 @@ public class CashierController {
     @FXML
     private void handleDeferredCollection() {
         showDeferredCollectionDialog();
+    }
+
+    @FXML
+    private void handleWastedItems() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/wasted_item_popup.fxml"));
+            loader.setControllerFactory(applicationContext::getBean);
+            Scene scene = new Scene(loader.load());
+
+            java.net.URL css = getClass().getResource("/css/style.css");
+            if (css != null) {
+                scene.getStylesheets().add(css.toExternalForm());
+            }
+
+            WastedItemPopupController controller = loader.getController();
+            controller.setWorker(currentUser);
+            controller.setOnDoneCallback(() -> {
+                updateDailyCash();
+                updateDataSignature();
+            });
+
+            Stage dialog = new Stage();
+            if (workerNameLabel != null && workerNameLabel.getScene() != null) {
+                dialog.initOwner(workerNameLabel.getScene().getWindow());
+            }
+            dialog.initModality(Modality.WINDOW_MODAL);
+            dialog.initStyle(StageStyle.UNDECORATED);
+            dialog.setTitle("تسجيل مواد هالكة");
+            dialog.setMinWidth(460);
+            dialog.setMinHeight(420);
+            dialog.setScene(scene);
+            dialog.centerOnScreen();
+            dialog.showAndWait();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "خطأ في فتح شاشة الهالك: " + ex.getMessage());
+        }
     }
 
     @FXML

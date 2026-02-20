@@ -46,6 +46,7 @@
             <Label fx:id="dateTimeLabel" styleClass="datetime-label"/>
             
             <Button text="المرتجعات" onAction="#handleReturns" styleClass="btn-returns"/>
+            <Button text="🗑 هالك" onAction="#handleWastedItems" style="-fx-background-color: #f97316; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14;"/>
             <Button text="تحصيل آجل" onAction="#handleDeferredCollection" styleClass="btn-secondary"/>
             <Button text="دفعات الموردين" onAction="#handleSupplierPayment" styleClass="btn-secondary"/>
             <Button text="%cashier.logout" onAction="#handleLogout" styleClass="btn-danger"/>

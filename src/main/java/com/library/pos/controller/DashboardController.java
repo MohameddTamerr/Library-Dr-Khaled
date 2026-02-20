@@ -88,6 +88,7 @@ public class DashboardController {
     private final ConfigurableApplicationContext applicationContext;
     private final SaleService saleService;
     private final ProductService productService;
+    private final com.library.pos.service.WastedItemService wastedItemService;
 
     private User currentUser;
     private Parent defaultDashboardView;
@@ -102,10 +103,12 @@ public class DashboardController {
 
     public DashboardController(ConfigurableApplicationContext applicationContext,
             SaleService saleService,
-            ProductService productService) {
+            ProductService productService,
+            com.library.pos.service.WastedItemService wastedItemService) {
         this.applicationContext = applicationContext;
         this.saleService = saleService;
         this.productService = productService;
+        this.wastedItemService = wastedItemService;
     }
 
     @FXML
@@ -220,7 +223,7 @@ public class DashboardController {
         List<Sale> sales = saleService.findByRange(start, end);
         List<Product> products = productService.getAll();
 
-        updateKPICards(sales, products);
+        updateKPICards(sales, products, start, end);
         updateReturnsAnalytics(start, end);
         updateCharts(sales);
         updateStockTable(products);
@@ -261,7 +264,7 @@ public class DashboardController {
     @FXML
     private Label productsBadge;
 
-    private void updateKPICards(List<Sale> sales, List<Product> products) {
+    private void updateKPICards(List<Sale> sales, List<Product> products, LocalDateTime start, LocalDateTime end) {
         // Total Sales (Filtered Range) - Exclude Returns from Revenue Calculation if
         // needed?
         // Usually Net Sales = Gross Sales - Returns.
@@ -272,8 +275,10 @@ public class DashboardController {
                 .sum();
         totalSalesLabel.setText(String.format("%.2f ج.م", totalRevenue));
 
-        // Net Profit (real transaction-based calculation)
+        // Net Profit (real transaction-based calculation minus wasted cost)
         double netProfit = saleService.calculateNetProfit(sales);
+        double wastedCostLoss = wastedItemService.getTotalCostLoss(start, end);
+        netProfit -= wastedCostLoss;
         netProfitLabel.setText(String.format("%.2f ج.م", netProfit));
 
         // Invoice Count (Only SOLD, exclude RETURNED for specific count?)
@@ -442,6 +447,11 @@ public class DashboardController {
     @FXML
     public void showOrders() {
         loadView("/fxml/orders.fxml");
+    }
+
+    @FXML
+    public void showWastedItems() {
+        loadView("/fxml/wasted_items.fxml");
     }
 
     @FXML

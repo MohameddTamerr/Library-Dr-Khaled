@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.library.pos.controller.WastedItemsController"
+      spacing="20" style="-fx-padding: 15;">
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <Label text="المواد الهالكة" styleClass="h1"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <!-- Summary labels -->
+        <Label text="إجمالي خسارة التكلفة:" style="-fx-font-size: 13px; -fx-text-fill: #64748b;"/>
+        <Label fx:id="totalLossLabel" text="0.00 ج.م"
+               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #dc2626;"/>
+    </HBox>
+
+    <!-- Filter Bar -->
+    <HBox spacing="12" alignment="CENTER_LEFT"
+          style="-fx-background-color: white; -fx-padding: 12; -fx-background-radius: 6;
+                 -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 4, 0, 0, 1);">
+        <Label text="من:" style="-fx-font-size: 12px;"/>
+        <DatePicker fx:id="fromDatePicker" promptText="من" prefWidth="130"/>
+        <Label text="إلى:" style="-fx-font-size: 12px;"/>
+        <DatePicker fx:id="toDatePicker" promptText="إلى" prefWidth="130"/>
+        <TextField fx:id="searchField" promptText="بحث باسم المنتج..." prefWidth="200"
+                   onKeyReleased="#handleSearch"/>
+        <Button text="تصفية" onAction="#handleFilter" styleClass="btn-primary"/>
+        <Button text="الكل" onAction="#handleShowAll" styleClass="btn-secondary"/>
+    </HBox>
+
+    <!-- Table -->
+    <TableView fx:id="wastedTable" VBox.vgrow="ALWAYS"
+               style="-fx-background-radius: 6; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 4, 0, 0, 1);">
+        <columns>
+            <TableColumn fx:id="dateCol"        text="التاريخ"           prefWidth="160"/>
+            <TableColumn fx:id="productNameCol" text="اسم المنتج"        prefWidth="220"/>
+            <TableColumn fx:id="quantityCol"    text="الكمية"            prefWidth="80"/>
+            <TableColumn fx:id="costPerUnitCol" text="تكلفة الوحدة"      prefWidth="120"/>
+            <TableColumn fx:id="totalCostCol"   text="إجمالي الخسارة"    prefWidth="130"/>
+            <TableColumn fx:id="workerCol"      text="الكاشير"           prefWidth="130"/>
+            <TableColumn fx:id="notesCol"       text="ملاحظات"           prefWidth="180"/>
+        </columns>
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+        </columnResizePolicy>
+    </TableView>
+
+</VBox>
