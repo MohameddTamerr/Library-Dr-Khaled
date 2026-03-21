@@ -302,6 +302,10 @@ public class CashierController {
         }
     }
 
+    public void reloadQuickKeys() {
+        loadQuickKeys();
+    }
+
     public void setUser(User user) {
         this.currentUser = user;
         if (user != null) {
