@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="15" alignment="CENTER" stylesheets="@../css/style.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.library.pos.controller.QuickKeysSettingsController">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="إعدادات الاختصارات F1-F6" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+    <Label text="أدخل الباركود والكمية لكل اختصار" style="-fx-text-fill: gray;"/>
+
+    <GridPane hgap="15" vgap="10" alignment="CENTER">
+        <!-- Headers -->
+        <Label text="الاختصار" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+        <Label text="باركود الصنف" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+        <Label text="الكمية" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        <Label text="اسم المنتج" style="-fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+
+        <!-- F1 -->
+        <Label text="F1:" style="-fx-font-weight: bold;" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+        <TextField fx:id="f1Field" promptText="الباركود" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+        <TextField fx:id="f1Qty" promptText="الكمية" text="1" prefWidth="60" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        <Label fx:id="f1Name" text="" prefWidth="150" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+
+        <!-- F2 -->
+        <Label text="F2:" style="-fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+        <TextField fx:id="f2Field" promptText="الباركود" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+        <TextField fx:id="f2Qty" promptText="الكمية" text="1" prefWidth="60" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+        <Label fx:id="f2Name" text="" prefWidth="150" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+
+        <!-- F3 -->
+        <Label text="F3:" style="-fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
+        <TextField fx:id="f3Field" promptText="الباركود" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+        <TextField fx:id="f3Qty" promptText="الكمية" text="1" prefWidth="60" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <Label fx:id="f3Name" text="" prefWidth="150" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+
+        <!-- F4 -->
+        <Label text="F4:" style="-fx-font-weight: bold;" GridPane.rowIndex="4" GridPane.columnIndex="3"/>
+        <TextField fx:id="f4Field" promptText="الباركود" GridPane.rowIndex="4" GridPane.columnIndex="2"/>
+        <TextField fx:id="f4Qty" promptText="الكمية" text="1" prefWidth="60" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        <Label fx:id="f4Name" text="" prefWidth="150" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+
+        <!-- F5 -->
+        <Label text="F5:" style="-fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="3"/>
+        <TextField fx:id="f5Field" promptText="الباركود" GridPane.rowIndex="5" GridPane.columnIndex="2"/>
+        <TextField fx:id="f5Qty" promptText="الكمية" text="1" prefWidth="60" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+        <Label fx:id="f5Name" text="" prefWidth="150" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+
+        <!-- F6 -->
+        <Label text="F6:" style="-fx-font-weight: bold;" GridPane.rowIndex="6" GridPane.columnIndex="3"/>
+        <TextField fx:id="f6Field" promptText="الباركود" GridPane.rowIndex="6" GridPane.columnIndex="2"/>
+        <TextField fx:id="f6Qty" promptText="الكمية" text="1" prefWidth="60" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+        <Label fx:id="f6Name" text="" prefWidth="150" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+    </GridPane>
+
+    <HBox spacing="15" alignment="CENTER">
+        <Button text="حفظ" onAction="#handleSave" styleClass="btn-success" prefWidth="100"/>
+        <Button text="إلغاء" onAction="#handleCancel" styleClass="btn-secondary" prefWidth="100"/>
+    </HBox>
+</VBox>
