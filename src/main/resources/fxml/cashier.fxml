@@ -85,8 +85,6 @@
                                            HBox.hgrow="ALWAYS"/>
                                 <Button text="%cashier.search" onAction="#handleSearch" styleClass="btn-primary"/>
                             </HBox>
-                            <ListView fx:id="suggestionList" styleClass="suggestion-list"
-                                      visible="false" managed="false" prefHeight="150"/>
                         </VBox>
 
                         <!-- Quick buttons -->
@@ -123,9 +121,6 @@
                             <TableColumn fx:id="totalCol" text="%cashier.col.total" prefWidth="80"/>
                             <TableColumn fx:id="actionCol" text="" prefWidth="50"/>
                         </columns>
-                        <columnResizePolicy>
-                             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                        </columnResizePolicy>
                     </TableView>
 
                     <!-- Summary -->
