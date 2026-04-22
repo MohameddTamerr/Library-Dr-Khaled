@@ -39,8 +39,7 @@
 
             <!-- Quick-access: Returns and Waste always visible -->
             <Button text="المرتجعات" onAction="#handleReturns" styleClass="btn-returns"/>
-            <Button text="🗑 هالك" onAction="#handleWastedItems"
-                    style="-fx-background-color: #f97316; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 5 12;"/>
+                <Button text="🗑 هالك" onAction="#handleWastedItems" styleClass="btn-waste"/>
 
             <!-- Toggle right panel -->
             <Button fx:id="toggleOrderPanelBtn" text="📋 طلبات" onAction="#handleToggleOrderPanel" styleClass="btn-secondary"/>
@@ -159,7 +158,7 @@
                     <HBox styleClass="payment-buttons" spacing="12">
                         <padding><Insets top="10" right="16" bottom="16" left="16"/></padding>
                         <Button text="تأكيد الدفع (Enter)" onAction="#handlePayment" styleClass="btn-success-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                        <ToggleButton fx:id="deliveryToggleBtn" text="التوصيل" onAction="#handleDeliveryToggle" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        <ToggleButton fx:id="deliveryFeeToggle" text="التوصيل" onAction="#handleDeliveryToggle" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                         <Button text="دفع آجل" onAction="#handleDeferredPayment" styleClass="btn-warning-large" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                     </HBox>
                 </VBox>

@@ -472,6 +472,11 @@ public class DashboardController {
     }
 
     @FXML
+    public void showSalesReport() {
+        loadView("/fxml/sales_report.fxml");
+    }
+
+    @FXML
     public void showWastedItems() {
         loadView("/fxml/wasted_items.fxml");
     }

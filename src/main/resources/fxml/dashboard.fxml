@@ -47,6 +47,7 @@
             <Button text="العملاء" onAction="#showCustomers" maxWidth="Infinity" styleClass="button-sidebar"/>
             <Button text="الموردين" onAction="#showSuppliers" maxWidth="Infinity" styleClass="button-sidebar"/>
             <Button text="الاوردرات" onAction="#showOrders" maxWidth="Infinity" styleClass="button-sidebar"/>
+                <Button text="تقرير المبيعات" onAction="#showSalesReport" maxWidth="Infinity" styleClass="button-sidebar"/>
             <Button text="المدفوعات الآجلة" onAction="#showDeferredPayments" maxWidth="Infinity" styleClass="button-sidebar"/>
             <Button text="🗑 الهالك" onAction="#showWastedItems" maxWidth="Infinity"
                     style="-fx-background-color: #f97316; -fx-text-fill: white; -fx-font-weight: bold;
