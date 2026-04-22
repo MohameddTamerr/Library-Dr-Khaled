@@ -1353,30 +1353,8 @@ public class CashierController {
         loadOpenOrders();
         selectOpenOrder(saved);
 
-        showSuccessWindow(bundle.getString("cashier.order.alert.saved"), "رقم الطلب: " + saved.getId());
+        showInAppMessage(bundle.getString("cashier.order.alert.saved") + " - رقم الطلب: " + saved.getId(), "#10b981");
         resetOrderState();
-    }
-
-    private void showSuccessWindow(String message, String details) {
-        try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-                    getClass().getResource("/fxml/success_popup.fxml"));
-            loader.setControllerFactory(applicationContext::getBean);
-
-            javafx.scene.Parent root = loader.load();
-            SuccessPopupController controller = loader.getController();
-            controller.setMessage(message);
-            controller.setDetails(details);
-
-            javafx.stage.Stage stage = new javafx.stage.Stage();
-            stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            stage.setTitle("نجاح");
-            stage.setScene(new javafx.scene.Scene(root));
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert(Alert.AlertType.INFORMATION, message);
-        }
     }
 
     @FXML
@@ -2050,10 +2028,6 @@ public class CashierController {
             showAlert(Alert.AlertType.WARNING, "الرجاء اختيار طريقة الدفع");
             return;
         }
-        // Show pre-checkout review
-        if (!showCheckoutReview()) {
-            return;
-        }
         // Extract payment method (remove emoji and parentheses)
         // If no parentheses, keep full label to avoid truncating values like "Vodafone
         // Cash"
@@ -2083,71 +2057,6 @@ public class CashierController {
             return;
         }
         showDeferredPaymentDialog();
-    }
-
-    private boolean showCheckoutReview() {
-        // Show a pre-checkout review dialog
-        VBox reviewContent = new VBox(16);
-        reviewContent.setPadding(new Insets(24));
-        reviewContent.setStyle("-fx-background-color: #1e293b; -fx-background-radius: 12;");
-
-        // Cart Summary
-        VBox cartSummary = new VBox(8);
-        cartSummary.setStyle("-fx-background-color: #334155; -fx-padding: 16; -fx-background-radius: 8;");
-        Label cartTitleLabel = new Label("ملخص الطلب:");
-        cartTitleLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #94a3b8;");
-        cartSummary.getChildren().add(cartTitleLabel);
-
-        for (CartItem item : cartItems) {
-            HBox itemBox = new HBox(10);
-            itemBox.setAlignment(Pos.CENTER_LEFT);
-            Label itemLabel = new Label(item.getProduct().getName() + " x" + item.getQuantity());
-            itemLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-            Label priceLabel = new Label(String.format("%.2f ج.م", item.getTotal()));
-            priceLabel.setStyle("-fx-text-fill: #10b981; -fx-font-weight: bold;");
-            Region spacer = new Region();
-            HBox.setHgrow(spacer, Priority.ALWAYS);
-            itemBox.getChildren().addAll(itemLabel, spacer, priceLabel);
-            cartSummary.getChildren().add(itemBox);
-        }
-
-        // Total
-        HBox totalBox = new HBox(10);
-        totalBox.setAlignment(Pos.CENTER_LEFT);
-        totalBox.setStyle("-fx-background-color: rgba(16,185,129,0.1); -fx-border-color: #10b981; " +
-                "-fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 12;");
-        Label totalLabel = new Label("الإجمالي:");
-        totalLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #94a3b8;");
-        Label totalValue = new Label(String.format("%.2f ج.م", getGrandTotal()));
-        totalValue.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #10b981;");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        totalBox.getChildren().addAll(totalLabel, spacer, totalValue);
-
-        // Buttons
-        HBox buttons = new HBox(12);
-        buttons.setAlignment(Pos.CENTER_RIGHT);
-        Button cancelBtn = new Button("إلغاء");
-        cancelBtn.setStyle("-fx-background-color: #334155; -fx-text-fill: white; -fx-padding: 10 24; " +
-                "-fx-background-radius: 8; -fx-cursor: hand;");
-        Button confirmBtn = new Button("متابعة الدفع");
-        confirmBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; " +
-                "-fx-padding: 10 32; -fx-background-radius: 8; -fx-cursor: hand;");
-        buttons.getChildren().addAll(cancelBtn, confirmBtn);
-
-        reviewContent.getChildren().addAll(cartSummary, totalBox, buttons);
-        Stage reviewDialog = DialogUtil.createDialog("مراجعة الطلب", reviewContent,
-                workerNameLabel.getScene().getWindow());
-
-        boolean[] confirmed = {false};
-        confirmBtn.setOnAction(e -> {
-            confirmed[0] = true;
-            reviewDialog.close();
-        });
-        cancelBtn.setOnAction(e -> reviewDialog.close());
-
-        reviewDialog.showAndWait();
-        return confirmed[0];
     }
 
     private void showPaymentDialog(String paymentMethod) {
@@ -2391,7 +2300,6 @@ public class CashierController {
         resetSelection();
         barcodeField.requestFocus();
 
-        showAlert(Alert.AlertType.INFORMATION, bundle.getString("cashier.success"));
         clearActiveOrderAfterPayment();
         resetOrderState();
     }

@@ -470,7 +470,9 @@
 }
 
 .suggestion-list .list-cell:filled:selected {
-    -fx-background-color: -cashier-primary;
+    -fx-background-color: -cashier-primary-dark;
+    -fx-border-color: #14b8a6;
+    -fx-border-width: 0 0 0 3;
     -fx-text-fill: white;
 }
 
@@ -656,6 +658,17 @@
 .order-panel .list-view .list-cell {
     -fx-padding: 6 10;
     -fx-text-fill: -text-primary;
+}
+
+.order-panel .list-view .list-cell:filled:hover {
+    -fx-background-color: #e2f3f2;
+}
+
+.order-panel .list-view .list-cell:filled:selected,
+.order-panel .list-view .list-cell:filled:selected:focused {
+    -fx-background-color: #0f766e;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
 }
 
 .field-label {
