@@ -470,23 +470,25 @@
 }
 
 .suggestion-list .list-cell:filled:selected {
-    -fx-background-color: -cashier-primary-dark;
+    -fx-background-color: #0a4f47;
     -fx-border-color: #14b8a6;
-    -fx-border-width: 0 0 0 3;
+    -fx-border-width: 0 0 0 4;
     -fx-text-fill: white;
 }
 
 .suggestion-list .list-cell:filled:selected .product-cell-name {
-    -fx-text-fill: white;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
 }
 
 .suggestion-list .list-cell:filled:selected .product-cell-barcode {
-    -fx-text-fill: #d1d5db;
+    -fx-text-fill: #b0d4d1;
 }
 
 .suggestion-list .list-cell:filled:selected .product-cell-price,
 .suggestion-list .list-cell:filled:selected .product-cell-currency {
-    -fx-text-fill: #22c55e;
+    -fx-text-fill: #4ade80;
+    -fx-font-weight: bold;
 }
 
 
