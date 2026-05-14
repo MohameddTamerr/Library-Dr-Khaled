@@ -131,7 +131,7 @@ public class CashierController {
     @FXML
     private TableColumn<CartItem, String> productCol;
     @FXML
-    private TableColumn<CartItem, Integer> qtyCol;
+    private TableColumn<CartItem, Double> qtyCol;
     @FXML
     private TableColumn<CartItem, Double> priceCol;
     @FXML
@@ -207,11 +207,17 @@ public class CashierController {
     private static final int REFRESH_SECONDS_VISIBLE = 3;
     private static final int REFRESH_SECONDS_HIDDEN = 6;
     private static final long SCANNER_INTER_KEY_MS = 80L;
-    private static final int MIN_SCANNER_LENGTH = 4;
+    private static final int MIN_SCANNER_LENGTH = 2;
     private final StringBuilder scannerBuffer = new StringBuilder();
     private long lastScannerCharTime = 0L;
     private java.time.LocalDateTime lastSaleTimestamp;
     private long lastSaleCount = -1;
+
+    private record WeightedBarcodeCandidate(String barcode, double quantity) {
+    }
+
+    private record WeightedBarcodeMatch(Product product, double quantity) {
+    }
 
     public CashierController(ProductService productService, SaleService saleService,
             CustomerService customerService, OpenOrderService openOrderService,
@@ -555,7 +561,11 @@ public class CashierController {
 
         String scanned = normalizeSearchTerm(scannerBuffer.toString());
         scannerBuffer.setLength(0);
-        if (scanned == null || scanned.length() < MIN_SCANNER_LENGTH) {
+        
+        // Decimal-aware length checking
+        boolean hasDecimal = scanned.contains(".");
+        int minLength = hasDecimal ? 2 : MIN_SCANNER_LENGTH;
+        if (scanned == null || scanned.length() < minLength) {
             return false;
         }
 
@@ -836,7 +846,7 @@ public class CashierController {
             if (event.getClickCount() == 1) {
                 Product selected = suggestionList.getSelectionModel().getSelectedItem();
                 if (selected != null) {
-                    addProductToCart(selected, 1);
+                    addProductToCart(selected, 1.0);
                     hideSuggestions();
                     barcodeField.clear();
                     barcodeField.requestFocus();
@@ -847,7 +857,7 @@ public class CashierController {
             if (event.getCode() == KeyCode.ENTER) {
                 Product selected = suggestionList.getSelectionModel().getSelectedItem();
                 if (selected != null) {
-                    addProductToCart(selected, 1);
+                    addProductToCart(selected, 1.0);
                     hideSuggestions();
                     barcodeField.clear();
                     barcodeField.requestFocus();
@@ -1345,7 +1355,7 @@ public class CashierController {
                 : null);
         order.clearItems();
         for (CartItem item : cartItems) {
-            OpenOrderItem orderItem = new OpenOrderItem(order, item.getProduct(), item.getQuantity(), item.getPrice());
+            OpenOrderItem orderItem = new OpenOrderItem(order, item.getProduct(), (int)item.getQuantity(), item.getPrice());
             order.addItem(orderItem);
         }
         OpenOrder saved = openOrderService.save(order);
@@ -1560,7 +1570,7 @@ public class CashierController {
                 "-fx-padding: 12 32; -fx-background-radius: 8; -fx-cursor: hand;");
         confirmBtn.setOnAction(e -> {
             try {
-                int newQty = Integer.parseInt(qtyField.getText().trim());
+                double newQty = Double.parseDouble(qtyField.getText().trim());
                 if (newQty <= 0) {
                     showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.qty"));
                     return;
@@ -1594,9 +1604,18 @@ public class CashierController {
 
     private void setupColumns() {
         productCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getProduct().getName()));
-        qtyCol.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getQuantity()).asObject());
+        qtyCol.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getQuantity()).asObject());
         priceCol.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getPrice()).asObject());
         totalCol.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getTotal()).asObject());
+
+        // Format quantity column with 2 decimal places
+        qtyCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : String.format("%.2f", item));
+            }
+        });
 
         // Format price columns
         priceCol.setCellFactory(col -> new TableCell<>() {
@@ -1642,6 +1661,7 @@ public class CashierController {
     @FXML
     private void handleBarcodeEnter() {
         String term = barcodeField.getText();
+        System.err.println("[BARCODE ENTER] Received: " + term);
         if (term == null || term.isBlank()) {
             hideSuggestions();
             return;
@@ -1663,10 +1683,27 @@ public class CashierController {
 
         String trimmed = term.trim();
         String normalized = normalizeSearchTerm(trimmed);
+        System.err.println("[SEARCH START] term=" + term + ", normalized=" + normalized);
 
+        // Try exact barcode match first
         Product exact = productService.findByBarcode(normalized != null ? normalized : trimmed).orElse(null);
         if (exact != null) {
-            addProductToCart(exact, 1);
+            System.err.println("[EXACT SEARCH] Found product: " + exact.getName());
+            addProductToCart(exact, 1.0);
+            if (barcodeField != null) {
+                barcodeField.clear();
+                barcodeField.requestFocus();
+            }
+            hideSuggestions();
+            return;
+        }
+        System.err.println("[EXACT SEARCH] No exact match found");
+
+        WeightedBarcodeMatch weighted = findWeightedBarcodeProduct(normalized);
+        if (weighted != null) {
+            System.err.println("[WEIGHTED SEARCH] Found product: " + weighted.product().getName()
+                    + ", qty=" + weighted.quantity());
+            addProductToCart(weighted.product(), weighted.quantity());
             if (barcodeField != null) {
                 barcodeField.clear();
                 barcodeField.requestFocus();
@@ -1679,7 +1716,42 @@ public class CashierController {
         if (results.isEmpty() && normalized != null && !normalized.equals(trimmed)) {
             results = productService.searchByBarcodeOrName(normalized);
         }
+        
+        // Fuzzy matching: try removing prefix or extracting suffix
         if (results.isEmpty()) {
+            System.err.println("[FUZZY SEARCH] Starting fuzzy matching for: " + normalized);
+            
+            // Try removing first character (prefix removal)
+            if (normalized != null && normalized.length() > 1) {
+                String noPrefix = normalized.substring(1);
+                System.err.println("[FUZZY SEARCH] Trying no-prefix: " + noPrefix);
+                exact = productService.findByBarcode(noPrefix).orElse(null);
+                if (exact != null) {
+                    System.err.println("[FUZZY SEARCH] Found via no-prefix: " + exact.getName());
+                    results.add(exact);
+                }
+            }
+            
+            // Try last N characters (suffix extraction)
+            if (results.isEmpty() && normalized != null) {
+                int[] suffixLengths = {12, 10, 8};
+                for (int len : suffixLengths) {
+                    if (normalized.length() >= len) {
+                        String suffix = normalized.substring(normalized.length() - len);
+                        System.err.println("[FUZZY SEARCH] Trying suffix (" + len + " chars): " + suffix);
+                        exact = productService.findByBarcode(suffix).orElse(null);
+                        if (exact != null) {
+                            System.err.println("[FUZZY SEARCH] Found via suffix: " + exact.getName());
+                            results.add(exact);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (results.isEmpty()) {
+            System.err.println("[SEARCH FAIL] No results found");
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.notfound"));
             resetSelection();
             if (barcodeField != null) {
@@ -1688,6 +1760,8 @@ public class CashierController {
             hideSuggestions();
             return;
         }
+        System.err.println("[SEARCH RESULTS] Found " + results.size() + " product(s)");
+        
         Product chosen = null;
 
         if (chosen == null && allowSuggestions && suggestionList != null && suggestionList.isVisible()) {
@@ -1704,7 +1778,8 @@ public class CashierController {
         }
 
         if (chosen != null) {
-            addProductToCart(chosen, 1);
+            System.err.println("[SEARCH SUCCESS] Adding to cart: " + chosen.getName());
+            addProductToCart(chosen, 1.0);
             if (barcodeField != null) {
                 barcodeField.clear();
                 barcodeField.requestFocus();
@@ -1713,6 +1788,85 @@ public class CashierController {
         } else if (allowSuggestions) {
             showSuggestions(results);
         }
+    }
+
+    private WeightedBarcodeMatch findWeightedBarcodeProduct(String normalized) {
+        for (WeightedBarcodeCandidate candidate : parseWeightedBarcodeCandidates(normalized)) {
+            Optional<Product> product = productService.findByBarcode(candidate.barcode());
+            if (product.isPresent()) {
+                return new WeightedBarcodeMatch(product.get(), candidate.quantity());
+            }
+        }
+        return null;
+    }
+
+    private List<WeightedBarcodeCandidate> parseWeightedBarcodeCandidates(String value) {
+        String digits = normalizeSearchTerm(value);
+        if (digits == null || !digits.matches("\\d{8,18}")) {
+            return List.of();
+        }
+
+        java.util.List<WeightedBarcodeCandidate> candidates = new java.util.ArrayList<>();
+        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+        int[] prefixLengths = {2, 1};
+        int[] codeLengths = {5, 4, 6, 3, 7, 8, 2};
+        int[] suffixLengths = {5, 6, 4};
+        int[] checkDigitLengths = digits.length() == 13 ? new int[] {1, 0} : new int[] {0, 1};
+
+        for (int checkDigits : checkDigitLengths) {
+            int bodyEnd = digits.length() - checkDigits;
+            if (bodyEnd <= 0) {
+                continue;
+            }
+            for (int prefixLength : prefixLengths) {
+                for (int codeLength : codeLengths) {
+                    for (int suffixLength : suffixLengths) {
+                        if (prefixLength + codeLength + suffixLength != bodyEnd) {
+                            continue;
+                        }
+                        String productCode = digits.substring(prefixLength, prefixLength + codeLength);
+                        String suffix = digits.substring(prefixLength + codeLength, bodyEnd);
+                        double quantity = parseWeightedQuantity(suffix);
+                        if (quantity <= 0) {
+                            continue;
+                        }
+                        addWeightedCandidate(candidates, seen, productCode, quantity);
+                        String withoutLeadingZeros = stripLeadingZeros(productCode);
+                        if (!withoutLeadingZeros.equals(productCode)) {
+                            addWeightedCandidate(candidates, seen, withoutLeadingZeros, quantity);
+                        }
+                    }
+                }
+            }
+        }
+        return candidates;
+    }
+
+    private void addWeightedCandidate(List<WeightedBarcodeCandidate> candidates, java.util.Set<String> seen,
+            String barcode, double quantity) {
+        if (barcode == null || barcode.isBlank()) {
+            return;
+        }
+        String key = barcode + "|" + quantity;
+        if (seen.add(key)) {
+            candidates.add(new WeightedBarcodeCandidate(barcode, quantity));
+        }
+    }
+
+    private double parseWeightedQuantity(String suffix) {
+        if (suffix == null || suffix.isBlank()) {
+            return 0.0d;
+        }
+        try {
+            return Integer.parseInt(suffix) / 1000.0d;
+        } catch (NumberFormatException ex) {
+            return 0.0d;
+        }
+    }
+
+    private String stripLeadingZeros(String value) {
+        String stripped = value == null ? "" : value.replaceFirst("^0+", "");
+        return stripped.isEmpty() ? "0" : stripped;
     }
 
     private void showSuggestions(List<Product> results) {
@@ -1765,7 +1919,7 @@ public class CashierController {
         suggestionList.setMaxHeight(Region.USE_PREF_SIZE);
     }
 
-    private void addProductToCart(Product product, int qty) {
+    private void addProductToCart(Product product, double qty) {
         // Check stock
         if (qty > product.getQuantity()) {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
@@ -1778,7 +1932,7 @@ public class CashierController {
                 .findFirst();
 
         if (existing.isPresent()) {
-            int newQty = existing.get().getQuantity() + qty;
+            double newQty = existing.get().getQuantity() + qty;
             if (newQty > product.getQuantity()) {
                 showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
                 return;
@@ -1792,7 +1946,7 @@ public class CashierController {
         updateSummary();
     }
 
-    private boolean adjustSelectedCartItemQuantity(int delta) {
+    private boolean adjustSelectedCartItemQuantity(double delta) {
         if (cartTable == null) {
             return false;
         }
@@ -1801,7 +1955,7 @@ public class CashierController {
             return false;
         }
 
-        int newQty = selectedItem.getQuantity() + delta;
+        double newQty = selectedItem.getQuantity() + delta;
         if (newQty <= 0) {
             cartItems.remove(selectedItem);
             updateSummary();
@@ -1809,7 +1963,7 @@ public class CashierController {
         }
 
         Product product = selectedItem.getProduct();
-        int maxQty = product != null && product.getQuantity() != null ? product.getQuantity() : Integer.MAX_VALUE;
+        double maxQty = product != null && product.getQuantity() != null ? product.getQuantity() : Double.MAX_VALUE;
         if (newQty > maxQty) {
             showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
             return true;
@@ -1851,7 +2005,7 @@ public class CashierController {
             addButton.setDisable(false);
         }
         if (qtyField != null) {
-            qtyField.setText("1");
+            qtyField.setText("1.00");
             qtyField.requestFocus();
             qtyField.selectAll();
         }
@@ -1876,7 +2030,7 @@ public class CashierController {
             addButton.setDisable(true);
         }
         if (qtyField != null) {
-            qtyField.setText("1");
+            qtyField.setText("1.00");
         }
     }
 
@@ -1886,9 +2040,9 @@ public class CashierController {
             return;
         }
         try {
-            int qty = Integer.parseInt(qtyField.getText().trim());
+            double qty = Double.parseDouble(qtyField.getText().trim());
             if (qty > 1) {
-                qtyField.setText(String.valueOf(qty - 1));
+                qtyField.setText(String.format("%.2f", qty - 1));
             }
         } catch (NumberFormatException e) {
             qtyField.setText("1");
@@ -1901,9 +2055,9 @@ public class CashierController {
             return;
         }
         try {
-            int qty = Integer.parseInt(qtyField.getText().trim());
+            double qty = Double.parseDouble(qtyField.getText().trim());
             if (selectedProduct != null && qty < selectedProduct.getQuantity()) {
-                qtyField.setText(String.valueOf(qty + 1));
+                qtyField.setText(String.format("%.2f", qty + 1));
             }
         } catch (NumberFormatException e) {
             qtyField.setText("1");
@@ -1916,9 +2070,9 @@ public class CashierController {
             return;
 
         try {
-            int qty = 1;
+            double qty = 1.0;
             if (qtyField != null) {
-                qty = Integer.parseInt(qtyField.getText().trim());
+                qty = Double.parseDouble(qtyField.getText().trim());
             }
             if (qty <= 0) {
                 showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.qty"));
@@ -1937,7 +2091,7 @@ public class CashierController {
                     .findFirst();
 
             if (existing.isPresent()) {
-                int newQty = existing.get().getQuantity() + qty;
+                double newQty = existing.get().getQuantity() + qty;
                 if (newQty > selectedProduct.getQuantity()) {
                     showAlert(Alert.AlertType.WARNING, bundle.getString("cashier.error.stock"));
                     return;
@@ -1976,10 +2130,10 @@ public class CashierController {
     }
 
     private void updateSummary() {
-        int itemCount = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
+        double itemCount = cartItems.stream().mapToDouble(CartItem::getQuantity).sum();
         double total = getGrandTotal();
 
-        itemCountLabel.setText(String.valueOf(itemCount));
+        itemCountLabel.setText(String.format("%.2f", itemCount));
         grandTotalLabel.setText(String.format("%.2f", total));
         updateOrderButtons();
     }
@@ -2317,7 +2471,7 @@ public class CashierController {
             Sale sale = new Sale();
             sale.setTimestamp(orderTime);
             sale.setItemName(item.getProduct().getName());
-            sale.setQuantity(item.getQuantity());
+            sale.setQuantity((int)item.getQuantity());
             sale.setTotalAmount(item.getTotal());
             sale.setWorker(worker);
             sale.setCustomer(selectedCustomer);
@@ -2683,7 +2837,24 @@ public class CashierController {
         if (trimmed.isBlank()) {
             return null;
         }
-        return trimmed.replaceAll("\\s+", "");
+        // Remove spaces but preserve decimals
+        String normalized = trimmed.replaceAll("\\s+", "");
+        // Convert Arabic numerals to Western
+        return convertArabicNumeralsToWestern(normalized);
+    }
+
+    private String convertArabicNumeralsToWestern(String value) {
+        if (value == null) {
+            return null;
+        }
+        String result = value;
+        // Replace Arabic numerals with Western equivalents
+        for (char i = '٠'; i <= '٩'; i++) {
+            result = result.replace(i, (char)('0' + (i - '٠')));
+        }
+        // Replace Arabic decimal separators with period
+        result = result.replace('٫', '.').replace('٬', ',');
+        return result;
     }
 
     @FXML
@@ -3297,10 +3468,10 @@ public class CashierController {
 
     public static class CartItem {
         private final Product product;
-        private int quantity;
+        private double quantity;
         private final double price;
 
-        public CartItem(Product product, int quantity) {
+        public CartItem(Product product, double quantity) {
             this.product = product;
             this.quantity = quantity;
             this.price = product.getSellPrice();
@@ -3314,7 +3485,7 @@ public class CashierController {
             return product;
         }
 
-        public int getQuantity() {
+        public double getQuantity() {
             return quantity;
         }
 
@@ -3322,7 +3493,7 @@ public class CashierController {
             return price;
         }
 
-        public void setQuantity(int q) {
+        public void setQuantity(double q) {
             this.quantity = q;
         }
     }
