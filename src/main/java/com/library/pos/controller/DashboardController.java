@@ -34,7 +34,12 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 @Component
@@ -88,6 +93,7 @@ public class DashboardController {
     private final ConfigurableApplicationContext applicationContext;
     private final SaleService saleService;
     private final ProductService productService;
+    private final com.library.pos.service.WastedItemService wastedItemService;
 
     private User currentUser;
     private Parent defaultDashboardView;
@@ -102,10 +108,12 @@ public class DashboardController {
 
     public DashboardController(ConfigurableApplicationContext applicationContext,
             SaleService saleService,
-            ProductService productService) {
+            ProductService productService,
+            com.library.pos.service.WastedItemService wastedItemService) {
         this.applicationContext = applicationContext;
         this.saleService = saleService;
         this.productService = productService;
+        this.wastedItemService = wastedItemService;
     }
 
     @FXML
@@ -120,8 +128,8 @@ public class DashboardController {
         if (stockTable != null) {
             configureStockTable();
             setupFilters();
-            // Initial Load: Last 30 Days
-            fromDatePicker.setValue(LocalDate.now().minusDays(30));
+            // Initial Load: Today
+            fromDatePicker.setValue(LocalDate.now());
             toDatePicker.setValue(LocalDate.now());
             refreshAnalytics();
         }
@@ -220,7 +228,7 @@ public class DashboardController {
         List<Sale> sales = saleService.findByRange(start, end);
         List<Product> products = productService.getAll();
 
-        updateKPICards(sales, products);
+        updateKPICards(sales, products, start, end);
         updateReturnsAnalytics(start, end);
         updateCharts(sales);
         updateStockTable(products);
@@ -259,9 +267,26 @@ public class DashboardController {
     @FXML
     private Label salesTrendLabel;
     @FXML
+    /*
+     * # Error Resolution & Git Push Walkthrough
+     *
+     * I've successfully resolved the compilation errors in your IDE and pushed the final, clean source code to GitHub.
+     *
+     * ## Changes Made
+     * - **Restored Missing Class**: Recovered `AppSettings.java` from the Git history, which was required by several controllers.
+     * - **Fixed Missing Imports**: Added standard Java imports (`LocalDateTime`, `List`, `Map`, `Objects`, etc.) that were missing in several files after the reset.
+     * - **Implemented Missing Method**: Added the `reloadQuickKeys()` method to `CashierController.java` to restore the link between settings and the cashier.
+     * - **Cleaned Repository**: Confirmed all large binaries are excluded and only pure source code is tracked.
+     *
+     * ## Verification
+     * - **Compilation Check**: All files in `src/main/java/com/library/pos/controller/` and `service/` are now correctly importing their dependencies.
+     * - **Git Sync**: Your local `ramy` branch is fully in sync with `origin/ramy`.
+     *
+     * Your IDE should be clear of red error marks now, and your latest work is safely on the cloud!
+     */
     private Label productsBadge;
 
-    private void updateKPICards(List<Sale> sales, List<Product> products) {
+    private void updateKPICards(List<Sale> sales, List<Product> products, LocalDateTime start, LocalDateTime end) {
         // Total Sales (Filtered Range) - Exclude Returns from Revenue Calculation if
         // needed?
         // Usually Net Sales = Gross Sales - Returns.
@@ -272,8 +297,10 @@ public class DashboardController {
                 .sum();
         totalSalesLabel.setText(String.format("%.2f ج.م", totalRevenue));
 
-        // Net Profit (real transaction-based calculation)
+        // Net Profit (real transaction-based calculation minus wasted cost)
         double netProfit = saleService.calculateNetProfit(sales);
+        double wastedCostLoss = wastedItemService.getTotalCostLoss(start, end);
+        netProfit -= wastedCostLoss;
         netProfitLabel.setText(String.format("%.2f ج.م", netProfit));
 
         // Invoice Count (Only SOLD, exclude RETURNED for specific count?)
@@ -445,6 +472,16 @@ public class DashboardController {
     }
 
     @FXML
+    public void showSalesReport() {
+        loadView("/fxml/sales_report.fxml");
+    }
+
+    @FXML
+    public void showWastedItems() {
+        loadView("/fxml/wasted_items.fxml");
+    }
+
+    @FXML
     public void showDeferredPayments() {
         loadView("/fxml/deferred_payments.fxml");
     }
@@ -469,8 +506,22 @@ public class DashboardController {
             if (!stage.isFullScreen()) {
                 stage.setFullScreen(true);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            DialogUtil.initOwner(alert, contentArea != null && contentArea.getScene() != null ? contentArea.getScene().getWindow() : null);
+            alert.setTitle("خطأ");
+            alert.setHeaderText("فشل فتح شاشة الكاشير");
+            String fullTrace = e.toString() + "\n";
+            Throwable cause = e.getCause();
+            while (cause != null) {
+                fullTrace += "Caused by: " + cause.toString() + "\n";
+                for (StackTraceElement el : cause.getStackTrace()) { fullTrace += "  at " + el.toString() + "\n"; }
+                cause = cause.getCause();
+            }
+            try { java.nio.file.Files.writeString(java.nio.file.Paths.get("crash.txt"), fullTrace); } catch(Exception ex) {}
+            alert.setContentText(e.getMessage() != null ? e.getMessage() : e.toString());
+            alert.showAndWait();
         }
     }
 

@@ -231,8 +231,8 @@ public class OrdersController {
             filterOrderTypeCombo.getSelectionModel().selectFirst();
         }
 
-        // Default: This month
-        fromDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
+        // Default: Today
+        fromDatePicker.setValue(LocalDate.now());
         toDatePicker.setValue(LocalDate.now());
 
         // Initial Load

@@ -38,7 +38,7 @@ public class AuthService {
         }
 
         String normalizedUsername = username.trim();
-        String normalizedPassword = password.trim();
+        String normalizedPassword = password;
         if (normalizedUsername.isEmpty() || normalizedPassword.isEmpty()) {
             return null;
         }
@@ -51,7 +51,7 @@ public class AuthService {
         }
 
         if (user.isPresent() && user.get().getPassword() != null
-                && user.get().getPassword().trim().equals(normalizedPassword)) {
+            && user.get().getPassword().equals(normalizedPassword)) {
             return user.get();
         }
         return null;

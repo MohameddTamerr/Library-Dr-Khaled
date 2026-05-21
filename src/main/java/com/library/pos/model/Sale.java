@@ -46,6 +46,9 @@ public class Sale {
     @Column(name = "return_condition")
     private String returnCondition;
 
+    @Column(name = "delivery_charge")
+    private Boolean deliveryCharge;
+
     public Sale() {
     }
 
@@ -148,5 +151,13 @@ public class Sale {
 
     public void setReturnCondition(String returnCondition) {
         this.returnCondition = returnCondition;
+    }
+
+    public boolean isDeliveryCharge() {
+        return Boolean.TRUE.equals(deliveryCharge);
+    }
+
+    public void setDeliveryCharge(boolean deliveryCharge) {
+        this.deliveryCharge = deliveryCharge;
     }
 }

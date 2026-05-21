@@ -1,15 +1,20 @@
 package com.library.pos.util;
 
-import com.library.pos.util.escpos.ReceiptModels;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.layout.*;
-import javafx.scene.text.TextAlignment;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
+
+import com.library.pos.util.escpos.ReceiptModels;
+
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 
 public class ReceiptNodeFactory {
 
@@ -368,8 +373,8 @@ public class ReceiptNodeFactory {
         static Labels of(boolean arabic) {
             if (arabic) {
                 return new Labels(
-                        "مكتبة سمسم 2",
-                        "فاتورة ضريبية مبسطة\nرقم تليفون: 01060390597 - 01025891972\nالعنوان: ابراج مدينه نصر عماره ٢ب شارع المدارس",
+                        "فرت-المدينه المنوره",
+                        "فاتورة ضريبية مبسطة\nرقم تليفون: 01064419197 - 01062565115\nالعنوان: ابراج مدينه نصر عماره 3ب شارع المدارس",
                         "رقم الفاتورة:",
                         "التاريخ:",
                         "الكاشير:",

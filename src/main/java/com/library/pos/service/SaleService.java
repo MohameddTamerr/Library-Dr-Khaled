@@ -88,10 +88,19 @@ public class SaleService {
         return saleRepository.findTopReturnedProducts(start, end, org.springframework.data.domain.PageRequest.of(0, 5));
     }
 
-    public void saveSales(List<Sale> sales) {
-        for (Sale sale : sales) {
-            save(sale);
+    @Transactional
+    public List<Sale> saveSales(List<Sale> sales) {
+        List<Sale> savedSales = new java.util.ArrayList<>();
+        if (sales == null) {
+            return savedSales;
         }
+        for (Sale sale : sales) {
+            if (sale == null) {
+                continue;
+            }
+            savedSales.add(save(sale));
+        }
+        return savedSales;
     }
 
     public double calculateNetProfit(List<Sale> sales) {

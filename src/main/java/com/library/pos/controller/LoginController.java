@@ -47,7 +47,7 @@ public class LoginController {
     @FXML
     private void handleLogin() {
         String username = usernameField.getText() != null ? usernameField.getText().trim() : "";
-        String password = passwordField.getText() != null ? passwordField.getText().trim() : "";
+        String password = passwordField.getText() != null ? passwordField.getText() : "";
 
         if (username.isEmpty() || password.isEmpty()) {
             errorLabel.setVisible(true);
@@ -60,11 +60,6 @@ public class LoginController {
         if (user != null) {
             errorLabel.setVisible(false);
             System.out.println("Login successful for: " + user.getUsername());
-            if (user.getRole() == com.library.pos.model.Role.DELIVERY_MEN) {
-                errorLabel.setVisible(true);
-                errorLabel.setText(ResourceBundle.getBundle("messages").getString("login.error.delivery"));
-                return;
-            }
 
             // Check for default admin credentials
             if ("admin".equalsIgnoreCase(user.getUsername()) && "admin".equals(password)) {

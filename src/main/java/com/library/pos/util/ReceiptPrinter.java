@@ -1,5 +1,6 @@
 package com.library.pos.util;
 
+import com.library.pos.util.AppSettings;
 import com.library.pos.model.Customer;
 import com.library.pos.model.Sale;
 import com.library.pos.util.escpos.EscPosReceiptPrinter;
@@ -12,7 +13,6 @@ import javafx.print.Printer;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -148,7 +147,7 @@ public final class ReceiptPrinter {
         receiptNode.getStylesheets().add(ReceiptPrinter.class.getResource("/css/receipt.css").toExternalForm());
 
         // We need to layout the node to take a snapshot
-        Scene dummy = new Scene(receiptNode);
+        new Scene(receiptNode);
         receiptNode.applyCss();
         receiptNode.layout();
 
@@ -156,10 +155,8 @@ public final class ReceiptPrinter {
         debug("Print mode: " + mode);
 
         if (mode == PrintMode.ESC_POS) {
-            debug("Trying ESC/POS raw path (Double).");
-            boolean s1 = printViaEscPos(order);
-            boolean s2 = printViaEscPos(order);
-            return s1 || s2;
+            debug("Trying ESC/POS raw path.");
+            return printViaEscPos(order);
         }
 
         // DEBUG: Save snapshot to checking rendering
@@ -174,44 +171,37 @@ public final class ReceiptPrinter {
         }
 
         if (mode == PrintMode.JAVAFX) {
-            debug("Trying JavaFX print path (Double).");
+            debug("Trying JavaFX print path.");
             boolean s1 = printViaJavaFx(receiptNode);
-            boolean s2 = printViaJavaFx(receiptNode);
-            if (s1 || s2)
+            if (s1)
                 return true;
-
+            
             debug("JavaFX path failed. Falling back to AWT.");
             WritableImage snapshot = receiptNode.snapshot(null, null);
-            boolean a1 = printViaAwt(snapshot);
-            boolean a2 = printViaAwt(snapshot);
-            return a1 || a2;
+            return printViaAwt(snapshot);
         }
 
         if (mode == PrintMode.AWT) {
-            debug("Trying AWT print path (Double).");
+            debug("Trying AWT print path.");
             // Explicitly set width again to be sure
             receiptNode.setPrefWidth(targetWidth);
             receiptNode.setMaxWidth(targetWidth);
             receiptNode.setMinWidth(targetWidth);
             receiptNode.layout();
-
+ 
             WritableImage snapshot = receiptNode.snapshot(null, null);
-            boolean a1 = printViaAwt(snapshot);
-            boolean a2 = printViaAwt(snapshot);
-            return a1 || a2;
+            return printViaAwt(snapshot);
         }
 
         // AUTO
-        debug("Trying JavaFX print path (Double).");
+        debug("Trying JavaFX print path.");
         if (printViaJavaFx(receiptNode)) {
-            printViaJavaFx(receiptNode);
             return true;
         }
-
-        debug("JavaFX path failed. Trying AWT path (Double).");
+ 
+        debug("JavaFX path failed. Trying AWT path.");
         WritableImage snapshot = receiptNode.snapshot(null, null);
         if (printViaAwt(snapshot)) {
-            printViaAwt(snapshot);
             return true;
         }
 
@@ -453,9 +443,17 @@ public final class ReceiptPrinter {
     }
 
     private static String printerHint() {
-        return PRINT_CONFIG.printerName == null || PRINT_CONFIG.printerName.isBlank()
-                ? PRINTER_HINT
-                : PRINT_CONFIG.printerName.trim();
+        // Priority 1: External settings.properties written by the installer
+        String fromSettings = AppSettings.getPrinterName();
+        if (fromSettings != null && !fromSettings.isBlank()) {
+            return fromSettings.trim();
+        }
+        // Priority 2: application.properties (receipt.printer.name)
+        if (PRINT_CONFIG.printerName != null && !PRINT_CONFIG.printerName.isBlank()) {
+            return PRINT_CONFIG.printerName.trim();
+        }
+        // Priority 3: Hardcoded default
+        return PRINTER_HINT;
     }
 
     private static double mmToPoints(double mm) {

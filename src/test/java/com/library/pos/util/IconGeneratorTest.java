@@ -32,7 +32,6 @@ public class IconGeneratorTest {
         g2d.setColor(new Color(16, 185, 129)); // Emerald Green
 
         // Book Spine
-        int spineWidth = 40;
         int centerX = size / 2;
         int bookY = 120;
         int bookHeight = 280;
